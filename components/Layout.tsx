@@ -1,7 +1,7 @@
 import Link from 'next/link';
-import Image from 'next/image';
+// import Image from 'next/image';
 import styled, { createGlobalStyle } from 'styled-components';
-import Logo from '../public/images/logo.png';
+// import Logo from '../public/images/logo.png';
 
 const GlobalStyles = createGlobalStyle`
   @font-face {
@@ -204,6 +204,10 @@ const LayoutStyles = styled.div`
     border-right: 1px solid #e5e7eb;
   }
 
+  .logo img {
+    width: 200px;
+  }
+
   nav {
     margin: 1.125rem 0;
     padding: 0.5rem 0;
@@ -244,11 +248,15 @@ export default function Layout({ children }: Props) {
         <div className="logo">
           <Link href="/dashboard">
             <a>
-              <Image
+              {/* <Image
                 src={Logo}
                 alt="Macaport logo with mountains"
                 width="200px"
                 height="54px"
+              /> */}
+              <img
+                src="/images/logo.png"
+                alt="Macaport logo in front of mountains"
               />
             </a>
           </Link>
