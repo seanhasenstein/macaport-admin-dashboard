@@ -6,7 +6,7 @@ import Link from 'next/link';
 import styled from 'styled-components';
 import { Formik, Form, Field, FieldArray } from 'formik';
 import { Store, StoreFormValues } from '../interfaces';
-import { unitedStates, months, slugify } from '../utils';
+import { unitedStates, months } from '../utils';
 import Layout from '../components/Layout';
 
 const UpdateStoreStyles = styled.div`
@@ -421,13 +421,6 @@ export default function UpdateStore({ store, error }: Props) {
                       <div className="item">
                         <label htmlFor="name">Store Name</label>
                         <Field name="name" id="name" />
-                        <div className="store-url">
-                          The store url will be:{' '}
-                          <span>
-                            www.macaport.com/store/
-                            {values.name ? slugify(values.name) : 'store-name'}
-                          </span>
-                        </div>
                       </div>
                     </div>
                   </div>

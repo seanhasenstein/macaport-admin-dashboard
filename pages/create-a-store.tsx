@@ -7,7 +7,7 @@ import styled from 'styled-components';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { StoreFormValues } from '../interfaces';
-import { unitedStates, months, slugify, removeNonDigits } from '../utils';
+import { unitedStates, months, removeNonDigits } from '../utils';
 import Layout from '../components/Layout';
 
 const CreateStoreStyles = styled.div`
@@ -438,13 +438,6 @@ export default function CreateStore() {
                           component="div"
                           className="validation-error"
                         />
-                        <div className="store-url">
-                          The store url will be:{' '}
-                          <span>
-                            www.macaport.com/store/
-                            {values.name ? slugify(values.name) : 'store-name'}
-                          </span>
-                        </div>
                       </div>
                     </div>
                   </div>

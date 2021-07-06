@@ -1,3 +1,5 @@
+import * as crypto from 'crypto';
+
 export const months = [
   'January',
   'February',
@@ -98,4 +100,33 @@ export function formatPhoneNumber(input: string) {
       return v;
     })
     .join('');
+}
+
+export function formatToMoney(input: number, includeDecimal = false) {
+  const price = input / 100;
+
+  if (includeDecimal) {
+    return `$${price.toFixed(2)}`;
+  } else {
+    return `$${price}`;
+  }
+}
+
+const ALPHA_NUM =
+  '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+export function createId(prefix?: string | false, len = 14) {
+  const rnd = crypto.randomBytes(len);
+  const value = new Array(len);
+  const charsLength = ALPHA_NUM.length;
+
+  for (let i = 0; i < len; i++) {
+    value[i] = ALPHA_NUM[rnd[i] % charsLength];
+  }
+
+  const id = value.join('');
+
+  if (prefix) return `${prefix}_${id}`;
+
+  return id;
 }

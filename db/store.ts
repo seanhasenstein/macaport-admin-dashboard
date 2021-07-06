@@ -1,9 +1,14 @@
 import { Db, ObjectID } from 'mongodb';
 import { Store } from '../interfaces';
+import { createId } from '../utils';
 
 export async function addStore(db: Db, store: Store) {
   try {
-    const result = await db.collection('stores').insertOne(store);
+    const storeId = createId('str');
+    console.log(storeId);
+    const result = await db
+      .collection('stores')
+      .insertOne({ ...store, storeId });
     return result.ops[0];
   } catch (error) {
     console.error(error);
@@ -23,11 +28,9 @@ export async function updateStore(db: Db, id: string, updates: Store) {
   }
 }
 
-export async function getStore(db: Db, id: string) {
+export async function getStore(db: Db, storeId: string) {
   try {
-    const result = await db
-      .collection('stores')
-      .findOne({ _id: new ObjectID(id) });
+    const result = await db.collection('stores').findOne({ storeId });
     if (!result) throw new Error('Invalid store ID was provided.');
     return {
       ...result,
