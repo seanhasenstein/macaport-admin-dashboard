@@ -1,16 +1,15 @@
-import React from 'react';
 import { GetServerSideProps } from 'next';
+import { getSession } from 'next-auth/client';
+import { connectToDb, store } from '../db';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { getSession } from 'next-auth/client';
 import styled from 'styled-components';
-import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
-import * as Yup from 'yup';
-import { StoreFormValues } from '../interfaces';
-import { unitedStates, months, slugify, removeNonDigits } from '../utils';
+import { Formik, Form, Field, FieldArray } from 'formik';
+import { Store, StoreFormValues } from '../interfaces';
+import { unitedStates, months, slugify } from '../utils';
 import Layout from '../components/Layout';
 
-const CreateStoreStyles = styled.div`
+const UpdateStoreStyles = styled.div`
   .title {
     padding: 1.625rem 2.5rem;
     border-bottom: 1px solid #e5e7eb;
@@ -27,20 +26,6 @@ const CreateStoreStyles = styled.div`
     margin: 0 0 1.5rem;
     font-weight: 600;
     color: #1f2937;
-  }
-
-  h4 {
-    margin: 0 0 1.5rem;
-    font-size: 1rem;
-    font-weight: 600;
-    color: #374151;
-  }
-
-  p {
-    margin: 0 0 2rem;
-    font-size: 0.9375rem;
-    color: #6b7280;
-    line-height: 1.5;
   }
 
   .main-content {
@@ -264,143 +249,146 @@ const CreateStoreStyles = styled.div`
     border-right: 2px solid transparent;
     animation: spinner 0.6s linear infinite;
   }
-
-  .validation-error {
-    margin: 0.5rem 0 0;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #b91c1c;
-  }
-
-  .server-error {
-    margin: 0;
-    padding: 0.75rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: #fef2f2;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #b91c1c;
-    border: 1px solid #fee2e2;
-    border-radius: 0.125rem;
-
-    svg {
-      margin: 0 0.5rem 0 0;
-      height: 1rem;
-      width: 1rem;
-      color: #f87171;
-    }
-  }
 `;
 
-const createStoreSchema = Yup.object().shape({
-  name: Yup.string().required('A store name is required.'),
-  contact: Yup.object({
-    email: Yup.string().email('Must be a valid email address'),
-    phone: Yup.string()
-      .transform(value => {
-        return removeNonDigits(value);
-      })
-      .matches(new RegExp(/^\d{10}$/), 'Phone number must be 10 digits'),
-  }),
-});
-
-const initialValues: StoreFormValues = {
-  name: '',
-  openImmediately: false,
-  openDate: {
-    month: 'default',
-    date: '',
-    year: '',
-  },
-  hasCloseDate: 'true',
-  closeDate: {
-    month: 'default',
-    date: '',
-    year: '',
-  },
-  shippingMethod: 'ship',
-  primaryShippingLocation: {
-    name: '',
-    street: '',
-    street2: '',
-    city: '',
-    state: '',
-    zipcode: '',
-  },
-  allowDirectShipping: 'true',
-  contact: {
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-  },
-  unsavedNote: '',
-  notes: [],
+type Props = {
+  store: Store;
+  error: string;
 };
 
-function formatDataForDb(data: StoreFormValues) {
-  let openDate,
-    closeDate,
-    hasCloseDate,
-    category,
-    hasPrimaryShippingLocation,
-    allowDirectShipping;
-
-  data.openImmediately
-    ? (openDate = new Date())
-    : (openDate = new Date(
-        `${data.openDate.month} ${data.openDate.date} ${data.openDate.year}`
-      ));
-  data.hasCloseDate === 'true'
-    ? (closeDate = new Date(
-        `${data.closeDate.month} ${data.closeDate.date} ${data.closeDate.year}`
-      ))
-    : (closeDate = undefined);
-  data.hasCloseDate === 'true' ? (hasCloseDate = true) : (hasCloseDate = false);
-  data.shippingMethod === 'inhouse'
-    ? (category = 'macaport')
-    : (category = 'client');
-  data.shippingMethod === 'ship'
-    ? (hasPrimaryShippingLocation = true)
-    : (hasPrimaryShippingLocation = false);
-  data.allowDirectShipping === 'true'
-    ? (allowDirectShipping = true)
-    : (allowDirectShipping = false);
-
-  return {
-    name: data.name,
-    openDate,
-    hasCloseDate,
-    closeDate,
-    category,
-    hasPrimaryShippingLocation,
-    primaryShippingLocation: data.primaryShippingLocation,
-    allowDirectShipping,
-    contact: data.contact,
-    notes: data.notes,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-}
-
-export default function CreateStore() {
+export default function UpdateStore({ store, error }: Props) {
   const router = useRouter();
-  const [serverError, setServerError] = React.useState();
+
+  if (error) {
+    return (
+      <Layout>
+        <UpdateStoreStyles>
+          <div className="title">
+            <h2>Store Error</h2>
+          </div>
+          <div className="main-content">
+            <h3 className="error">Error: {error}</h3>
+          </div>
+        </UpdateStoreStyles>
+      </Layout>
+    );
+  }
+
+  function getInitialValues(store: Store): StoreFormValues {
+    const dbOpenDate = new Date(store.openDate);
+    const dbCloseDate =
+      store.hasCloseDate && store.closeDate
+        ? new Date(store.closeDate)
+        : undefined;
+    const closeDate =
+      store.hasCloseDate && dbCloseDate
+        ? {
+            month: months[dbCloseDate.getMonth()],
+            date: dbCloseDate.getDate().toString(),
+            year: dbCloseDate.getFullYear().toString(),
+          }
+        : { month: '', date: '', year: '' };
+    const shippingMethod =
+      store.category === 'macaport'
+        ? 'inhouse'
+        : store.hasPrimaryShippingLocation
+        ? 'ship'
+        : 'noship';
+    const { name, street, street2, city, state, zipcode } =
+      store.primaryShippingLocation;
+    const { firstName, lastName, email, phone } = store.contact;
+
+    return {
+      name: store.name,
+      openImmediately: false,
+      openDate: {
+        month: months[dbOpenDate.getMonth()],
+        date: dbOpenDate.getDate().toString(),
+        year: dbOpenDate.getFullYear().toString(),
+      },
+      hasCloseDate: store.hasCloseDate ? 'true' : 'false',
+      closeDate,
+      shippingMethod,
+      primaryShippingLocation: {
+        name,
+        street,
+        street2,
+        city,
+        state,
+        zipcode,
+      },
+      allowDirectShipping: store.allowDirectShipping ? 'true' : 'false',
+      contact: {
+        firstName,
+        lastName,
+        email,
+        phone,
+      },
+      unsavedNote: '',
+      notes: store.notes,
+    };
+  }
+
+  function formatDataForDb(data: StoreFormValues) {
+    let openDate,
+      closeDate,
+      hasCloseDate,
+      category,
+      hasPrimaryShippingLocation,
+      allowDirectShipping;
+
+    data.openImmediately
+      ? (openDate = new Date())
+      : (openDate = new Date(
+          `${data.openDate.month} ${data.openDate.date} ${data.openDate.year}`
+        ));
+    data.hasCloseDate === 'true'
+      ? (closeDate = new Date(
+          `${data.closeDate.month} ${data.closeDate.date} ${data.closeDate.year}`
+        ))
+      : (closeDate = undefined);
+    data.hasCloseDate === 'true'
+      ? (hasCloseDate = true)
+      : (hasCloseDate = false);
+    data.shippingMethod === 'inhouse'
+      ? (category = 'macaport')
+      : (category = 'client');
+    data.shippingMethod === 'ship'
+      ? (hasPrimaryShippingLocation = true)
+      : (hasPrimaryShippingLocation = false);
+    data.allowDirectShipping === 'true'
+      ? (allowDirectShipping = true)
+      : (allowDirectShipping = false);
+
+    return {
+      _id: store._id,
+      name: data.name,
+      openDate,
+      hasCloseDate,
+      closeDate,
+      category,
+      hasPrimaryShippingLocation,
+      primaryShippingLocation: data.primaryShippingLocation,
+      allowDirectShipping,
+      contact: data.contact,
+      notes: data.notes,
+      updatedAt: new Date(),
+    };
+  }
+
+  const initialValues: StoreFormValues = getInitialValues(store);
 
   return (
     <Layout>
-      <CreateStoreStyles>
+      <UpdateStoreStyles>
         <div className="title">
-          <h2>Create a Store</h2>
+          <h2>Update Store - {store.name}</h2>
         </div>
         <div className="main-content">
           <Formik
             initialValues={initialValues}
-            validationSchema={createStoreSchema}
             onSubmit={async values => {
-              const fetchResponse = await fetch('/api/add-store', {
+              const fetchResponse = await fetch('/api/update-store', {
                 method: 'post',
                 body: JSON.stringify(formatDataForDb(values)),
                 headers: {
@@ -411,7 +399,7 @@ export default function CreateStore() {
               const response = await fetchResponse.json();
 
               if (response.error) {
-                setServerError(response.error);
+                // set a server error state and notify the user
                 return;
               }
 
@@ -423,7 +411,7 @@ export default function CreateStore() {
             {({ values, setFieldValue, isSubmitting }) => (
               <div className="form-container">
                 <Form>
-                  <h3>Store Information</h3>
+                  <h3>Store Details</h3>
                   <p>
                     Fill out this form to create a new online store for the
                     Macaport website.
@@ -433,11 +421,6 @@ export default function CreateStore() {
                       <div className="item">
                         <label htmlFor="name">Store Name</label>
                         <Field name="name" id="name" />
-                        <ErrorMessage
-                          name="name"
-                          component="div"
-                          className="validation-error"
-                        />
                         <div className="store-url">
                           The store url will be:{' '}
                           <span>
@@ -572,8 +555,8 @@ export default function CreateStore() {
                             value="noship"
                           />
                           <label htmlFor="noship">
-                            We will <span className="underline">NOT</span> be
-                            shipping orders to the client
+                            Orders for this store will NOT be shipped to the
+                            client
                           </label>
                         </div>
                         <div className="radio-item">
@@ -584,7 +567,7 @@ export default function CreateStore() {
                             value="inhouse"
                           />
                           <label htmlFor="inhouse">
-                            This store is for Macaport (has no client)
+                            This store is for us here at Macaport
                           </label>
                         </div>
                       </div>
@@ -593,6 +576,10 @@ export default function CreateStore() {
                   {values.shippingMethod === 'ship' && (
                     <div className="section">
                       <h4>Primary Shipping Location</h4>
+                      <p>
+                        This is where the orders will be shipped unless
+                        customers ship directly to themselves.
+                      </p>
                       <div className="item">
                         <label htmlFor="primaryShippingLocation.name">
                           Location Name
@@ -686,8 +673,8 @@ export default function CreateStore() {
                                 value="false"
                               />
                               <label htmlFor="noDirectShipping">
-                                No, all orders will be shipped/picked up
-                                together by the client
+                                No, all orders will be packaged and
+                                shipped/picked up together
                               </label>
                             </div>
                           </div>
@@ -720,20 +707,10 @@ export default function CreateStore() {
                         <div className="item">
                           <label htmlFor="contact.email">Email Address</label>
                           <Field name="contact.email" id="contact.email" />
-                          <ErrorMessage
-                            name="contact.email"
-                            component="div"
-                            className="validation-error"
-                          />
                         </div>
                         <div className="item">
                           <label htmlFor="contact.phone">Phone Number</label>
                           <Field name="contact.phone" id="contact.phone" />
-                          <ErrorMessage
-                            name="contact.phone"
-                            component="div"
-                            className="validation-error"
-                          />
                         </div>
                       </div>
                     </>
@@ -820,50 +797,53 @@ export default function CreateStore() {
                       {isSubmitting ? (
                         <span className="spinner" />
                       ) : (
-                        'Create the store'
+                        'Update the store'
                       )}
                     </button>
                   </div>
-                  {serverError && (
-                    <div className="server-error">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      An error has occurred. Please try submitting again.
-                    </div>
-                  )}
                 </Form>
               </div>
             )}
           </Formik>
         </div>
-      </CreateStoreStyles>
+      </UpdateStoreStyles>
     </Layout>
   );
 }
 
 export const getServerSideProps: GetServerSideProps = async context => {
-  const session = await getSession(context);
-  if (!session) {
+  try {
+    const session = await getSession(context);
+    if (!session) {
+      return {
+        props: {},
+        redirect: {
+          permanent: false,
+          destination: '/login',
+        },
+      };
+    }
+
+    if (context.query.id === undefined) {
+      throw new Error('A store ID must be provided.');
+    }
+
+    const id = Array.isArray(context.query.id)
+      ? context.query.id[0]
+      : context.query.id;
+    const { db } = await connectToDb();
+    const result = await store.getStore(db, id);
     return {
-      props: {},
-      redirect: {
-        permanent: false,
-        destination: '/login',
+      props: {
+        store: result,
+      },
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      props: {
+        error: error.message,
       },
     };
   }
-  return {
-    props: { session },
-  };
 };

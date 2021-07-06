@@ -1,6 +1,7 @@
 import Link from 'next/link';
 // import Image from 'next/image';
 import styled, { createGlobalStyle } from 'styled-components';
+import { signOut } from 'next-auth/client';
 // import Logo from '../public/images/logo.png';
 
 const GlobalStyles = createGlobalStyle`
@@ -76,6 +77,10 @@ a {
   width: 1px;
   overflow: hidden;
 }
+
+.underline {
+    text-decoration: underline;
+  }
 
 label {
   margin: 0 0 0.375rem;
@@ -192,7 +197,7 @@ const LayoutStyles = styled.div`
   position: relative;
 
   header {
-    padding: 1.5rem 2rem;
+    padding: 1.5rem 2rem 2rem;
     display: flex;
     flex-direction: column;
     width: 20rem;
@@ -220,18 +225,49 @@ const LayoutStyles = styled.div`
       align-items: center;
       font-size: 1rem;
       font-weight: 500;
-      color: #4b5563;
+      color: #374151;
+      border-bottom: 1px solid #e5e7eb;
+
+      &:last-of-type {
+        border-bottom: none;
+      }
 
       &:hover {
-        color: #111827;
+        color: #000;
       }
 
       svg {
-        margin: 0 0.5rem 0 0;
-        height: 1.375rem;
-        width: 1.375rem;
+        margin: 0 0.625rem 0 0;
+        height: 1.25rem;
+        width: 1.25rem;
         color: #9ca3af;
       }
+    }
+  }
+
+  .logout-button {
+    padding: 0.5rem 0;
+    margin-top: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    border-radius: 0.25rem;
+    cursor: pointer;
+
+    svg {
+      margin: 0 0 0 0.25rem;
+      height: 0.875rem;
+      width: 0.875rem;
+      color: #9ca3af;
+    }
+
+    &:hover {
+      border-color: #d1d5db;
     }
   }
 `;
@@ -317,6 +353,28 @@ export default function Layout({ children }: Props) {
             </a>
           </Link>
         </nav>
+        <button
+          type="button"
+          className="logout-button"
+          onClick={() =>
+            signOut({ callbackUrl: 'http://localhost:3000/login' })
+          }
+        >
+          Sign Out
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+            />
+          </svg>
+        </button>
       </header>
       <main>{children}</main>
     </LayoutStyles>

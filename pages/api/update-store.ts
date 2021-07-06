@@ -9,7 +9,8 @@ const handler = nc<Request, NextApiResponse>()
   .use(database)
   .post(async (req, res) => {
     try {
-      const result: Store = await store.addStore(req.db, req.body);
+      const { _id, ...updates } = req.body;
+      const result: Store = await store.updateStore(req.db, _id, updates);
       res.json({ success: true, store: result });
     } catch (error) {
       console.error(error);

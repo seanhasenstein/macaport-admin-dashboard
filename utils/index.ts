@@ -82,3 +82,20 @@ export function slugify(input: string) {
   result = result.replace(/-$/, '');
   return result;
 }
+
+export function removeNonDigits(input: string) {
+  return input.replace(/\D/g, '');
+}
+
+export function formatPhoneNumber(input: string) {
+  const digits = removeNonDigits(input);
+  const digitsArray = digits.split('');
+  return digitsArray
+    .map((v, i) => {
+      if (i === 0) return `(${v}`;
+      if (i === 2) return `${v}) `;
+      if (i === 5) return `${v}-`;
+      return v;
+    })
+    .join('');
+}

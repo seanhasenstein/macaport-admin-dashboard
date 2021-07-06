@@ -1,4 +1,4 @@
-import { Db } from 'mongodb';
+import { Db, ObjectID } from 'mongodb';
 import { Store } from '../interfaces';
 
 export async function addStore(db: Db, store: Store) {
@@ -11,9 +11,23 @@ export async function addStore(db: Db, store: Store) {
   }
 }
 
+export async function updateStore(db: Db, id: string, updates: Store) {
+  try {
+    const result = await db
+      .collection('stores')
+      .findOneAndUpdate({ _id: new ObjectID(id) }, { $set: { ...updates } });
+    return result.value;
+  } catch (error) {
+    console.error(error);
+    throw new Error('An error occurred while updating the store.');
+  }
+}
+
 export async function getStore(db: Db, id: string) {
   try {
-    const result = await db.collection('stores').findOne({ _id: id });
+    const result = await db
+      .collection('stores')
+      .findOne({ _id: new ObjectID(id) });
     if (!result) throw new Error('Invalid store ID was provided.');
     return {
       ...result,
@@ -23,6 +37,30 @@ export async function getStore(db: Db, id: string) {
     };
   } catch (error) {
     console.error(error);
-    throw new Error('An error occurred while getting the store.');
+    throw new Error('An error occurred getting the store.');
+  }
+}
+
+export async function getStores(db: Db, filter: Record<string, unknown> = {}) {
+  try {
+    const result = await db
+      .collection('stores')
+      .aggregate([
+        {
+          $match: { ...filter },
+        },
+        {
+          $set: {
+            _id: {
+              $toString: '$_id',
+            },
+          },
+        },
+      ])
+      .toArray();
+    return await result;
+  } catch (error) {
+    console.log(error);
+    throw new Error('An error occurred getting the stores.');
   }
 }
