@@ -14,7 +14,7 @@ const StoreStyles = styled.div`
     margin: 0;
     font-size: 1.375rem;
     font-weight: 600;
-    color: #1f2937;
+    color: #111827;
   }
 
   h3 {
@@ -73,7 +73,7 @@ export default function Store({ store, error }: Props) {
 export const getServerSideProps: GetServerSideProps = async context => {
   try {
     if (context.query.id === undefined) {
-      throw new Error('A store ID must be provided.');
+      throw new Error('A Store ID must be provided.');
     }
 
     const id = Array.isArray(context.query.id)

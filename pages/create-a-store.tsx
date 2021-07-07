@@ -20,7 +20,7 @@ const CreateStoreStyles = styled.div`
     margin: 0;
     font-size: 1.375rem;
     font-weight: 600;
-    color: #1f2937;
+    color: #111827;
   }
 
   h3 {

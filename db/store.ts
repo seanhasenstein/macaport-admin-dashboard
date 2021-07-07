@@ -31,7 +31,7 @@ export async function updateStore(db: Db, id: string, updates: Store) {
 export async function getStore(db: Db, storeId: string) {
   try {
     const result = await db.collection('stores').findOne({ storeId });
-    if (!result) throw new Error('Invalid store ID was provided.');
+    if (!result) throw new Error('Invalid store ID provided.');
     return {
       ...result,
       _id: result._id.toString(),

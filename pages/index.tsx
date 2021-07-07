@@ -19,6 +19,7 @@ const DashboardStyles = styled.div`
     margin: 0;
     font-size: 1.375rem;
     font-weight: 600;
+    color: #111827;
   }
 
   .main-content {
@@ -267,7 +268,7 @@ const DashboardStyles = styled.div`
       font-size: 0.6875rem;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.0375em;
+      letter-spacing: 0.05em;
       color: #374151;
       border-radius: 9999px;
       background: #e5e7eb;
