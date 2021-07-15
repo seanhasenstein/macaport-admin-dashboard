@@ -126,6 +126,7 @@ const DashboardStyles = styled.div`
 
   th,
   td {
+    padding: 0.625rem 2rem;
     border-bottom: 1px solid #e5e7eb;
 
     &.text-center {
@@ -142,8 +143,8 @@ const DashboardStyles = styled.div`
   }
 
   th {
-    padding: 1rem 1rem;
-    background-color: #f9fafb;
+    padding: 1rem;
+    background-color: #f3f4f6;
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -173,8 +174,9 @@ const DashboardStyles = styled.div`
 
   td {
     padding: 0.875rem 1rem;
-    color: #1f2937;
     font-size: 0.875rem;
+    font-weight: 500;
+    color: #1f2937;
 
     &.store-name {
       padding-left: 0.5rem;
@@ -220,7 +222,7 @@ const DashboardStyles = styled.div`
   }
 
   & .contact-email {
-    color: #4b5563;
+    color: #89909d;
   }
 
   .is-active {
@@ -259,7 +261,7 @@ const DashboardStyles = styled.div`
   }
 
   .customer-name {
-    color: #9ca3af;
+    color: #89909d;
   }
 
   .order-status {
@@ -408,7 +410,7 @@ export default function Index({ stores }: Props) {
                     <th>Contact</th>
                     <th>Open Date</th>
                     <th>Close Date</th>
-                    <th />
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -559,7 +561,7 @@ export default function Index({ stores }: Props) {
                     <th>Shipping</th>
                     <th className="text-center"># of Items</th>
                     <th className="text-right">Total</th>
-                    <th />
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>

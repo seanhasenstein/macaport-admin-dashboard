@@ -1,10 +1,11 @@
 import { GetServerSideProps } from 'next';
+import { ObjectID } from 'mongodb';
 import styled from 'styled-components';
-import Layout from '../components/Layout';
-import { connectToDb, store } from '../db';
-import { Store as StoreInterface } from '../interfaces';
+import { connectToDb, order } from '../../db';
+import Layout from '../../components/Layout';
+import { Order } from '../../interfaces';
 
-const StoreStyles = styled.div`
+const EditStoreStyles = styled.div`
   .title {
     padding: 1.625rem 2.5rem;
     border-bottom: 1px solid #e5e7eb;
@@ -36,36 +37,37 @@ const StoreStyles = styled.div`
 `;
 
 type Props = {
-  store: StoreInterface;
+  order: Order;
   error: string;
 };
 
-export default function Store({ store, error }: Props) {
+export default function EditOrder({ order, error }: Props) {
+  console.log(order);
   if (error) {
     return (
       <Layout>
-        <StoreStyles>
+        <EditStoreStyles>
           <div className="title">
-            <h2>Store Error</h2>
+            <h2>Edit Order Error</h2>
           </div>
           <div className="main-content">
             <h3 className="error">Error: {error}</h3>
           </div>
-        </StoreStyles>
+        </EditStoreStyles>
       </Layout>
     );
   }
 
   return (
     <Layout>
-      <StoreStyles>
+      <EditStoreStyles>
         <div className="title">
-          <h2>{store.name} Store</h2>
+          <h2>Order #{order.orderId}</h2>
         </div>
         <div className="main-content">
-          <pre>{JSON.stringify(store, null, 2)}</pre>
+          <pre>{JSON.stringify(order, null, 2)}</pre>
         </div>
-      </StoreStyles>
+      </EditStoreStyles>
     </Layout>
   );
 }
@@ -80,10 +82,10 @@ export const getServerSideProps: GetServerSideProps = async context => {
       ? context.query.id[0]
       : context.query.id;
     const { db } = await connectToDb();
-    const result = await store.getStore(db, { storeId: id });
+    const result = await order.getOrder(db, { _id: new ObjectID(id) });
     return {
       props: {
-        store: result,
+        order: result,
       },
     };
   } catch (error) {

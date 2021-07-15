@@ -1,5 +1,4 @@
 import { GetServerSideProps } from 'next';
-import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import { signIn, getSession } from 'next-auth/client';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
@@ -144,8 +143,6 @@ const loginSchema = Yup.object().shape({
 });
 
 export default function Login() {
-  const router = useRouter();
-  console.log(router);
   return (
     <BasicLayout>
       <LoginStyles>

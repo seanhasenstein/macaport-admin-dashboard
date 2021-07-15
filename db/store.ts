@@ -5,7 +5,6 @@ import { createId } from '../utils';
 export async function addStore(db: Db, store: Store) {
   try {
     const storeId = createId('str');
-    console.log(storeId);
     const result = await db
       .collection('stores')
       .insertOne({ ...store, storeId });
@@ -28,9 +27,9 @@ export async function updateStore(db: Db, id: string, updates: Store) {
   }
 }
 
-export async function getStore(db: Db, storeId: string) {
+export async function getStore(db: Db, filter: Record<string, unknown>) {
   try {
-    const result = await db.collection('stores').findOne({ storeId });
+    const result = await db.collection('stores').findOne({ ...filter });
     if (!result) throw new Error('Invalid store ID provided.');
     return {
       ...result,
@@ -63,7 +62,7 @@ export async function getStores(db: Db, filter: Record<string, unknown> = {}) {
       .toArray();
     return await result;
   } catch (error) {
-    console.log(error);
+    console.error(error);
     throw new Error('An error occurred getting the stores.');
   }
 }

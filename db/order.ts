@@ -14,7 +14,6 @@ export async function getOrder(db: Db, filter: Record<string, unknown>) {
       ])
       .toArray();
     if (!result) throw new Error('Invalid order ID provided.');
-    console.log(result);
     return result[0];
   } catch (error) {
     console.error(error);
