@@ -2,7 +2,7 @@ import { Db, ObjectID } from 'mongodb';
 import { Store } from '../interfaces';
 import { createId } from '../utils';
 
-export async function addStore(db: Db, store: Store) {
+export async function createStore(db: Db, store: Store) {
   try {
     const storeId = createId('str');
     const result = await db
@@ -27,16 +27,14 @@ export async function updateStore(db: Db, id: string, updates: Store) {
   }
 }
 
-export async function getStore(db: Db, filter: Record<string, unknown>) {
+export async function getStoreById(db: Db, id: string) {
   try {
-    const result = await db.collection('stores').findOne({ ...filter });
+    const result = await db
+      .collection('stores')
+      .findOne({ _id: new ObjectID(id) });
     if (!result) throw new Error('Invalid store ID provided.');
-    return {
-      ...result,
-      _id: result._id.toString(),
-      createdAt: result.createdAt.toString(),
-      updatedAt: result.updatedAt.toString(),
-    };
+
+    return result;
   } catch (error) {
     console.error(error);
     throw new Error('An error occurred getting the store.');
@@ -50,13 +48,6 @@ export async function getStores(db: Db, filter: Record<string, unknown> = {}) {
       .aggregate([
         {
           $match: { ...filter },
-        },
-        {
-          $set: {
-            _id: {
-              $toString: '$_id',
-            },
-          },
         },
       ])
       .toArray();

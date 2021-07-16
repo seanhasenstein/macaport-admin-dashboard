@@ -1,14 +1,13 @@
 import React from 'react';
-import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { getSession } from 'next-auth/client';
+import { useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import { StoreFormValues } from '../interfaces';
-import { unitedStates, months, removeNonDigits } from '../utils';
-import Layout from '../components/Layout';
+import { StoreForm } from '../../interfaces';
+import { unitedStates, months, removeNonDigits } from '../../utils';
+import Layout from '../../components/Layout';
 
 const CreateStoreStyles = styled.div`
   .title {
@@ -271,27 +270,6 @@ const CreateStoreStyles = styled.div`
     font-weight: 500;
     color: #b91c1c;
   }
-
-  .server-error {
-    margin: 0;
-    padding: 0.75rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: #fef2f2;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #b91c1c;
-    border: 1px solid #fee2e2;
-    border-radius: 0.125rem;
-
-    svg {
-      margin: 0 0.5rem 0 0;
-      height: 1rem;
-      width: 1rem;
-      color: #f87171;
-    }
-  }
 `;
 
 const createStoreSchema = Yup.object().shape({
@@ -306,7 +284,7 @@ const createStoreSchema = Yup.object().shape({
   }),
 });
 
-const initialValues: StoreFormValues = {
+const initialValues: StoreForm = {
   name: '',
   openImmediately: false,
   openDate: {
@@ -340,7 +318,7 @@ const initialValues: StoreFormValues = {
   notes: [],
 };
 
-function formatDataForDb(data: StoreFormValues) {
+function formatDataForDb(data: StoreForm) {
   let openDate,
     closeDate,
     hasCloseDate,
@@ -387,7 +365,31 @@ function formatDataForDb(data: StoreFormValues) {
 
 export default function CreateStore() {
   const router = useRouter();
-  const [serverError, setServerError] = React.useState();
+  const queryClient = useQueryClient();
+  const mutation = useMutation(
+    async (store: StoreForm) => {
+      const response = await fetch(`/api/stores/create`, {
+        method: 'POST',
+        body: JSON.stringify(formatDataForDb(store)),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create the store.');
+      }
+
+      const data = await response.json();
+      return data.store;
+    },
+    {
+      onSuccess: data => {
+        queryClient.invalidateQueries('stores');
+        router.push(`/stores/${data._id}`);
+      },
+    }
+  );
 
   return (
     <Layout>
@@ -400,24 +402,7 @@ export default function CreateStore() {
             initialValues={initialValues}
             validationSchema={createStoreSchema}
             onSubmit={async values => {
-              const fetchResponse = await fetch('/api/add-store', {
-                method: 'post',
-                body: JSON.stringify(formatDataForDb(values)),
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-              });
-
-              const response = await fetchResponse.json();
-
-              if (response.error) {
-                setServerError(response.error);
-                return;
-              }
-
-              if (response.success) {
-                router.push(`/store?id=${response.store._id}`);
-              }
+              await mutation.mutate(values);
             }}
           >
             {({ values, setFieldValue, isSubmitting }) => (
@@ -817,24 +802,6 @@ export default function CreateStore() {
                       )}
                     </button>
                   </div>
-                  {serverError && (
-                    <div className="server-error">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      An error has occurred. Please try submitting again.
-                    </div>
-                  )}
                 </Form>
               </div>
             )}
@@ -844,19 +811,3 @@ export default function CreateStore() {
     </Layout>
   );
 }
-
-export const getServerSideProps: GetServerSideProps = async context => {
-  const session = await getSession(context);
-  if (!session) {
-    return {
-      props: {},
-      redirect: {
-        permanent: false,
-        destination: '/login',
-      },
-    };
-  }
-  return {
-    props: { session },
-  };
-};

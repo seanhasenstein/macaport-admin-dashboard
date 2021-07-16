@@ -1,8 +1,6 @@
 import React from 'react';
-import { GetServerSideProps } from 'next';
-import { getSession } from 'next-auth/client';
-import { connectToDb, store } from '../db';
 import Link from 'next/link';
+import { useQuery } from 'react-query';
 import styled from 'styled-components';
 import { Store } from '../interfaces';
 import { formatToMoney } from '../utils';
@@ -303,7 +301,6 @@ function isStoreActive(openDate: string, closeDate: string | undefined) {
   return isOpen;
 }
 
-type Props = { stores: Store[] };
 type StoreViewOptions =
   | 'allStores'
   | 'activeStores'
@@ -317,7 +314,28 @@ type OrderViewOptions =
   | 'fulfilledOrders'
   | 'completedOrders';
 
-export default function Index({ stores }: Props) {
+export default function Index() {
+  const storesQuery = useQuery<Store[]>('stores', async () => {
+    const response = await fetch('/api/stores');
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch the stores.');
+    }
+
+    const data = await response.json();
+    return data.stores;
+  });
+
+  // const ordersQuery = useQuery('orders', async () => {
+  //   const response = await fetch('/api/orders');
+
+  //   if (!response.ok) {
+  //     throw new Error('Failed to fetch the orders.');
+  //   }
+
+  //   const data = await response.json();
+  //   return data.orders;
+  // })
   const [storeViewOption, setStoreViewOption] =
     React.useState<StoreViewOptions>('allStores');
   const [orderViewOption, setOrderViewOption] =
@@ -330,7 +348,7 @@ export default function Index({ stores }: Props) {
           <h2>Dashboard Homepage</h2>
         </div>
         <div className="main-content">
-          <Link href="/create-a-store">
+          <Link href="/stores/create">
             <a className="create-store-link">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -346,171 +364,194 @@ export default function Index({ stores }: Props) {
               Create a store
             </a>
           </Link>
-          <div className="stores section">
-            <h3>Website Stores</h3>
-            <div className="buttons">
-              <div className="container">
-                <button
-                  type="button"
-                  className={storeViewOption === 'allStores' ? 'active' : ''}
-                  onClick={() => setStoreViewOption('allStores')}
-                >
-                  All Stores
-                </button>
-                <button
-                  type="button"
-                  className={storeViewOption === 'clientStores' ? 'active' : ''}
-                  onClick={() => setStoreViewOption('clientStores')}
-                >
-                  Client Stores
-                </button>
-                <button
-                  type="button"
-                  className={
-                    storeViewOption === 'macaportStores' ? 'active' : ''
-                  }
-                  onClick={() => setStoreViewOption('macaportStores')}
-                >
-                  Macaport Stores
-                </button>
-                <button
-                  type="button"
-                  className={storeViewOption === 'activeStores' ? 'active' : ''}
-                  onClick={() => setStoreViewOption('activeStores')}
-                >
-                  Active Stores
-                </button>
-                <button
-                  type="button"
-                  className={storeViewOption === 'closedStores' ? 'active' : ''}
-                  onClick={() => setStoreViewOption('closedStores')}
-                >
-                  Closed Stores
-                </button>
+          {storesQuery.isLoading && <div>Loading Stores...</div>}
+          {storesQuery.isError && storesQuery.error instanceof Error && (
+            <>
+              <div className="title">
+                <div className="details">
+                  <h2>Store Error!</h2>
+                </div>
+              </div>
+              <div className="main-content">
+                <div className="wrapper">
+                  <div>Error: {storesQuery.error.message}</div>
+                </div>
+              </div>
+            </>
+          )}
+          {storesQuery.data && (
+            <div className="stores section">
+              <h3>Website Stores</h3>
+              <div className="buttons">
+                <div className="container">
+                  <button
+                    type="button"
+                    className={storeViewOption === 'allStores' ? 'active' : ''}
+                    onClick={() => setStoreViewOption('allStores')}
+                  >
+                    All Stores
+                  </button>
+                  <button
+                    type="button"
+                    className={
+                      storeViewOption === 'clientStores' ? 'active' : ''
+                    }
+                    onClick={() => setStoreViewOption('clientStores')}
+                  >
+                    Client Stores
+                  </button>
+                  <button
+                    type="button"
+                    className={
+                      storeViewOption === 'macaportStores' ? 'active' : ''
+                    }
+                    onClick={() => setStoreViewOption('macaportStores')}
+                  >
+                    Macaport Stores
+                  </button>
+                  <button
+                    type="button"
+                    className={
+                      storeViewOption === 'activeStores' ? 'active' : ''
+                    }
+                    onClick={() => setStoreViewOption('activeStores')}
+                  >
+                    Active Stores
+                  </button>
+                  <button
+                    type="button"
+                    className={
+                      storeViewOption === 'closedStores' ? 'active' : ''
+                    }
+                    onClick={() => setStoreViewOption('closedStores')}
+                  >
+                    Closed Stores
+                  </button>
+                </div>
+              </div>
+              <div className="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th className="status">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M5.05 3.636a1 1 0 010 1.414 7 7 0 000 9.9 1 1 0 11-1.414 1.414 9 9 0 010-12.728 1 1 0 011.414 0zm9.9 0a1 1 0 011.414 0 9 9 0 010 12.728 1 1 0 11-1.414-1.414 7 7 0 000-9.9 1 1 0 010-1.414zM7.879 6.464a1 1 0 010 1.414 3 3 0 000 4.243 1 1 0 11-1.415 1.414 5 5 0 010-7.07 1 1 0 011.415 0zm4.242 0a1 1 0 011.415 0 5 5 0 010 7.072 1 1 0 01-1.415-1.415 3 3 0 000-4.242 1 1 0 010-1.415zM10 9a1 1 0 011 1v.01a1 1 0 11-2 0V10a1 1 0 011-1z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </th>
+                      <th>Store Name</th>
+                      <th>Contact</th>
+                      <th>Open Date</th>
+                      <th>Close Date</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {storesQuery.data.map(s => (
+                      <tr key={s._id}>
+                        <td className="is-active">
+                          {isStoreActive(s.openDate, s.closeDate) ? (
+                            <span className="active-store">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-6 w-6"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"
+                                />
+                              </svg>
+                            </span>
+                          ) : (
+                            <span className="inactive-store">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-6 w-6"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                                />
+                              </svg>
+                            </span>
+                          )}
+                        </td>
+                        <td className="store-name">
+                          <Link href={`/stores/${s._id}`}>
+                            <a>{s.name}</a>
+                          </Link>
+                        </td>
+                        <td className="store-contact">
+                          <div className="contact-name">
+                            {s.contact.firstName} {s.contact.lastName}
+                          </div>
+                          <div className="contact-email">{s.contact.email}</div>
+                        </td>
+                        <td>{new Date(s.openDate).toDateString()}</td>
+                        <td className="close-date">
+                          {s.closeDate
+                            ? new Date(s.closeDate).toDateString()
+                            : 'Never'}
+                        </td>
+                        <td className="actions">
+                          <Link href={`/stores/update?id=${s._id}`}>
+                            <a>
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                                />
+                              </svg>
+                            </a>
+                          </Link>
+                          <Link href={`/stores/${s._id}`}>
+                            <a>
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-5 w-5"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </a>
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
-            <div className="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th className="status">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M5.05 3.636a1 1 0 010 1.414 7 7 0 000 9.9 1 1 0 11-1.414 1.414 9 9 0 010-12.728 1 1 0 011.414 0zm9.9 0a1 1 0 011.414 0 9 9 0 010 12.728 1 1 0 11-1.414-1.414 7 7 0 000-9.9 1 1 0 010-1.414zM7.879 6.464a1 1 0 010 1.414 3 3 0 000 4.243 1 1 0 11-1.415 1.414 5 5 0 010-7.07 1 1 0 011.415 0zm4.242 0a1 1 0 011.415 0 5 5 0 010 7.072 1 1 0 01-1.415-1.415 3 3 0 000-4.242 1 1 0 010-1.415zM10 9a1 1 0 011 1v.01a1 1 0 11-2 0V10a1 1 0 011-1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </th>
-                    <th>Store Name</th>
-                    <th>Contact</th>
-                    <th>Open Date</th>
-                    <th>Close Date</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stores.map(s => (
-                    <tr key={s._id}>
-                      <td className="is-active">
-                        {isStoreActive(s.openDate, s.closeDate) ? (
-                          <span className="active-store">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-6 w-6"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"
-                              />
-                            </svg>
-                          </span>
-                        ) : (
-                          <span className="inactive-store">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-6 w-6"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                              />
-                            </svg>
-                          </span>
-                        )}
-                      </td>
-                      <td className="store-name">
-                        <Link href={`/store?id=${s._id}`}>
-                          <a>{s.name}</a>
-                        </Link>
-                      </td>
-                      <td className="store-contact">
-                        <div className="contact-name">
-                          {s.contact.firstName} {s.contact.lastName}
-                        </div>
-                        <div className="contact-email">{s.contact.email}</div>
-                      </td>
-                      <td>{new Date(s.openDate).toDateString()}</td>
-                      <td className="close-date">
-                        {s.closeDate
-                          ? new Date(s.closeDate).toDateString()
-                          : 'Never'}
-                      </td>
-                      <td className="actions">
-                        <Link href={`/update-store?id=${s.storeId}`}>
-                          <a>
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-                              />
-                            </svg>
-                          </a>
-                        </Link>
-                        <Link href={`/store?id=${s.storeId}`}>
-                          <a>
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-5 w-5"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                          </a>
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          )}
           <div className="orders section">
             <h3>Website Orders</h3>
             <div className="buttons">
@@ -595,7 +636,7 @@ export default function Index({ stores }: Props) {
                         {formatToMoney(o.summary.total)}
                       </td>
                       <td className="actions">
-                        <Link href={`/update-order?id=${o.orderId}`}>
+                        <Link href={`/orders/update?id=${o._id}`}>
                           <a>
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -612,7 +653,7 @@ export default function Index({ stores }: Props) {
                             </svg>
                           </a>
                         </Link>
-                        <Link href={`/order?id=${o.orderId}`}>
+                        <Link href={`/orders/${o._id}`}>
                           <a>
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -641,33 +682,3 @@ export default function Index({ stores }: Props) {
     </Layout>
   );
 }
-
-export const getServerSideProps: GetServerSideProps = async context => {
-  try {
-    const session = await getSession(context);
-    if (!session) {
-      return {
-        props: {},
-        redirect: {
-          permanent: false,
-          destination: '/login',
-        },
-      };
-    }
-
-    const { db } = await connectToDb();
-    const result = await store.getStores(db);
-    return {
-      props: {
-        stores: result,
-      },
-    };
-  } catch (error) {
-    console.error(error);
-    return {
-      props: {
-        error: error.message,
-      },
-    };
-  }
-};
