@@ -5,6 +5,88 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import BasicLayout from '../components/BasicLayout';
 
+const loginSchema = Yup.object().shape({
+  email: Yup.string()
+    .email('A valid email is required')
+    .required('Email is required to login'),
+});
+
+export default function Login() {
+  return (
+    <BasicLayout>
+      <LoginStyles>
+        <div className="container">
+          <img
+            src="/images/logo-round.png"
+            alt="Macaport logo with mountains"
+            className="logo"
+          />
+
+          <h2>Sign in to your account</h2>
+          <Formik
+            initialValues={{ email: '' }}
+            validationSchema={loginSchema}
+            onSubmit={values => {
+              signIn('email', { email: values.email, callbackUrl: '/' });
+            }}
+          >
+            {({ isSubmitting }) => (
+              <Form>
+                <div className="item">
+                  <label htmlFor="email">Email address</label>
+                  <Field
+                    name="email"
+                    id="email"
+                    placeholder="example@email.com"
+                  />
+                  <ErrorMessage
+                    name="email"
+                    component="div"
+                    className="validation-error"
+                  />
+                </div>
+                <button type="submit">
+                  {isSubmitting ? (
+                    <span className="spinner" />
+                  ) : (
+                    'Email a Login Link'
+                  )}
+                </button>
+              </Form>
+            )}
+          </Formik>
+        </div>
+      </LoginStyles>
+    </BasicLayout>
+  );
+}
+
+export const getServerSideProps: GetServerSideProps = async context => {
+  try {
+    const session = await getSession(context);
+    if (session) {
+      return {
+        props: {},
+        redirect: {
+          permanent: false,
+          destination: '/',
+        },
+      };
+    }
+
+    return {
+      props: {},
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      props: {
+        error: error.message,
+      },
+    };
+  }
+};
+
 const LoginStyles = styled.div`
   width: 100%;
   min-height: 100vh;
@@ -135,85 +217,3 @@ const LoginStyles = styled.div`
     color: #b91c1c;
   }
 `;
-
-const loginSchema = Yup.object().shape({
-  email: Yup.string()
-    .email('A valid email is required')
-    .required('Email is required to login'),
-});
-
-export default function Login() {
-  return (
-    <BasicLayout>
-      <LoginStyles>
-        <div className="container">
-          <img
-            src="/images/logo-round.png"
-            alt="Macaport logo with mountains"
-            className="logo"
-          />
-
-          <h2>Sign in to your account</h2>
-          <Formik
-            initialValues={{ email: '' }}
-            validationSchema={loginSchema}
-            onSubmit={values => {
-              signIn('email', { email: values.email, callbackUrl: '/' });
-            }}
-          >
-            {({ isSubmitting }) => (
-              <Form>
-                <div className="item">
-                  <label htmlFor="email">Email address</label>
-                  <Field
-                    name="email"
-                    id="email"
-                    placeholder="example@email.com"
-                  />
-                  <ErrorMessage
-                    name="email"
-                    component="div"
-                    className="validation-error"
-                  />
-                </div>
-                <button type="submit">
-                  {isSubmitting ? (
-                    <span className="spinner" />
-                  ) : (
-                    'Email a Login Link'
-                  )}
-                </button>
-              </Form>
-            )}
-          </Formik>
-        </div>
-      </LoginStyles>
-    </BasicLayout>
-  );
-}
-
-export const getServerSideProps: GetServerSideProps = async context => {
-  try {
-    const session = await getSession(context);
-    if (session) {
-      return {
-        props: {},
-        redirect: {
-          permanent: false,
-          destination: '/',
-        },
-      };
-    }
-
-    return {
-      props: {},
-    };
-  } catch (error) {
-    console.error(error);
-    return {
-      props: {
-        error: error.message,
-      },
-    };
-  }
-};

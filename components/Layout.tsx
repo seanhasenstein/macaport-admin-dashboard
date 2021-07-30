@@ -102,7 +102,10 @@ input:not([type="checkbox"], [type="radio"]), textarea {
   padding: 0.6875rem 0.75rem;
 
   &:focus {
-    outline-color: #4F46E5;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    border-color: #4F46E5;
+    box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px, #4F46E5 0px 0px 0px 1px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
   }
 }
 
@@ -182,8 +185,22 @@ textarea {
 }
 
 @media print {
+  @page:first {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  @page {
+    margin-top: 40px;
+    margin-bottom: 0;
+  }
+
+  body, html {
+    background-color: transparent;
+  }
+
   body {
-    background-color: #fff;
+    padding: 48px 32px;
   }
 
   header, footer {
@@ -238,8 +255,8 @@ const LayoutStyles = styled.div`
 
       svg {
         margin: 0 0.625rem 0 0;
-        height: 1.25rem;
-        width: 1.25rem;
+        height: 1.125rem;
+        width: 1.125rem;
         color: #9ca3af;
       }
     }
@@ -270,6 +287,14 @@ const LayoutStyles = styled.div`
       border-color: #d1d5db;
     }
   }
+
+  @media print {
+    padding: 0;
+
+    header {
+      display: none;
+    }
+  }
 `;
 
 type Props = {
@@ -282,7 +307,7 @@ export default function Layout({ children }: Props) {
       <GlobalStyles />
       <header>
         <div className="logo">
-          <Link href="/dashboard">
+          <Link href="/">
             <a>
               {/* <Image
                 src={Logo}

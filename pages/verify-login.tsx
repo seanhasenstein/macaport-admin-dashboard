@@ -1,6 +1,24 @@
 import styled from 'styled-components';
 import BasicLayout from '../components/BasicLayout';
 
+export default function VerifyLogin() {
+  return (
+    <BasicLayout>
+      <VerifyLoginStyles>
+        <div className="container">
+          <img
+            className="logo"
+            src="/images/logo-round.png"
+            alt="Macaport logo with mountains"
+          />
+          <h2>Please check your email...</h2>
+          <p>A sign in link has been sent to your email address.</p>
+        </div>
+      </VerifyLoginStyles>
+    </BasicLayout>
+  );
+}
+
 const VerifyLoginStyles = styled.div`
   padding: 0 1.5rem;
   width: 100%;
@@ -38,21 +56,3 @@ const VerifyLoginStyles = styled.div`
     align-items: center;
   }
 `;
-
-export default function VerifyLogin() {
-  return (
-    <BasicLayout>
-      <VerifyLoginStyles>
-        <div className="container">
-          <img
-            className="logo"
-            src="/images/logo-round.png"
-            alt="Macaport logo with mountains"
-          />
-          <h2>Please check your email...</h2>
-          <p>A sign in link has been sent to your email address.</p>
-        </div>
-      </VerifyLoginStyles>
-    </BasicLayout>
-  );
-}

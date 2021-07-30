@@ -1,253 +1,10 @@
 import { useRouter } from 'next/router';
-import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
-import { Formik, Form, Field, FieldArray } from 'formik';
+import { Formik, Form, Field } from 'formik';
 import { Store, StoreForm } from '../../interfaces';
 import { unitedStates, months } from '../../utils';
-import Layout from '../../components/Layout';
-
-const UpdateStoreStyles = styled.div`
-  .title {
-    padding: 1.625rem 2.5rem;
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  h2 {
-    margin: 0;
-    font-size: 1.375rem;
-    font-weight: 600;
-    color: #111827;
-  }
-
-  h3 {
-    margin: 0 0 1.5rem;
-    font-weight: 600;
-    color: #1f2937;
-  }
-
-  .main-content {
-    padding: 3.5rem 3rem;
-    position: relative;
-  }
-
-  .form-container {
-    width: 32rem;
-  }
-
-  .section {
-    margin: 3rem 0 0;
-  }
-
-  .grid-col-1 {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .grid-col-2 {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-    gap: 1rem;
-  }
-
-  .grid-col-3 {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(5rem, 1fr));
-    gap: 1rem;
-  }
-
-  .open-date-inputs {
-    margin: 0.75rem 0 0;
-  }
-
-  .item {
-    margin: 0 0 1.5rem;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .radio-item,
-  .checkbox-item {
-    margin: 0 0 1rem;
-    display: flex;
-    align-items: center;
-
-    input {
-      margin: 0 0.75rem 0 0;
-    }
-
-    label {
-      margin: 0;
-    }
-  }
-
-  .store-url {
-    margin: 0.75rem 0 0;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #9ca3af;
-
-    span {
-      text-decoration: underline;
-    }
-  }
-
-  .add-note-container {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 1rem;
-    align-items: flex-end;
-
-    .item {
-      margin: 0;
-    }
-
-    button {
-      padding: 0 0.75rem;
-      height: 41px;
-      display: flex;
-      align-items: center;
-      font-size: 0.875rem;
-      font-weight: 500;
-      line-height: 1;
-      color: #1f2937;
-      background-color: #fff;
-      border: 1px solid #dddde2;
-      border-radius: 0.375rem;
-      box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
-      cursor: pointer;
-
-      &:hover {
-        background-color: #f9fafb;
-      }
-
-      svg {
-        margin: 0 0.125rem 0 0;
-        width: 1.25rem;
-        height: 1.25rem;
-        color: #9ca3af;
-      }
-    }
-  }
-
-  .saved-notes {
-    margin: 1.875rem 0 1rem;
-
-    h4 {
-      margin: 0 0 0.875rem;
-    }
-  }
-
-  .note {
-    padding: 1rem 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #e5e7eb;
-
-    &:first-of-type {
-      border-top: 1px solid #e5e7eb;
-    }
-
-    p {
-      margin: 0;
-      padding: 0 1rem 0 0;
-    }
-
-    button {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 1.125rem;
-      width: 1.125rem;
-      background-color: transparent;
-      border: none;
-      cursor: pointer;
-
-      svg {
-        flex-shrink: 0;
-        height: 1.125rem;
-        width: 1.125rem;
-        color: #374151;
-      }
-
-      &:hover svg {
-        color: #1f2937;
-      }
-    }
-  }
-
-  .buttons {
-    margin: 2rem 0;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 0 1.5rem;
-
-    a {
-      color: #6b7280;
-
-      &:hover {
-        color: #4b5563;
-        text-decoration: underline;
-      }
-    }
-
-    button {
-      padding: 0.75rem 1.25rem;
-      height: 2.625rem;
-      position: relative;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: #4338ca;
-      color: #f3f4f5;
-      font-size: 0.875rem;
-      font-weight: 600;
-      letter-spacing: 0.011em;
-      border: 1px solid #3730a3;
-      border-radius: 0.375rem;
-      box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
-      cursor: pointer;
-
-      &:hover {
-        background-color: #3730a3;
-      }
-
-      &:focus {
-        outline: 2px solid transparent;
-        outline-offset: 2px;
-        box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #4f46e5 0px 0px 0px 4px,
-          rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
-      }
-    }
-  }
-
-  @keyframes spinner {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  .spinner:before {
-    content: '';
-    box-sizing: border-box;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 20px;
-    height: 20px;
-    margin-top: -10px;
-    margin-left: -10px;
-    border-radius: 50%;
-    border-top: 2px solid #fff;
-    border-right: 2px solid transparent;
-    animation: spinner 0.6s linear infinite;
-  }
-`;
+import BasicLayout from '../../components/BasicLayout';
 
 function formatInitialValues(store: Store): StoreForm {
   const dbOpenDate = new Date(store.openDate);
@@ -299,8 +56,6 @@ function formatInitialValues(store: Store): StoreForm {
       email,
       phone,
     },
-    unsavedNote: '',
-    notes: store.notes,
   };
 }
 
@@ -343,7 +98,6 @@ function formatDataForDb(data: StoreForm) {
     primaryShippingLocation: data.primaryShippingLocation,
     allowDirectShipping,
     contact: data.contact,
-    notes: data.notes,
     updatedAt: new Date(),
   };
 }
@@ -369,7 +123,7 @@ export default function UpdateStore() {
     return data.store;
   });
 
-  const mutation = useMutation(
+  const updateStoreMutation = useMutation(
     async (store: StoreForm) => {
       const response = await fetch(`/api/stores/update?id=${router.query.id}`, {
         method: 'POST',
@@ -396,7 +150,7 @@ export default function UpdateStore() {
   );
 
   return (
-    <Layout>
+    <BasicLayout>
       <UpdateStoreStyles>
         {isLoading && <div>Loading Store...</div>}
         {isError && error instanceof Error && (
@@ -414,25 +168,51 @@ export default function UpdateStore() {
           </>
         )}
         {store && (
-          <>
-            <div className="title">
-              <h2>Update Store: {store.name}</h2>
-            </div>
-            <div className="main-content">
-              <Formik
-                initialValues={formatInitialValues(store)}
-                onSubmit={async values => {
-                  await mutation.mutate(values);
-                }}
-              >
-                {({ values, setFieldValue, isSubmitting }) => (
+          <Formik
+            initialValues={formatInitialValues(store)}
+            onSubmit={async values => {
+              await updateStoreMutation.mutate(values);
+            }}
+          >
+            {({ values }) => (
+              <>
+                <div className="title">
+                  <div>
+                    <button
+                      type="button"
+                      className="cancel-link"
+                      onClick={() => router.back()}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                    <h2>Update Store</h2>
+                  </div>
+                  <div className="save-buttons">
+                    <button
+                      type="button"
+                      className="primary-button"
+                      onClick={() => updateStoreMutation.mutate(values)}
+                    >
+                      Save store
+                    </button>
+                  </div>
+                </div>
+                <div className="main-content">
                   <div className="form-container">
                     <Form>
-                      <h3>Store Details</h3>
-                      <p>
-                        Fill out this form to create a new online store for the
-                        Macaport website.
-                      </p>
+                      <h3>Store Information</h3>
                       <div className="section">
                         <div className="grid-col-1">
                           <div className="item">
@@ -557,7 +337,8 @@ export default function UpdateStore() {
                                 value="ship"
                               />
                               <label htmlFor="ship">
-                                We will be shipping the orders to the client
+                                We will be shipping the orders to a primary
+                                location
                               </label>
                             </div>
                             <div className="radio-item">
@@ -568,8 +349,8 @@ export default function UpdateStore() {
                                 value="noship"
                               />
                               <label htmlFor="noship">
-                                Orders for this store will NOT be shipped to the
-                                client
+                                We will NOT be shipping orders to a primary
+                                location
                               </label>
                             </div>
                             <div className="radio-item">
@@ -580,7 +361,7 @@ export default function UpdateStore() {
                                 value="inhouse"
                               />
                               <label htmlFor="inhouse">
-                                This store is for us here at Macaport
+                                This store is for Macaport (no client)
                               </label>
                             </div>
                           </div>
@@ -589,10 +370,6 @@ export default function UpdateStore() {
                       {values.shippingMethod === 'ship' && (
                         <div className="section">
                           <h4>Primary Shipping Location</h4>
-                          <p>
-                            This is where the orders will be shipped unless
-                            customers ship directly to themselves.
-                          </p>
                           <div className="item">
                             <label htmlFor="primaryShippingLocation.name">
                               Location Name
@@ -665,7 +442,7 @@ export default function UpdateStore() {
                           <div className="section">
                             <div className="grid-col-1">
                               <div className="radio-group">
-                                <h4>Allow direct shipping for this store?</h4>
+                                <h4>Direct shipping option:</h4>
                                 <div className="radio-item">
                                   <Field
                                     type="radio"
@@ -674,8 +451,8 @@ export default function UpdateStore() {
                                     value="true"
                                   />
                                   <label htmlFor="allowDirectShipping">
-                                    Yes, allow direct shipping to customers for
-                                    this store
+                                    Yes, customers can ship directly to
+                                    themselves
                                   </label>
                                 </div>
                                 <div className="radio-item">
@@ -686,8 +463,8 @@ export default function UpdateStore() {
                                     value="false"
                                   />
                                   <label htmlFor="noDirectShipping">
-                                    No, all orders will be packaged and
-                                    shipped/picked up together
+                                    No, all orders will be sent to the primary
+                                    location
                                   </label>
                                 </div>
                               </div>
@@ -695,10 +472,6 @@ export default function UpdateStore() {
                           </div>
                           <div className="section">
                             <h3>Store Contact</h3>
-                            <p>
-                              This will be the main individual that you will
-                              communicate with for this store.
-                            </p>
                             <div className="grid-col-2">
                               <div className="item">
                                 <label htmlFor="contact.firstName">
@@ -734,103 +507,150 @@ export default function UpdateStore() {
                           </div>
                         </>
                       )}
-                      <div className="section">
-                        <h3>Add notes about this store</h3>
-                        <div className="item">
-                          <FieldArray name="notes">
-                            {({ push, remove }) => (
-                              <>
-                                <div className="add-note-container">
-                                  <div className="item">
-                                    <label
-                                      htmlFor="unsavedNote"
-                                      className="sr-only"
-                                    >
-                                      Add a note
-                                    </label>
-                                    <Field
-                                      name="unsavedNote"
-                                      id="unsavedNote"
-                                    />
-                                  </div>
-                                  <div>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        push(values.unsavedNote);
-                                        setFieldValue('unsavedNote', '');
-                                      }}
-                                    >
-                                      <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 20 20"
-                                        fill="currentColor"
-                                      >
-                                        <path
-                                          fillRule="evenodd"
-                                          d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                                          clipRule="evenodd"
-                                        />
-                                      </svg>
-                                      Add note
-                                    </button>
-                                  </div>
-                                </div>
-
-                                {values.notes.length > 0 && (
-                                  <div className="saved-notes">
-                                    <h4>Saved Notes:</h4>
-                                    {values.notes.map((n, i) => (
-                                      <div key={i} className="note">
-                                        <p>{n}</p>
-                                        <button
-                                          type="button"
-                                          onClick={() => remove(i)}
-                                        >
-                                          <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 20 20"
-                                            fill="currentColor"
-                                          >
-                                            <path
-                                              fillRule="evenodd"
-                                              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                              clipRule="evenodd"
-                                            />
-                                          </svg>
-                                          <span className="sr-only">
-                                            Remove note
-                                          </span>
-                                        </button>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </>
-                            )}
-                          </FieldArray>
-                        </div>
-                      </div>
-                      <div className="buttons">
-                        <Link href="/dashboard">
-                          <a>Cancel</a>
-                        </Link>
-                        <button type="submit">
-                          {isSubmitting ? (
-                            <span className="spinner" />
-                          ) : (
-                            'Update the store'
-                          )}
-                        </button>
-                      </div>
                     </Form>
                   </div>
-                )}
-              </Formik>
-            </div>
-          </>
+                </div>
+              </>
+            )}
+          </Formik>
         )}
       </UpdateStoreStyles>
-    </Layout>
+    </BasicLayout>
   );
 }
+
+const UpdateStoreStyles = styled.div`
+  .title {
+    padding: 1.5rem 2.5rem;
+    position: fixed;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    z-index: 100;
+
+    > div {
+      display: flex;
+      align-items: center;
+    }
+
+    .cancel-link {
+      padding: 0.375rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #fff;
+      border: none;
+      color: #6b7280;
+      cursor: pointer;
+
+      &:hover {
+        color: #111827;
+      }
+
+      svg {
+        height: 1.125rem;
+        width: 1.125rem;
+      }
+    }
+
+    h2 {
+      margin: 0 0 0 0.75rem;
+      padding: 0 0 0 1.125rem;
+      border-left: 1px solid #d1d5db;
+    }
+
+    .save-buttons {
+      margin: 0;
+      display: flex;
+      gap: 0.875rem;
+    }
+
+    .primary-button {
+      padding: 0.5rem 1.125rem;
+      font-weight: 500;
+      border-radius: 0.3125rem;
+      background-color: #4f46e5;
+      color: #fff;
+      border: 1px solid transparent;
+      cursor: pointer;
+
+      &:hover {
+        background-color: #4338ca;
+      }
+    }
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 1.0625rem;
+    font-weight: 500;
+    color: #111827;
+    line-height: 1;
+  }
+
+  h3 {
+    margin: 0 0 1.5rem;
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  .main-content {
+    padding: 10rem 3rem 3rem;
+    position: relative;
+  }
+
+  .form-container {
+    margin: 0 auto;
+    width: 32rem;
+  }
+
+  .section {
+    margin: 3rem 0 0;
+  }
+
+  .grid-col-1 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .grid-col-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: 1rem;
+  }
+
+  .grid-col-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(5rem, 1fr));
+    gap: 1rem;
+  }
+
+  .open-date-inputs {
+    margin: 0.75rem 0 0;
+  }
+
+  .item {
+    margin: 0 0 1.5rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .radio-item,
+  .checkbox-item {
+    margin: 0 0 1rem;
+    display: flex;
+    align-items: center;
+
+    input {
+      margin: 0 0.75rem 0 0;
+    }
+
+    label {
+      margin: 0;
+    }
+  }
+`;

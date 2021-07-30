@@ -1,6 +1,55 @@
 import { NextApiRequest } from 'next';
 import { Db, MongoClient } from 'mongodb';
 
+export interface Note {
+  id: string;
+  text: string;
+  createdAt: string;
+}
+
+interface SecondaryImage {
+  id: string;
+  url: string;
+  alt: string;
+}
+
+export interface Size {
+  id: string;
+  label: string;
+  price: number;
+}
+
+interface ProductColor {
+  id: string;
+  label: string;
+  hex: string;
+  primaryImage: string;
+  secondaryImages: SecondaryImage[];
+}
+
+interface SkuColor {
+  id: string;
+  label: string;
+}
+
+export interface Sku {
+  id: string;
+  productId: string;
+  color: SkuColor;
+  size: Size;
+}
+
+export interface Product {
+  id: string;
+  productName: string;
+  description: string;
+  details: string[];
+  tag: string;
+  sizes: Size[];
+  colors: ProductColor[];
+  skus: Sku[];
+}
+
 export interface StoreForm {
   name: string;
   openImmediately: boolean;
@@ -31,8 +80,7 @@ export interface StoreForm {
     email: string;
     phone: string;
   };
-  unsavedNote: string;
-  notes: string[];
+  redirectTo?: 'store' | 'add_product';
 }
 
 export interface Store {
@@ -59,15 +107,11 @@ export interface Store {
     email: string;
     phone: string;
   };
-  notes: string[];
+  products: Product[];
+  orders: Order[];
+  notes: Note[];
   createdAt: string;
   updatedAt: string;
-}
-
-export interface Request extends NextApiRequest {
-  db: Db;
-  dbClient: MongoClient;
-  query: { id: string };
 }
 
 interface OrderItem {
@@ -80,6 +124,8 @@ interface OrderItem {
   itemTotal: number;
 }
 
+export type OrderStatus = 'Unfulfilled' | 'Fulfilled' | 'Completed';
+
 export interface Order {
   _id: string;
   orderId: string;
@@ -91,9 +137,9 @@ export interface Order {
     email: string;
     phone: string;
   };
-  orderStatus: 'Unfulfilled' | 'Fulfilled' | 'Completed';
+  orderStatus: OrderStatus;
   shippingMethod: 'Primary' | 'Direct' | 'None';
-  shippingAddress?: {
+  shippingAddress: {
     street: string;
     street2: string;
     city: string;
@@ -107,6 +153,13 @@ export interface Order {
     total: number;
   };
   transactionId: string;
+  notes: Note[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Request extends NextApiRequest {
+  db: Db;
+  dbClient: MongoClient;
+  query: { id: string };
 }

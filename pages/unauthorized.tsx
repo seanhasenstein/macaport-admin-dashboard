@@ -2,6 +2,27 @@ import Link from 'next/link';
 import styled from 'styled-components';
 import BasicLayout from '../components/BasicLayout';
 
+export default function Unauthorized() {
+  return (
+    <BasicLayout>
+      <UnauthorizedStyles>
+        <div className="container">
+          <img
+            className="logo"
+            src="/images/logo-round.png"
+            alt="Macaport logo with mountains"
+          />
+          <h2>Unauthorized</h2>
+          <p>You must be logged in with a verified email to proceed.</p>
+          <Link href="/login">
+            <a className="login-link">Go to login</a>
+          </Link>
+        </div>
+      </UnauthorizedStyles>
+    </BasicLayout>
+  );
+}
+
 const UnauthorizedStyles = styled.div`
   padding: 0 1.5rem;
   width: 100%;
@@ -71,24 +92,3 @@ const UnauthorizedStyles = styled.div`
     }
   }
 `;
-
-export default function Unauthorized() {
-  return (
-    <BasicLayout>
-      <UnauthorizedStyles>
-        <div className="container">
-          <img
-            className="logo"
-            src="/images/logo-round.png"
-            alt="Macaport logo with mountains"
-          />
-          <h2>Unauthorized</h2>
-          <p>You must be logged in with a verified email to proceed.</p>
-          <Link href="/login">
-            <a className="login-link">Go to login</a>
-          </Link>
-        </div>
-      </UnauthorizedStyles>
-    </BasicLayout>
-  );
-}
