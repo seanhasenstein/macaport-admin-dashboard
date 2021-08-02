@@ -22,10 +22,12 @@ type CloudinaryStatus = 'idle' | 'loading' | 'success' | 'error';
 
 export default function AddProduct() {
   const router = useRouter();
-  const [cloudinaryStatus, setCloudinaryStatus] =
+  const [primaryImageStatus, setPrimaryImageStatus] =
+    React.useState<CloudinaryStatus>('idle');
+  const [secondaryImageStatus, setSecondaryImageStatus] =
     React.useState<CloudinaryStatus>('idle');
   const [primaryImages, setPrimaryImages] = React.useState<string[]>([]);
-  const [secondaryImages, setSecondaryImages] = React.useState<string[]>();
+  const [secondaryImages, setSecondaryImages] = React.useState<string[][]>([]);
   const queryClient = useQueryClient();
   const storeQuery = useQuery<Store>(['store', router.query.id], async () => {
     if (!router.query.id) return;
@@ -110,6 +112,8 @@ export default function AddProduct() {
     }
   );
 
+  const url = `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_NAME}/image/upload`;
+
   const handlePrimaryImageChange = async (
     index: number,
     productId: string,
@@ -122,12 +126,11 @@ export default function AddProduct() {
     ) => void,
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    if (e.target.files === null) {
+    if (e.target.files === null || e.target.files[0] === undefined) {
       return;
     }
 
-    setCloudinaryStatus('loading');
-    const url = `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_NAME}/image/upload`;
+    setPrimaryImageStatus('loading');
     const publicId = `stores/${slugify(storeQuery.data.name)}/${
       storeQuery.data?._id
     }/${productId}/${color.id}/${createId('primary')}`;
@@ -147,9 +150,9 @@ export default function AddProduct() {
 
     const data = await response.json();
 
-    const primaryImageState = [...primaryImages];
-    primaryImageState[index] = data.secure_url;
-    setPrimaryImages(primaryImageState);
+    const primeImgCopy = [...primaryImages];
+    primeImgCopy[index] = data.secure_url;
+    setPrimaryImages(primeImgCopy);
 
     const updatedColors = colors.map(c => {
       if (c.id == color.id) {
@@ -160,7 +163,89 @@ export default function AddProduct() {
     });
 
     setFieldValue('colors', updatedColors);
-    setCloudinaryStatus('idle');
+    setPrimaryImageStatus('idle');
+  };
+
+  const handleSecondaryImagesChange = async (
+    index: number,
+    productId: string,
+    color: ProductColor,
+    colors: ProductColor[],
+    setFieldValue: (
+      field: string,
+      value: any,
+      shouldValidate?: boolean | undefined
+    ) => void,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    if (e.target.files === null || e.target.files[0] === undefined) {
+      return;
+    }
+
+    setSecondaryImageStatus('loading');
+    const secImgsCopy = [...secondaryImages];
+
+    for (let i = 0; i < e.target.files.length; i++) {
+      const publicId = `stores/${slugify(storeQuery.data.name)}/${
+        storeQuery.data?._id
+      }/${productId}/${color.id}/${createId('secondary')}`;
+
+      const { signature, timestamp } = await getCloudinarySignature(publicId);
+
+      const formData = new FormData();
+      formData.append('file', e.target.files[i]);
+      formData.append('api_key', `${process.env.NEXT_PUBLIC_CLOUDINARY_KEY}`);
+      formData.append('public_id', publicId);
+      formData.append('timestamp', `${timestamp}`);
+      formData.append('signature', signature);
+
+      const response = await fetch(url, {
+        method: 'post',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      secImgsCopy[index] = [...(secImgsCopy[index] || []), data.secure_url];
+    }
+
+    setSecondaryImages(secImgsCopy);
+
+    const updatedColors = colors.map(c => {
+      if (c.id === color.id) {
+        return { ...color, secondaryImages: secImgsCopy[index] };
+      }
+      return c;
+    });
+    setFieldValue('colors', updatedColors);
+    setSecondaryImageStatus('idle');
+  };
+
+  const handleDeleteSecondaryImage = (
+    colorIndex: number,
+    secImgIndex: number,
+    color: ProductColor,
+    colors: ProductColor[],
+    setFieldValue: (
+      field: string,
+      value: any,
+      shouldValidate?: boolean | undefined
+    ) => void
+  ) => {
+    const secImgsCopy = [...secondaryImages];
+    const secImgIndexCopy = [...secondaryImages[colorIndex]];
+    secImgIndexCopy.splice(secImgIndex, 1);
+    secImgsCopy[colorIndex] = secImgIndexCopy;
+    setSecondaryImages(secImgsCopy);
+
+    const updatedColors = colors.map(c => {
+      if (c.id === color.id) {
+        return { ...color, secondaryImages: secImgsCopy[colorIndex] };
+      }
+      return c;
+    });
+
+    setFieldValue('colors', updatedColors);
   };
 
   const handleRemoveColorClick = (
@@ -170,6 +255,11 @@ export default function AddProduct() {
     const primaryImagesClone = [...primaryImages];
     primaryImagesClone.splice(colorIndex, 1);
     setPrimaryImages(primaryImagesClone);
+
+    const secondaryImagesClone = [...secondaryImages];
+    secondaryImagesClone.splice(colorIndex, 1);
+    setSecondaryImages(secondaryImagesClone);
+
     remove(colorIndex);
   };
 
@@ -422,7 +512,7 @@ export default function AddProduct() {
                                   <div className="item primary-image-item">
                                     <h5>Primary image</h5>
                                     <div className="row">
-                                      <div className="demo">
+                                      <div className="primary-thumbnail">
                                         {primaryImages &&
                                         primaryImages[colorIndex] ? (
                                           <img
@@ -452,7 +542,7 @@ export default function AddProduct() {
                                         <label
                                           htmlFor={`primaryImage${colorIndex}`}
                                         >
-                                          {cloudinaryStatus === 'loading' ? (
+                                          {primaryImageStatus === 'loading' ? (
                                             'Loading...'
                                           ) : (
                                             <>
@@ -493,8 +583,100 @@ export default function AddProduct() {
                                       </div>
                                     </div>
                                   </div>
-                                  <div className="item">
-                                    <p>TODO: add secondary images...</p>
+                                  <div className="item secondary-images-item">
+                                    <h5>Secondary image</h5>
+                                    <div className="row">
+                                      <div>
+                                        <label
+                                          htmlFor={`secondaryImages${colorIndex}`}
+                                        >
+                                          {secondaryImageStatus ===
+                                          'loading' ? (
+                                            'Loading...'
+                                          ) : (
+                                            <>
+                                              <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                              >
+                                                <path
+                                                  strokeLinecap="round"
+                                                  strokeLinejoin="round"
+                                                  strokeWidth={2}
+                                                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                                                />
+                                              </svg>
+                                              Upload images
+                                            </>
+                                          )}
+                                        </label>
+                                        <input
+                                          type="file"
+                                          multiple
+                                          accept="image/png, image/jpeg"
+                                          name={`secondaryImages${colorIndex}`}
+                                          id={`secondaryImages${colorIndex}`}
+                                          className="sr-only"
+                                          onChange={e =>
+                                            handleSecondaryImagesChange(
+                                              colorIndex,
+                                              values.id,
+                                              color,
+                                              values.colors,
+                                              setFieldValue,
+                                              e
+                                            )
+                                          }
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="secondary-thumbnails">
+                                      {secondaryImages[colorIndex] &&
+                                        secondaryImages[colorIndex].map(
+                                          (secImg, secImgIndex) => {
+                                            return (
+                                              <div
+                                                key={secImgIndex}
+                                                className="thumbnail"
+                                              >
+                                                <img src={secImg} alt="TODO" />
+                                                <button
+                                                  type="button"
+                                                  className="remove-button"
+                                                  onClick={() =>
+                                                    handleDeleteSecondaryImage(
+                                                      colorIndex,
+                                                      secImgIndex,
+                                                      color,
+                                                      values.colors,
+                                                      setFieldValue
+                                                    )
+                                                  }
+                                                >
+                                                  <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                  >
+                                                    <path
+                                                      strokeLinecap="round"
+                                                      strokeLinejoin="round"
+                                                      strokeWidth={2}
+                                                      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                    />
+                                                  </svg>
+                                                  <span className="sr-only">
+                                                    Remove Image
+                                                  </span>
+                                                </button>
+                                              </div>
+                                            );
+                                          }
+                                        )}
+                                    </div>
                                   </div>
                                 </div>
                                 <button
@@ -780,7 +962,8 @@ const AddProductStyles = styled.div`
     }
   }
 
-  .primary-image-item {
+  .primary-image-item,
+  .secondary-images-item {
     padding: 1.5rem 0;
 
     h5 {
@@ -827,15 +1010,18 @@ const AddProductStyles = styled.div`
     .row {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 1rem;
     }
 
-    .demo {
+    .primary-thumbnail {
+      padding: 0.5rem 0.875rem;
       display: flex;
       justify-content: center;
       align-items: center;
-      width: 3rem;
-      height: 3rem;
+      width: 5rem;
+      height: 5rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.125rem;
 
       .placeholder {
         background-color: #f3f4f7;
@@ -856,6 +1042,39 @@ const AddProductStyles = styled.div`
       height: 1.5rem;
       width: 1.5rem;
       color: #d1d5db;
+    }
+
+    .secondary-thumbnails {
+      margin: 1.875rem 0 0;
+      display: flex;
+      gap: 1.25rem;
+
+      .thumbnail {
+        padding: 0.5rem 0.875rem;
+        position: relative;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.125rem;
+        width: 5rem;
+        height: 5rem;
+      }
+
+      img {
+        width: 100%;
+      }
+
+      .remove-button {
+        padding: 0;
+        position: absolute;
+        top: -0.875rem;
+        right: -0.875rem;
+        background-color: #fff;
+        color: #374151;
+
+        svg {
+          height: 1.75rem;
+          width: 1.75rem;
+        }
+      }
     }
   }
 `;
