@@ -19,7 +19,7 @@ export interface Size {
   price: number;
 }
 
-interface ProductColor {
+export interface ProductColor {
   id: string;
   label: string;
   hex: string;

@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "cloudinary": "^1.26.3",
     "date-fns": "^2.22.1",
     "formik": "^2.2.9",
     "mongodb": "^3.6.9",

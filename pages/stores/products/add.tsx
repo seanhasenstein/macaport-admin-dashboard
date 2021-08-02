@@ -1,13 +1,12 @@
+import React from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { Formik, Form, Field, FieldArray } from 'formik';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
-import { Size } from '../../../interfaces';
-import { createId } from '../../../utils';
+import { Store, Size, ProductColor } from '../../../interfaces';
+import { createId, getCloudinarySignature, slugify } from '../../../utils';
 import BasicLayout from '../../../components/BasicLayout';
-import { ChangeEvent } from 'mongodb';
-import React from 'react';
 
 const initialValues = {
   id: createId('prod'),
@@ -19,11 +18,16 @@ const initialValues = {
   colors: [],
 };
 
+type CloudinaryStatus = 'idle' | 'loading' | 'success' | 'error';
+
 export default function AddProduct() {
   const router = useRouter();
-  const [primaryImage, setPrimaryImage] = React.useState();
+  const [cloudinaryStatus, setCloudinaryStatus] =
+    React.useState<CloudinaryStatus>('idle');
+  const [primaryImages, setPrimaryImages] = React.useState<string[]>([]);
+  const [secondaryImages, setSecondaryImages] = React.useState<string[]>();
   const queryClient = useQueryClient();
-  const productsQuery = useQuery(['store', router.query.id], async () => {
+  const storeQuery = useQuery<Store>(['store', router.query.id], async () => {
     if (!router.query.id) return;
     const response = await fetch(`/api/stores/${router.query.id}`);
 
@@ -78,7 +82,7 @@ export default function AddProduct() {
         ],
       };
 
-      const prevProducts = productsQuery.data.products || [];
+      const prevProducts = storeQuery?.data?.products || [];
 
       const response = await fetch(`/api/stores/update?id=${router.query.id}`, {
         method: 'post',
@@ -106,11 +110,67 @@ export default function AddProduct() {
     }
   );
 
-  const handlePrimaryImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePrimaryImageChange = async (
+    index: number,
+    productId: string,
+    color: ProductColor,
+    colors: ProductColor[],
+    setFieldValue: (
+      field: string,
+      value: any,
+      shouldValidate?: boolean | undefined
+    ) => void,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     if (e.target.files === null) {
-      throw new Error('');
+      return;
     }
-    setPrimaryImage(e.target.files[0]);
+
+    setCloudinaryStatus('loading');
+    const url = `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_NAME}/image/upload`;
+    const publicId = `stores/${slugify(storeQuery.data.name)}/${
+      storeQuery.data?._id
+    }/${productId}/${color.id}/${createId('primary')}`;
+    const { signature, timestamp } = await getCloudinarySignature(publicId);
+
+    const formData = new FormData();
+    formData.append('file', e.target.files[0]);
+    formData.append('api_key', `${process.env.NEXT_PUBLIC_CLOUDINARY_KEY}`);
+    formData.append('public_id', publicId);
+    formData.append('timestamp', `${timestamp}`);
+    formData.append('signature', signature);
+
+    const response = await fetch(url, {
+      method: 'post',
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    const primaryImageState = [...primaryImages];
+    primaryImageState[index] = data.secure_url;
+    setPrimaryImages(primaryImageState);
+
+    const updatedColors = colors.map(c => {
+      if (c.id == color.id) {
+        return { ...color, primaryImage: data.secure_url };
+      }
+
+      return c;
+    });
+
+    setFieldValue('colors', updatedColors);
+    setCloudinaryStatus('idle');
+  };
+
+  const handleRemoveColorClick = (
+    colorIndex: number,
+    remove: (index: number) => void
+  ) => {
+    const primaryImagesClone = [...primaryImages];
+    primaryImagesClone.splice(colorIndex, 1);
+    setPrimaryImages(primaryImagesClone);
+    remove(colorIndex);
   };
 
   return (
@@ -165,7 +225,7 @@ export default function AddProduct() {
               initialValues={initialValues}
               onSubmit={() => console.log('submitting...')}
             >
-              {({ values }) => (
+              {({ values, setFieldValue }) => (
                 <Form>
                   <div className="section">
                     <h3>Product information</h3>
@@ -335,39 +395,103 @@ export default function AddProduct() {
                       render={arrayHelpers => (
                         <>
                           {values.colors.length > 0 &&
-                            values.colors.map((s: Size, i) => (
-                              <div key={i} className="color-item">
+                            values.colors.map((color, colorIndex) => (
+                              <div key={colorIndex} className="color-item">
                                 <div>
                                   <div className="item">
-                                    <label htmlFor={`colors.${i}.label`}>
+                                    <label
+                                      htmlFor={`colors.${colorIndex}.label`}
+                                    >
                                       Color label
                                     </label>
                                     <Field
-                                      name={`colors.${i}.label`}
-                                      id={`colors.${i}.label`}
+                                      name={`colors.${colorIndex}.label`}
+                                      id={`colors.${colorIndex}.label`}
                                     />
                                   </div>
                                   <div className="item">
-                                    <label htmlFor={`colors.${i}.hex`}>
+                                    <label htmlFor={`colors.${colorIndex}.hex`}>
                                       Hex color value
                                     </label>
                                     <Field
-                                      name={`colors.${i}.hex`}
-                                      id={`colors.${i}.hex`}
+                                      name={`colors.${colorIndex}.hex`}
+                                      id={`colors.${colorIndex}.hex`}
                                       placeholder="i.e. #ffffff"
                                     />
                                   </div>
-                                  <div className="item">
-                                    <label htmlFor={`colors.${i}.primaryImage`}>
-                                      Primary image
-                                    </label>
-                                    <input
-                                      type="file"
-                                      accept="image/png, image/jpeg"
-                                      name={`colors.${i}.primaryImage`}
-                                      id={`colors.${i}.primaryImage`}
-                                      onChange={handlePrimaryImageChange}
-                                    />
+                                  <div className="item primary-image-item">
+                                    <h5>Primary image</h5>
+                                    <div className="row">
+                                      <div className="demo">
+                                        {primaryImages &&
+                                        primaryImages[colorIndex] ? (
+                                          <img
+                                            src={primaryImages[colorIndex]}
+                                            alt={`${values.productName} - ${values.colors[colorIndex].label}`}
+                                          />
+                                        ) : (
+                                          <div className="placeholder">
+                                            <svg
+                                              xmlns="http://www.w3.org/2000/svg"
+                                              className="placeholder-icon"
+                                              fill="none"
+                                              viewBox="0 0 24 24"
+                                              stroke="currentColor"
+                                            >
+                                              <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                              />
+                                            </svg>
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div>
+                                        <label
+                                          htmlFor={`primaryImage${colorIndex}`}
+                                        >
+                                          {cloudinaryStatus === 'loading' ? (
+                                            'Loading...'
+                                          ) : (
+                                            <>
+                                              <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                              >
+                                                <path
+                                                  strokeLinecap="round"
+                                                  strokeLinejoin="round"
+                                                  strokeWidth={2}
+                                                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                                                />
+                                              </svg>
+                                              Upload an image
+                                            </>
+                                          )}
+                                        </label>
+                                        <input
+                                          type="file"
+                                          accept="image/png, image/jpeg"
+                                          name={`primaryImage${colorIndex}`}
+                                          id={`primaryImage${colorIndex}`}
+                                          className="sr-only"
+                                          onChange={e =>
+                                            handlePrimaryImageChange(
+                                              colorIndex,
+                                              values.id,
+                                              color,
+                                              values.colors,
+                                              setFieldValue,
+                                              e
+                                            )
+                                          }
+                                        />
+                                      </div>
+                                    </div>
                                   </div>
                                   <div className="item">
                                     <p>TODO: add secondary images...</p>
@@ -376,7 +500,12 @@ export default function AddProduct() {
                                 <button
                                   type="button"
                                   className="remove-button"
-                                  onClick={() => arrayHelpers.remove(i)}
+                                  onClick={() =>
+                                    handleRemoveColorClick(
+                                      colorIndex,
+                                      arrayHelpers.remove
+                                    )
+                                  }
                                 >
                                   <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -491,6 +620,7 @@ const AddProductStyles = styled.div`
     justify-content: center;
     align-items: center;
     gap: 0.5rem;
+    font-size: 0.8125rem;
     font-weight: 500;
     border-radius: 0.3125rem;
     cursor: pointer;
@@ -647,6 +777,85 @@ const AddProductStyles = styled.div`
       box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
         rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 1px 3px 0px,
         rgba(0, 0, 0, 0.06) 0px 1px 2px 0px;
+    }
+  }
+
+  .primary-image-item {
+    padding: 1.5rem 0;
+
+    h5 {
+      margin: 0 0 0.75rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #6e788c;
+    }
+
+    label {
+      margin: 0.125rem 0 0;
+      padding: 0.375rem 1rem;
+      display: inline-flex;
+      align-items: center;
+      width: inherit;
+      background-color: #fff;
+      border: 1px solid #d1d5db;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      border-radius: 0.3125rem;
+      color: #374151;
+      cursor: pointer;
+      box-shadow: rgb(0 0 0 / 0%) 0px 0px 0px 0px,
+        rgb(0 0 0 / 0%) 0px 0px 0px 0px, rgb(0 0 0 / 10%) 0px 1px 2px 0px,
+        rgb(0 0 0 / 2%) 0px 1px 1px 0px;
+
+      svg {
+        margin: 0 0.375rem 0 0;
+        height: 0.875rem;
+        width: 0.875rem;
+        color: #9ca3af;
+      }
+
+      &:hover {
+        background-color: #f9fafb;
+        color: #111827;
+
+        svg {
+          color: #6b7280;
+        }
+      }
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .demo {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 3rem;
+      height: 3rem;
+
+      .placeholder {
+        background-color: #f3f4f7;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 0.125rem;
+      }
+
+      img {
+        width: 100%;
+      }
+    }
+
+    .placeholder-icon {
+      height: 1.5rem;
+      width: 1.5rem;
+      color: #d1d5db;
     }
   }
 `;

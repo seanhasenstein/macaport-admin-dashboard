@@ -153,3 +153,10 @@ export function getStoreStatus(
 
   return;
 }
+
+export async function getCloudinarySignature(publicId: string) {
+  const response = await fetch(`/api/cloudinary/sign?publicId=${publicId}`);
+  const data: { signature: string; timestamp: number } = await response.json();
+  const { signature, timestamp } = data;
+  return { signature, timestamp };
+}
