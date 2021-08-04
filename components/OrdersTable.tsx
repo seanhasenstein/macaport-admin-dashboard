@@ -90,7 +90,7 @@ export default function OrdersTable() {
                     <div className="customer-name">
                       {o.customer.firstName} {o.customer.lastName}
                     </div>
-                    <div className="store-name">{o.storeId}</div>
+                    <div className="store-name">{o.store.id}</div>
                   </td>
                   <td>{o.shippingMethod}</td>
                   <td className="text-center total-items">{o.items.length}</td>

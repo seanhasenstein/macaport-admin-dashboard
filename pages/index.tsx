@@ -32,7 +32,7 @@ export default function Index() {
           <h3>Stores</h3>
           <StoresTable />
           <h3>Orders</h3>
-          <OrdersTable />
+          {/* <OrdersTable /> */}
         </div>
       </DashboardStyles>
     </Layout>

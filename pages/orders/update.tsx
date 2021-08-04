@@ -24,7 +24,7 @@ export default function UpdateOrder() {
     return data.order;
   });
 
-  const mutation = useMutation(
+  const orderUpdateMutation = useMutation(
     async (order: Order) => {
       const response = await fetch(`/api/orders/update?id=${router.query.id}`, {
         method: 'POST',

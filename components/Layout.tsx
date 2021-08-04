@@ -176,6 +176,7 @@ select:focus {
 textarea {
   resize: vertical;
   min-height: 6rem;
+  line-height: 1.5;
 }
 
 @media (max-width: 500px) {

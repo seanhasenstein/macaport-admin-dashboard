@@ -364,9 +364,7 @@ export default function Store() {
                                   href={`/stores/products/${p.id}`}
                                   key={p.id}
                                 >
-                                  <a className="product-name">
-                                    {p.productName}
-                                  </a>
+                                  <a className="product-name">{p.name}</a>
                                 </Link>
                                 <button
                                   type="button"

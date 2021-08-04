@@ -1,4 +1,5 @@
 import * as crypto from 'crypto';
+import { Size, Color, Sku } from '../interfaces';
 
 export const months = [
   'January',
@@ -85,6 +86,10 @@ export function slugify(input: string) {
   return result;
 }
 
+export function removeNonAlphanumeric(input: string) {
+  return input.replace(/\W/g, '');
+}
+
 export function removeNonDigits(input: string) {
   return input.replace(/\D/g, '');
 }
@@ -159,4 +164,23 @@ export async function getCloudinarySignature(publicId: string) {
   const data: { signature: string; timestamp: number } = await response.json();
   const { signature, timestamp } = data;
   return { signature, timestamp };
+}
+
+export function createSkusFromSizesAndColors(
+  sizes: Size[],
+  colors: Color[],
+  productId: string
+) {
+  let skus: Sku[] = [];
+
+  sizes.forEach(s => {
+    const skusResult = colors.map(c => {
+      const id = createId('sku');
+      return { id, productId, size: s, color: c };
+    });
+
+    skus = [...skus, ...skusResult];
+  });
+
+  return skus;
 }

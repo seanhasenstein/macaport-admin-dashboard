@@ -1,24 +1,49 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { Formik, Form, Field, FieldArray } from 'formik';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
-import { Store, Size, ProductColor } from '../../../interfaces';
-import { createId, getCloudinarySignature, slugify } from '../../../utils';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
+import * as Yup from 'yup';
+import { Store, Size, Product, Color } from '../../../interfaces';
+import {
+  createId,
+  getCloudinarySignature,
+  slugify,
+  removeNonAlphanumeric,
+  createSkusFromSizesAndColors,
+} from '../../../utils';
 import BasicLayout from '../../../components/BasicLayout';
 
-const initialValues = {
-  id: createId('prod'),
-  productName: '',
-  description: '',
-  tag: '',
-  details: [],
-  sizes: [],
-  colors: [],
-};
+const validationSchema = Yup.object().shape({
+  name: Yup.string().required('Product name is required'),
+  sizes: Yup.array().of(
+    Yup.object().shape({
+      label: Yup.string().required('A label is required'),
+      price: Yup.string()
+        .matches(
+          /^([0-9]{1,})(\.)([0-9]{2})$/,
+          'Must be a valid price (i.e. 10.00)'
+        )
+        .required('A price is required'),
+    })
+  ),
+  colors: Yup.array().of(
+    Yup.object().shape({
+      label: Yup.string().required('A label is required'),
+      hex: Yup.string()
+        .transform(value => removeNonAlphanumeric(value))
+        .matches(
+          /^[0-9a-fA-F]{6}$/,
+          'Must be a valid 6 character hex color (includes a-f, A-F, or 0-9)'
+        )
+        .required('A hex color is required'),
+    })
+  ),
+});
 
-type CloudinaryStatus = 'idle' | 'loading' | 'success' | 'error';
+type CloudinaryStatus = 'idle' | 'loading';
+type AddMutationInput = Omit<Product, 'skus'>;
 
 export default function AddProduct() {
   const router = useRouter();
@@ -41,50 +66,21 @@ export default function AddProduct() {
     return data.store;
   });
   const addProductMutation = useMutation(
-    async () => {
-      const productId = createId('prod');
-      const colorId = createId('col');
-      const sizeId = createId('size');
-      const product = {
-        id: productId,
-        productName: 'Cotton Short Sleeve T-Shirt',
-        description: 'This is the descriptio...',
-        details: ['Made in the USA', '100% Cotton'],
-        tag: 'Adult Sizes',
-        sizes: [
-          {
-            id: sizeId,
-            label: 'S',
-            price: 1500,
-          },
-        ],
-        colors: [
-          {
-            id: colorId,
-            label: 'Gray',
-            hex: 'dddddd',
-            primaryImage: 'www.image.com',
-            secondaryImages: [],
-          },
-        ],
-        skus: [
-          {
-            id: createId('sku'),
-            productId,
-            color: {
-              id: colorId,
-              label: 'Gray',
-            },
-            size: {
-              id: sizeId,
-              label: 'S',
-              price: 1500,
-            },
-          },
-        ],
-      };
-
+    async (values: AddMutationInput) => {
       const prevProducts = storeQuery?.data?.products || [];
+
+      const sizes = values.sizes.map(size => {
+        const price = Number(size.price) * 100;
+
+        return { ...size, price };
+      });
+      const colors = values.colors.map(color => {
+        const hex = `#${color.hex.replace(/[^0-9A-Fa-f]/g, '').toLowerCase()}`;
+        return { ...color, hex };
+      });
+      const skus = createSkusFromSizesAndColors(sizes, colors, values.id);
+
+      const product = { ...values, colors, sizes, skus };
 
       const response = await fetch(`/api/stores/update?id=${router.query.id}`, {
         method: 'post',
@@ -107,6 +103,7 @@ export default function AddProduct() {
       onSuccess: () => {
         queryClient.invalidateQueries('stores');
         queryClient.invalidateQueries(['store', router.query.id]);
+        // TODO: push to single product page
         router.push(`/stores/${router.query.id}#products`);
       },
     }
@@ -117,8 +114,8 @@ export default function AddProduct() {
   const handlePrimaryImageChange = async (
     index: number,
     productId: string,
-    color: ProductColor,
-    colors: ProductColor[],
+    color: Color,
+    colors: Color[],
     setFieldValue: (
       field: string,
       value: any,
@@ -131,7 +128,7 @@ export default function AddProduct() {
     }
 
     setPrimaryImageStatus('loading');
-    const publicId = `stores/${slugify(storeQuery.data.name)}/${
+    const publicId = `stores/${slugify(storeQuery.data!.name)}/${
       storeQuery.data?._id
     }/${productId}/${color.id}/${createId('primary')}`;
     const { signature, timestamp } = await getCloudinarySignature(publicId);
@@ -169,8 +166,8 @@ export default function AddProduct() {
   const handleSecondaryImagesChange = async (
     index: number,
     productId: string,
-    color: ProductColor,
-    colors: ProductColor[],
+    color: Color,
+    colors: Color[],
     setFieldValue: (
       field: string,
       value: any,
@@ -186,7 +183,7 @@ export default function AddProduct() {
     const secImgsCopy = [...secondaryImages];
 
     for (let i = 0; i < e.target.files.length; i++) {
-      const publicId = `stores/${slugify(storeQuery.data.name)}/${
+      const publicId = `stores/${slugify(storeQuery.data!.name)}/${
         storeQuery.data?._id
       }/${productId}/${color.id}/${createId('secondary')}`;
 
@@ -221,11 +218,11 @@ export default function AddProduct() {
     setSecondaryImageStatus('idle');
   };
 
-  const handleDeleteSecondaryImage = (
+  const handleRemoveSecondaryImage = (
     colorIndex: number,
     secImgIndex: number,
-    color: ProductColor,
-    colors: ProductColor[],
+    color: Color,
+    colors: Color[],
     setFieldValue: (
       field: string,
       value: any,
@@ -252,76 +249,87 @@ export default function AddProduct() {
     colorIndex: number,
     remove: (index: number) => void
   ) => {
-    const primaryImagesClone = [...primaryImages];
-    primaryImagesClone.splice(colorIndex, 1);
-    setPrimaryImages(primaryImagesClone);
+    const primaryImgsCopy = [...primaryImages];
+    primaryImgsCopy.splice(colorIndex, 1);
+    setPrimaryImages(primaryImgsCopy);
 
-    const secondaryImagesClone = [...secondaryImages];
-    secondaryImagesClone.splice(colorIndex, 1);
-    setSecondaryImages(secondaryImagesClone);
+    const secondaryImgsCopy = [...secondaryImages];
+    secondaryImgsCopy.splice(colorIndex, 1);
+    setSecondaryImages(secondaryImgsCopy);
 
     remove(colorIndex);
   };
 
+  if (storeQuery.isLoading) return <div />;
+  if (storeQuery.isError && storeQuery.error instanceof Error)
+    return <div>Error: {storeQuery.error.message}</div>;
+
   return (
     <BasicLayout>
       <AddProductStyles>
-        <div className="title">
-          <div>
-            <Link href={`/stores/${router.query.id}#products`}>
-              <a className="cancel-link">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </a>
-            </Link>
-            <h2>Add a product</h2>
-          </div>
-          <div className="save-buttons">
-            <button
-              type="button"
-              className="secondary-button"
-              // onClick={() =>
-              //   addProductMutation.mutate({
-              //     ...values,
-              //     redirectTo: 'add_product',
-              //   })
-              // }
-            >
-              Save and add another
-            </button>
-            <button
-              type="button"
-              className="primary-button"
-              // onClick={() => addProductMutation.mutate(values)}
-            >
-              Save product
-            </button>
-          </div>
-        </div>
-        <div className="main-content">
-          <div className="form-container">
-            <Formik
-              initialValues={initialValues}
-              onSubmit={() => console.log('submitting...')}
-            >
-              {({ values, setFieldValue }) => (
-                <Form>
+        <Formik
+          initialValues={{
+            id: createId('prod'),
+            name: '',
+            description: '',
+            tag: '',
+            details: [],
+            sizes: [],
+            colors: [],
+          }}
+          validationSchema={validationSchema}
+          onSubmit={values => {
+            console.log('submitting...');
+            addProductMutation.mutate(values);
+          }}
+        >
+          {({ values, setFieldValue }) => (
+            <Form>
+              <div className="title">
+                <div>
+                  <Link href={`/stores/${router.query.id}#products`}>
+                    <a className="cancel-link">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </a>
+                  </Link>
+                  <h2>Add a product</h2>
+                </div>
+                <div className="save-buttons">
+                  {/* <button
+                    type="button"
+                    className="secondary-button"
+                  >
+                    Save and add another
+                  </button> */}
+                  <button type="submit" className="primary-button">
+                    Save product
+                  </button>
+                </div>
+              </div>
+              <div className="main-content">
+                <div className="form-container">
                   <div className="section">
                     <h3>Product information</h3>
                     <div className="item">
-                      <label htmlFor="productName">Product name</label>
-                      <Field name="productName" id="productName" />
+                      <label htmlFor="name">Product name</label>
+                      <Field name="name" id="name" />
+                      <ErrorMessage
+                        name="name"
+                        component="div"
+                        className="validation-error"
+                      />
                     </div>
                     <div className="item">
                       <label htmlFor="description">Product description</label>
@@ -347,37 +355,43 @@ export default function AddProduct() {
                       render={arrayHelpers => (
                         <>
                           {values.details.length > 0 &&
-                            values.details.map((d: string, i) => (
-                              <div key={i} className="details-item">
-                                <div className="item">
-                                  <label htmlFor={`details.${i}`}>
-                                    Detail {i + 1}
-                                  </label>
-                                  <Field
-                                    name={`details.${i}`}
-                                    id={`details.${i}`}
-                                  />
-                                </div>
-                                <button
-                                  type="button"
-                                  className="remove-button"
-                                  onClick={() => arrayHelpers.remove(i)}
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                  >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                      clipRule="evenodd"
+                            values.details.map(
+                              (_detail: string, detailIndex) => (
+                                <div key={detailIndex} className="details-item">
+                                  <div className="item">
+                                    <label htmlFor={`details.${detailIndex}`}>
+                                      Detail {detailIndex + 1}
+                                    </label>
+                                    <Field
+                                      name={`details.${detailIndex}`}
+                                      id={`details.${detailIndex}`}
                                     />
-                                  </svg>
-                                  <span className="sr-only">Remove detail</span>
-                                </button>
-                              </div>
-                            ))}
+                                  </div>
+                                  <button
+                                    type="button"
+                                    className="remove-button"
+                                    onClick={() =>
+                                      arrayHelpers.remove(detailIndex)
+                                    }
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      viewBox="0 0 20 20"
+                                      fill="currentColor"
+                                    >
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                        clipRule="evenodd"
+                                      />
+                                    </svg>
+                                    <span className="sr-only">
+                                      Remove detail
+                                    </span>
+                                  </button>
+                                </div>
+                              )
+                            )}
                           <button
                             type="button"
                             className="secondary-button"
@@ -408,32 +422,44 @@ export default function AddProduct() {
                       render={arrayHelpers => (
                         <>
                           {values.sizes.length > 0 &&
-                            values.sizes.map((s: Size, i) => (
-                              <div key={i} className="size-item">
+                            values.sizes.map((_size: Size, sizeIndex) => (
+                              <div key={sizeIndex} className="size-item">
                                 <div>
                                   <div className="item">
-                                    <label htmlFor={`sizes.${i}.label`}>
+                                    <label htmlFor={`sizes.${sizeIndex}.label`}>
                                       Size label
                                     </label>
                                     <Field
-                                      name={`sizes.${i}.label`}
-                                      id={`sizes.${i}.label`}
+                                      name={`sizes.${sizeIndex}.label`}
+                                      id={`sizes.${sizeIndex}.label`}
+                                      placeholder="S, M, L, XL, XXL, etc."
+                                    />
+                                    <ErrorMessage
+                                      name={`sizes.${sizeIndex}.label`}
+                                      component="div"
+                                      className="validation-error"
                                     />
                                   </div>
                                   <div className="item">
-                                    <label htmlFor={`sizes.${i}.price`}>
+                                    <label htmlFor={`sizes.${sizeIndex}.price`}>
                                       Size price
                                     </label>
                                     <Field
-                                      name={`sizes.${i}.price`}
-                                      id={`sizes.${i}.price`}
+                                      name={`sizes.${sizeIndex}.price`}
+                                      id={`sizes.${sizeIndex}.price`}
+                                      placeholder="0.00"
+                                    />
+                                    <ErrorMessage
+                                      name={`sizes.${sizeIndex}.price`}
+                                      component="div"
+                                      className="validation-error"
                                     />
                                   </div>
                                 </div>
                                 <button
                                   type="button"
                                   className="remove-button"
-                                  onClick={() => arrayHelpers.remove(i)}
+                                  onClick={() => arrayHelpers.remove(sizeIndex)}
                                 >
                                   <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -457,7 +483,7 @@ export default function AddProduct() {
                               arrayHelpers.push({
                                 id: createId('size'),
                                 label: '',
-                                price: '',
+                                price: '0.00',
                               })
                             }
                           >
@@ -498,6 +524,11 @@ export default function AddProduct() {
                                       name={`colors.${colorIndex}.label`}
                                       id={`colors.${colorIndex}.label`}
                                     />
+                                    <ErrorMessage
+                                      name={`colors.${colorIndex}.label`}
+                                      component="div"
+                                      className="validation-error"
+                                    />
                                   </div>
                                   <div className="item">
                                     <label htmlFor={`colors.${colorIndex}.hex`}>
@@ -508,6 +539,11 @@ export default function AddProduct() {
                                       id={`colors.${colorIndex}.hex`}
                                       placeholder="i.e. #ffffff"
                                     />
+                                    <ErrorMessage
+                                      name={`colors.${colorIndex}.hex`}
+                                      component="div"
+                                      className="validation-error"
+                                    />
                                   </div>
                                   <div className="item primary-image-item">
                                     <h5>Primary image</h5>
@@ -517,7 +553,7 @@ export default function AddProduct() {
                                         primaryImages[colorIndex] ? (
                                           <img
                                             src={primaryImages[colorIndex]}
-                                            alt={`${values.productName} - ${values.colors[colorIndex].label}`}
+                                            alt={`${values.name} - ${values.colors[colorIndex].label}`}
                                           />
                                         ) : (
                                           <div className="placeholder">
@@ -559,7 +595,9 @@ export default function AddProduct() {
                                                   d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
                                                 />
                                               </svg>
-                                              Upload an image
+                                              {primaryImages[colorIndex]
+                                                ? 'Upload a different image'
+                                                : 'Upload an image'}
                                             </>
                                           )}
                                         </label>
@@ -641,12 +679,15 @@ export default function AddProduct() {
                                                 key={secImgIndex}
                                                 className="thumbnail"
                                               >
-                                                <img src={secImg} alt="TODO" />
+                                                <img
+                                                  src={secImg}
+                                                  alt={`Secondary number ${secImgIndex} for color number ${colorIndex}`}
+                                                />
                                                 <button
                                                   type="button"
-                                                  className="remove-button"
+                                                  className="remove-img-button"
                                                   onClick={() =>
-                                                    handleDeleteSecondaryImage(
+                                                    handleRemoveSecondaryImage(
                                                       colorIndex,
                                                       secImgIndex,
                                                       color,
@@ -735,11 +776,11 @@ export default function AddProduct() {
                       )}
                     />
                   </div>
-                </Form>
-              )}
-            </Formik>
-          </div>
-        </div>
+                </div>
+              </div>
+            </Form>
+          )}
+        </Formik>
       </AddProductStyles>
     </BasicLayout>
   );
@@ -1014,6 +1055,7 @@ const AddProductStyles = styled.div`
     }
 
     .primary-thumbnail {
+      margin: 0.75rem 0 0;
       padding: 0.5rem 0.875rem;
       display: flex;
       justify-content: center;
@@ -1061,20 +1103,33 @@ const AddProductStyles = styled.div`
       img {
         width: 100%;
       }
+    }
 
-      .remove-button {
-        padding: 0;
-        position: absolute;
-        top: -0.875rem;
-        right: -0.875rem;
-        background-color: #fff;
-        color: #374151;
+    .remove-img-button {
+      padding: 0;
+      position: absolute;
+      top: -0.875rem;
+      right: -0.875rem;
+      background-color: #fff;
+      color: #6b7280;
+      border: none;
+      cursor: pointer;
 
-        svg {
-          height: 1.75rem;
-          width: 1.75rem;
-        }
+      &:hover {
+        color: #991b1b;
+      }
+
+      svg {
+        height: 1.625rem;
+        width: 1.625rem;
       }
     }
+  }
+
+  .validation-error {
+    margin: 0.25rem 0 0;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #dc2626;
   }
 `;

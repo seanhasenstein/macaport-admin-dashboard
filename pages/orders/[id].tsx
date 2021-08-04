@@ -351,13 +351,15 @@ export default function Order() {
                         </thead>
                         <tbody>
                           {order.items.map(i => (
-                            <tr key={i.productId} className="order-item">
+                            <tr key={i.sku.productId} className="order-item">
                               <td>
                                 <div className="product-name">{i.name}</div>
-                                <div className="product-id">{i.productId}</div>
+                                <div className="product-id">
+                                  {i.sku.productId}
+                                </div>
                               </td>
-                              <td>{i.color}</td>
-                              <td>{i.size}</td>
+                              <td>{i.sku.color.label}</td>
+                              <td>{i.sku.size.label}</td>
                               <td>{formatToMoney(i.price)}</td>
                               <td className="text-center">{i.quantity}</td>
                               <td className="text-right">

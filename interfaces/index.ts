@@ -7,46 +7,35 @@ export interface Note {
   createdAt: string;
 }
 
-interface SecondaryImage {
-  id: string;
-  url: string;
-  alt: string;
-}
-
 export interface Size {
   id: string;
   label: string;
   price: number;
 }
 
-export interface ProductColor {
+export interface Color {
   id: string;
   label: string;
   hex: string;
   primaryImage: string;
-  secondaryImages: SecondaryImage[];
-}
-
-interface SkuColor {
-  id: string;
-  label: string;
+  secondaryImages: string[];
 }
 
 export interface Sku {
   id: string;
   productId: string;
-  color: SkuColor;
+  color: Color;
   size: Size;
 }
 
 export interface Product {
   id: string;
-  productName: string;
+  name: string;
   description: string;
   details: string[];
   tag: string;
   sizes: Size[];
-  colors: ProductColor[];
+  colors: Color[];
   skus: Sku[];
 }
 
@@ -115,11 +104,10 @@ export interface Store {
 }
 
 interface OrderItem {
-  productId: string;
+  sku: Sku;
   name: string;
+  image: string;
   price: number;
-  color: string;
-  size: string;
   quantity: number;
   itemTotal: number;
 }
@@ -129,7 +117,11 @@ export type OrderStatus = 'Unfulfilled' | 'Fulfilled' | 'Completed';
 export interface Order {
   _id: string;
   orderId: string;
-  storeId: string;
+  store: {
+    id: string;
+    name: string;
+  };
+  transactionId: string;
   items: OrderItem[];
   customer: {
     firstName: string;
@@ -150,9 +142,9 @@ export interface Order {
     subtotal: number;
     shipping: number;
     transactionFee: number;
+    salesTax: number;
     total: number;
   };
-  transactionId: string;
   notes: Note[];
   createdAt: string;
   updatedAt: string;
