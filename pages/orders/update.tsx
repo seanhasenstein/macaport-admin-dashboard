@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery } from 'react-query';
 import styled from 'styled-components';
 import { useSession } from '../../hooks/useSession';
 import { Order } from '../../interfaces';
@@ -8,7 +8,7 @@ import BasicLayout from '../../components/BasicLayout';
 export default function UpdateOrder() {
   const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient();
   const {
     isLoading,
     isError,
@@ -26,31 +26,31 @@ export default function UpdateOrder() {
     return data.order;
   });
 
-  const orderUpdateMutation = useMutation(
-    async (order: Order) => {
-      const response = await fetch(`/api/stores/update?id=${router.query.id}`, {
-        method: 'POST',
-        body: JSON.stringify(order),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+  // const orderUpdateMutation = useMutation(
+  //   async (order: Order) => {
+  //     const response = await fetch(`/api/stores/update?id=${router.query.id}`, {
+  //       method: 'POST',
+  //       body: JSON.stringify(order),
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //     });
 
-      if (!response.ok) {
-        throw new Error('Failed to update the order.');
-      }
+  //     if (!response.ok) {
+  //       throw new Error('Failed to update the order.');
+  //     }
 
-      const data = await response.json();
-      return data.order;
-    },
-    {
-      onSuccess: data => {
-        queryClient.invalidateQueries('orders');
-        queryClient.invalidateQueries('order', data._id);
-        router.push(`/orders/${data._id}`);
-      },
-    }
-  );
+  //     const data = await response.json();
+  //     return data.order;
+  //   },
+  //   {
+  //     onSuccess: data => {
+  //       queryClient.invalidateQueries('orders');
+  //       queryClient.invalidateQueries('order', data._id);
+  //       router.push(`/orders/${data._id}`);
+  //     },
+  //   }
+  // );
 
   if (sessionLoading || !session) return <div />;
 
@@ -108,6 +108,7 @@ export default function UpdateOrder() {
               </div>
             </div>
             <div className="main-content">
+              <p>TODO: This page needs work...</p>
               <pre>{JSON.stringify(order, null, 2)}</pre>
             </div>
           </>

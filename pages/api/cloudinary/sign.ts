@@ -5,8 +5,6 @@ import { withAuth } from '../../../utils/withAuth';
 const cloudinary = Cloudinary.v2;
 
 function handler(req: NextApiRequest, res: NextApiResponse) {
-  // TODO: check for authentication
-
   if (!process.env.CLOUDINARY_SECRET) {
     res.status(500).json({ error: 'Cloudinary secret not provided.' });
     return;

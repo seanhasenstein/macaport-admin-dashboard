@@ -5,19 +5,27 @@ import { formatToMoney } from '../utils';
 import { Order } from '../interfaces';
 import OrdersTableMenu from './OrdersTableMenu';
 
-type OrderViewOptions =
-  | 'allOrders'
-  | 'unfulfilledOrders'
-  | 'fulfilledOrders'
-  | 'completedOrders';
+type OrderViewOptions = 'All' | 'Unfulfilled' | 'Fulfilled' | 'Completed';
 
 export default function OrdersTable({ orders }: { orders: Order[] }) {
   const router = useRouter();
   const [orderViewOption, setOrderViewOption] =
-    React.useState<OrderViewOptions>('allOrders');
+    React.useState<OrderViewOptions>('All');
+  const [filteredOrders, setFilteredOrders] = React.useState(orders);
   const [currentActiveId, setCurrentActiveId] = React.useState<
     string | undefined
   >(undefined);
+
+  React.useEffect(() => {
+    if (orderViewOption === 'All') {
+      setFilteredOrders(orders);
+      return;
+    }
+    const updatedFilteredOrders = orders.filter(
+      o => o.orderStatus === orderViewOption
+    );
+    setFilteredOrders(updatedFilteredOrders);
+  }, [orderViewOption, orders]);
 
   return (
     <OrdersTableStyles>
@@ -27,35 +35,29 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
             <div className="container">
               <button
                 type="button"
-                className={orderViewOption === 'allOrders' ? 'active' : ''}
-                onClick={() => setOrderViewOption('allOrders')}
+                className={orderViewOption === 'All' ? 'active' : ''}
+                onClick={() => setOrderViewOption('All')}
               >
                 All Orders
               </button>
               <button
                 type="button"
-                className={
-                  orderViewOption === 'unfulfilledOrders' ? 'active' : ''
-                }
-                onClick={() => setOrderViewOption('unfulfilledOrders')}
+                className={orderViewOption === 'Unfulfilled' ? 'active' : ''}
+                onClick={() => setOrderViewOption('Unfulfilled')}
               >
                 Unfulfilled Orders
               </button>
               <button
                 type="button"
-                className={
-                  orderViewOption === 'fulfilledOrders' ? 'active' : ''
-                }
-                onClick={() => setOrderViewOption('fulfilledOrders')}
+                className={orderViewOption === 'Fulfilled' ? 'active' : ''}
+                onClick={() => setOrderViewOption('Fulfilled')}
               >
                 Fulfilled Orders
               </button>
               <button
                 type="button"
-                className={
-                  orderViewOption === 'completedOrders' ? 'active' : ''
-                }
-                onClick={() => setOrderViewOption('completedOrders')}
+                className={orderViewOption === 'Completed' ? 'active' : ''}
+                onClick={() => setOrderViewOption('Completed')}
               >
                 Completed Orders
               </button>
@@ -80,52 +82,62 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
                 </tr>
               </thead>
               <tbody>
-                {orders.map(o => (
-                  <tr key={o.orderId}>
-                    <td>{new Date(o.createdAt).toDateString()}</td>
-                    <td className="order-status">
-                      <span
-                        className={
-                          o.orderStatus === 'Completed'
-                            ? 'completed'
-                            : o.orderStatus === 'Fulfilled'
-                            ? 'fulfilled'
-                            : o.orderStatus === 'Unfulfilled'
-                            ? 'unfulfilled'
-                            : ''
-                        }
-                      >
-                        {o.orderStatus}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="customer-name">
-                        {o.customer.firstName} {o.customer.lastName}
-                      </div>
-                      {router.pathname === '/stores/[id]/orders' ? (
-                        <div className="order-id">Order #{o.orderId}</div>
-                      ) : (
-                        <div className="store-name">{o.store.name}</div>
-                      )}
-                    </td>
-                    <td>{o.shippingMethod}</td>
-                    <td className="text-center total-items">
-                      {o.items.length}
-                    </td>
-                    <td className="text-right">
-                      {formatToMoney(o.summary.total)}
-                    </td>
-                    <td className="order-actions">
-                      <OrdersTableMenu
-                        storeId={o.store.id}
-                        orderId={o.orderId}
-                        currentActiveId={currentActiveId}
-                        setCurrentActiveId={setCurrentActiveId}
-                        orderStatus={o.orderStatus}
-                      />
+                {filteredOrders.length === 0 ? (
+                  <tr>
+                    <td className="empty">
+                      There are no {orderViewOption.toLowerCase()} orders
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  <>
+                    {filteredOrders.map(o => (
+                      <tr key={o.orderId}>
+                        <td>{new Date(o.createdAt).toDateString()}</td>
+                        <td className="order-status">
+                          <span
+                            className={
+                              o.orderStatus === 'Completed'
+                                ? 'completed'
+                                : o.orderStatus === 'Fulfilled'
+                                ? 'fulfilled'
+                                : o.orderStatus === 'Unfulfilled'
+                                ? 'unfulfilled'
+                                : ''
+                            }
+                          >
+                            {o.orderStatus}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="customer-name">
+                            {o.customer.firstName} {o.customer.lastName}
+                          </div>
+                          {router.pathname === '/stores/[id]/orders' ? (
+                            <div className="order-id">Order #{o.orderId}</div>
+                          ) : (
+                            <div className="store-name">{o.store.name}</div>
+                          )}
+                        </td>
+                        <td>{o.shippingMethod}</td>
+                        <td className="text-center total-items">
+                          {o.items.length}
+                        </td>
+                        <td className="text-right">
+                          {formatToMoney(o.summary.total)}
+                        </td>
+                        <td className="order-actions">
+                          <OrdersTableMenu
+                            storeId={o.store.id}
+                            orderId={o.orderId}
+                            currentActiveId={currentActiveId}
+                            setCurrentActiveId={setCurrentActiveId}
+                            orderStatus={o.orderStatus}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </>
+                )}
               </tbody>
             </table>
           </div>
@@ -243,6 +255,10 @@ const OrdersTableStyles = styled.div`
     font-size: 0.875rem;
     font-weight: 500;
     color: #1f2937;
+
+    &.empty {
+      padding: 1.25rem 2rem;
+    }
   }
 
   .customer-name {

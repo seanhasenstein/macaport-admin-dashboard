@@ -16,6 +16,18 @@ import {
 } from '../../../utils';
 import BasicLayout from '../../../components/BasicLayout';
 
+type InitialValues = {
+  id: string;
+  name: string;
+  description: string;
+  tag: string;
+  details: string[];
+  sizes: Size[];
+  colors: Color[];
+};
+type CloudinaryStatus = 'idle' | 'loading';
+type AddMutationInput = Omit<Product, 'skus'>;
+
 const validationSchema = Yup.object().shape({
   name: Yup.string().required('Product name is required'),
   sizes: Yup.array().of(
@@ -42,9 +54,6 @@ const validationSchema = Yup.object().shape({
     })
   ),
 });
-
-type CloudinaryStatus = 'idle' | 'loading';
-type AddMutationInput = Omit<Product, 'skus'>;
 
 export default function AddProduct() {
   const [session, sessionLoading] = useSession({ required: true });
@@ -267,19 +276,21 @@ export default function AddProduct() {
   if (storeQuery.isError && storeQuery.error instanceof Error)
     return <div>Error: {storeQuery.error.message}</div>;
 
+  const initialValues: InitialValues = {
+    id: createId('prod'),
+    name: '',
+    description: '',
+    tag: '',
+    details: [],
+    sizes: [],
+    colors: [],
+  };
+
   return (
     <BasicLayout>
       <AddProductStyles>
         <Formik
-          initialValues={{
-            id: createId('prod'),
-            name: '',
-            description: '',
-            tag: '',
-            details: [],
-            sizes: [],
-            colors: [],
-          }}
+          initialValues={initialValues}
           validationSchema={validationSchema}
           onSubmit={values => {
             addProductMutation.mutate(values);

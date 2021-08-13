@@ -73,11 +73,14 @@ export default function Product() {
             <div className="main-content">
               <div className="wrapper">
                 <h3>Product - {router.query.id}.</h3>
-                {/* <pre>{JSON.stringify(product, null, 2)}</pre> */}
                 <div>
                   <div>....product.id: {product.id}</div>
                   {product.skus.map((s: Sku) => (
                     <div key={s.id}>
+                      <p>
+                        TODO: Do I want to use this page or
+                        /stores/[id]/product?prodId=id?
+                      </p>
                       <div>sku.productId{s.productId}</div>
                     </div>
                   ))}

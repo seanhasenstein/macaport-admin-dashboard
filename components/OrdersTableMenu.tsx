@@ -90,6 +90,7 @@ export default function OrdersTableMenu({
 
   const handleStatusChange = (newStatus: OrderStatus) => {
     orderStatusMutation.mutate(newStatus);
+    setCurrentActiveId(undefined);
   };
 
   return (

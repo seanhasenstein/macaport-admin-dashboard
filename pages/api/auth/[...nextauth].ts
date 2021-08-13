@@ -45,7 +45,10 @@ export default NextAuth({
   database: process.env.NEXTAUTH_DATABASE_URL,
   callbacks: {
     async signIn(user) {
-      const allowedEmailAccounts = ['seanhasenstein@gmail.com'];
+      const allowedEmailAccounts = [
+        'seanhasenstein@gmail.com',
+        'nick@macaport.com',
+      ];
       if (user.email && allowedEmailAccounts.includes(user.email)) {
         return true;
       } else {

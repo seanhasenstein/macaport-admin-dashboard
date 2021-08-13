@@ -60,6 +60,7 @@ export default function Product() {
           <div className="main-content">
             <div className="wrapper">
               <h3>Product Details</h3>
+              <p>TODO: This page needs to be finished...</p>
               <pre>{JSON.stringify(product, null, 2)}</pre>
             </div>
           </div>

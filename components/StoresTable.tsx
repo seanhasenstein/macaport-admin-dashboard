@@ -6,16 +6,7 @@ import { Store } from '../interfaces';
 import { getStoreStatus } from '../utils';
 import StoresTableMenu from './StoresTableMenu';
 
-type StoreViewOptions =
-  | 'allStores'
-  | 'activeStores'
-  | 'closedStores'
-  | 'macaportStores'
-  | 'clientStores';
-
 export default function StoresTable() {
-  const [storeViewOption, setStoreViewOption] =
-    React.useState<StoreViewOptions>('allStores');
   const [currentActiveId, setCurrentActiveId] = React.useState<
     string | undefined
   >(undefined);
@@ -37,125 +28,90 @@ export default function StoresTable() {
   return (
     <StoresTableStyles>
       {storesQuery.data && (
-        <div className="stores section">
-          <div className="buttons">
-            <div className="container">
-              <button
-                type="button"
-                className={storeViewOption === 'allStores' ? 'active' : ''}
-                onClick={() => setStoreViewOption('allStores')}
-              >
-                All Stores
-              </button>
-              <button
-                type="button"
-                className={storeViewOption === 'clientStores' ? 'active' : ''}
-                onClick={() => setStoreViewOption('clientStores')}
-              >
-                Client Stores
-              </button>
-              <button
-                type="button"
-                className={storeViewOption === 'macaportStores' ? 'active' : ''}
-                onClick={() => setStoreViewOption('macaportStores')}
-              >
-                Macaport Stores
-              </button>
-              <button
-                type="button"
-                className={storeViewOption === 'activeStores' ? 'active' : ''}
-                onClick={() => setStoreViewOption('activeStores')}
-              >
-                Active Stores
-              </button>
-              <button
-                type="button"
-                className={storeViewOption === 'closedStores' ? 'active' : ''}
-                onClick={() => setStoreViewOption('closedStores')}
-              >
-                Closed Stores
-              </button>
+        <>
+          <h3>Stores for macaport.com</h3>
+          <div className="stores section">
+            <div className="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th className="status">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M5.05 3.636a1 1 0 010 1.414 7 7 0 000 9.9 1 1 0 11-1.414 1.414 9 9 0 010-12.728 1 1 0 011.414 0zm9.9 0a1 1 0 011.414 0 9 9 0 010 12.728 1 1 0 11-1.414-1.414 7 7 0 000-9.9 1 1 0 010-1.414zM7.879 6.464a1 1 0 010 1.414 3 3 0 000 4.243 1 1 0 11-1.415 1.414 5 5 0 010-7.07 1 1 0 011.415 0zm4.242 0a1 1 0 011.415 0 5 5 0 010 7.072 1 1 0 01-1.415-1.415 3 3 0 000-4.242 1 1 0 010-1.415zM10 9a1 1 0 011 1v.01a1 1 0 11-2 0V10a1 1 0 011-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </th>
+                    <th>Store Name</th>
+                    <th>Open Date</th>
+                    <th>Close Date</th>
+                    <th className="text-center">Products</th>
+                    <th className="text-center">Orders</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {storesQuery.data.map(s => (
+                    <tr key={s._id}>
+                      <td className="store-status">
+                        {getStoreStatus(s.openDate, s.closeDate) ===
+                          'upcoming' && (
+                          <span className="upcoming-store">
+                            <span className="dot" />
+                          </span>
+                        )}
+                        {getStoreStatus(s.openDate, s.closeDate) === 'open' && (
+                          <span className="open-store">
+                            <span className="dot" />
+                          </span>
+                        )}
+                        {getStoreStatus(s.openDate, s.closeDate) ===
+                          'closed' && (
+                          <span className="closed-store">
+                            <span className="dot" />
+                          </span>
+                        )}
+                      </td>
+                      <td className="store-name">
+                        <Link href={`/stores/${s._id}`}>
+                          <a>{s.name}</a>
+                        </Link>
+                      </td>
+                      <td className="store-date">
+                        {new Date(s.openDate).toDateString()}
+                      </td>
+                      <td className="store-date">
+                        {' '}
+                        {s.closeDate
+                          ? new Date(s.closeDate).toDateString()
+                          : 'Open Permanently'}
+                      </td>
+                      <td className="text-center store-products">
+                        {s.products ? s.products.length : 0}
+                      </td>
+                      <td className="text-center store-orders">
+                        {s.orders ? s.orders.length : 0}
+                      </td>
+                      <td className="store-actions">
+                        <StoresTableMenu
+                          storeId={s._id}
+                          currentActiveId={currentActiveId}
+                          setCurrentActiveId={setCurrentActiveId}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th className="status">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.05 3.636a1 1 0 010 1.414 7 7 0 000 9.9 1 1 0 11-1.414 1.414 9 9 0 010-12.728 1 1 0 011.414 0zm9.9 0a1 1 0 011.414 0 9 9 0 010 12.728 1 1 0 11-1.414-1.414 7 7 0 000-9.9 1 1 0 010-1.414zM7.879 6.464a1 1 0 010 1.414 3 3 0 000 4.243 1 1 0 11-1.415 1.414 5 5 0 010-7.07 1 1 0 011.415 0zm4.242 0a1 1 0 011.415 0 5 5 0 010 7.072 1 1 0 01-1.415-1.415 3 3 0 000-4.242 1 1 0 010-1.415zM10 9a1 1 0 011 1v.01a1 1 0 11-2 0V10a1 1 0 011-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </th>
-                  <th>Store Name</th>
-                  <th>Open Date</th>
-                  <th>Close Date</th>
-                  <th className="text-center">Products</th>
-                  <th className="text-center">Orders</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {storesQuery.data.map(s => (
-                  <tr key={s._id}>
-                    <td className="store-status">
-                      {getStoreStatus(s.openDate, s.closeDate) ===
-                        'upcoming' && (
-                        <span className="upcoming-store">
-                          <span className="dot" />
-                        </span>
-                      )}
-                      {getStoreStatus(s.openDate, s.closeDate) === 'open' && (
-                        <span className="open-store">
-                          <span className="dot" />
-                        </span>
-                      )}
-                      {getStoreStatus(s.openDate, s.closeDate) === 'closed' && (
-                        <span className="closed-store">
-                          <span className="dot" />
-                        </span>
-                      )}
-                    </td>
-                    <td className="store-name">
-                      <Link href={`/stores/${s._id}`}>
-                        <a>{s.name}</a>
-                      </Link>
-                    </td>
-                    <td className="store-date">
-                      {new Date(s.openDate).toDateString()}
-                    </td>
-                    <td className="store-date">
-                      {' '}
-                      {s.closeDate
-                        ? new Date(s.closeDate).toDateString()
-                        : 'Open Permanently'}
-                    </td>
-                    <td className="text-center store-products">
-                      {s.products ? s.products.length : 0}
-                    </td>
-                    <td className="text-center store-orders">
-                      {s.orders ? s.orders.length : 0}
-                    </td>
-                    <td className="store-actions">
-                      <StoresTableMenu
-                        storeId={s._id}
-                        currentActiveId={currentActiveId}
-                        setCurrentActiveId={setCurrentActiveId}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        </>
       )}
     </StoresTableStyles>
   );
@@ -172,46 +128,8 @@ const StoresTableStyles = styled.div`
     margin: 0 0 4rem;
   }
 
-  .buttons {
-    padding: 1.5rem 0 2rem;
-
-    .container {
-      padding: 0.375rem;
-      display: inline-flex;
-      background-color: #f3f4f6;
-      border: 1px solid #e5e7eb;
-      border-radius: 0.375rem;
-    }
-
-    button {
-      padding: 0.625rem 1.25rem;
-      background-color: transparent;
-      border: 1px solid transparent;
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: #6b7280;
-      border-radius: 0.375rem;
-      cursor: pointer;
-
-      &:hover {
-        color: #1f2937;
-      }
-
-      &.active {
-        background-color: #fff;
-        border-color: #e5e7eb;
-        color: #1f2937;
-        box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-          rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
-      }
-
-      &:not(:first-of-type, :last-of-type) {
-        margin: 0 0.5rem;
-      }
-    }
-  }
-
   .table-container {
+    margin: 2rem 0 0;
     width: 100%;
     border: 1px solid #e5e7eb;
     border-radius: 0.375rem;

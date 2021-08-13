@@ -33,7 +33,6 @@ export default function Index() {
           </Link>
         </div>
         <div className="main-content">
-          <h3>Stores for macaport.com</h3>
           <StoresTable />
         </div>
       </DashboardStyles>
