@@ -4,15 +4,18 @@ import { useRouter } from 'next/router';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import { format } from 'date-fns';
-import { Store as StoreInterface, Note } from '../../interfaces';
-import { createId, formatPhoneNumber, getStoreStatus } from '../../utils';
-import Layout from '../../components/Layout';
-import StoreProductMenu from '../../components/StoreProductMenu';
-import Notes from '../../components/Notes';
+import { useSession } from '../../../hooks/useSession';
+import { Store as StoreInterface, Note } from '../../../interfaces';
+import { createId, formatPhoneNumber, getStoreStatus } from '../../../utils';
+import Layout from '../../../components/Layout';
+import StoreProductMenu from '../../../components/StoreProductMenu';
+import Notes from '../../../components/Notes';
+import OrdersTable from '../../../components/OrdersTable';
 
 type StoreStatus = 'upcoming' | 'open' | 'closed';
 
 export default function Store() {
+  const [session, loading] = useSession({ required: true });
   const router = useRouter();
   const [storeStatus, setStoreStatus] = React.useState<StoreStatus>();
   const [showMenu, setShowMenu] = React.useState<string | undefined>(undefined);
@@ -184,6 +187,8 @@ export default function Store() {
     }
   };
 
+  if (loading || !session) return <div />;
+
   return (
     <Layout>
       <StoreStyles>
@@ -353,7 +358,7 @@ export default function Store() {
                     {store.products ? (
                       <>
                         {store.products.length < 1 ? (
-                          <div className="empty">
+                          <div className="empty empty-products">
                             This store has no products.
                           </div>
                         ) : (
@@ -380,6 +385,7 @@ export default function Store() {
                                   </svg>
                                 </button>
                                 <StoreProductMenu
+                                  storeId={store._id}
                                   productId={p.id}
                                   showMenu={showMenu}
                                   setShowMenu={setShowMenu}
@@ -393,16 +399,20 @@ export default function Store() {
                         )}
                       </>
                     ) : (
-                      <div className="empty">This store has no products.</div>
+                      <div className=" empty-products">
+                        This store has no products.
+                      </div>
                     )}
                   </div>
                 </div>
                 <div className="section orders">
                   <h4>Store Orders</h4>
                   {store.orders ? (
-                    <div>Add store orders code here...</div>
+                    <OrdersTable orders={store.orders} />
                   ) : (
-                    <div className="empty">This store has no orders.</div>
+                    <div className=" empty-products">
+                      This store has no orders.
+                    </div>
                   )}
                 </div>
                 <Notes
@@ -657,6 +667,10 @@ const StoreStyles = styled.div`
 
   .section {
     padding: 3.5rem 0;
+
+    &.products {
+      padding-bottom: 0;
+    }
   }
 
   .error {
@@ -792,7 +806,7 @@ const StoreStyles = styled.div`
     }
   }
 
-  .edit-link,
+  .menu-link,
   .edit-button,
   .delete-button {
     padding: 0.75rem 2rem 0.75rem 0.25rem;
@@ -824,7 +838,7 @@ const StoreStyles = styled.div`
   }
 
   .edit-button,
-  .edit-link {
+  .menu-link {
     border-bottom: 1px solid #e5e7eb;
   }
 
@@ -837,16 +851,16 @@ const StoreStyles = styled.div`
   }
 
   /* PRODUCT STYLES */
+  .empty-products {
+    padding-bottom: 3rem;
+  }
+
   .product {
     position: relative;
     display: grid;
     grid-template-columns: 1fr 3rem;
     align-items: center;
-    border-bottom: 1px solid #e5e7eb;
-
-    &:first-of-type {
-      border-top: 1px solid #e5e7eb;
-    }
+    border-top: 1px solid #e5e7eb;
 
     &:hover {
       background-color: #f9fafb;

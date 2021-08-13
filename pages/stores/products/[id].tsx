@@ -2,10 +2,12 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useQuery } from 'react-query';
 import styled from 'styled-components';
+import { useSession } from '../../../hooks/useSession';
 import Layout from '../../../components/Layout';
 import { Sku } from '../../../interfaces';
 
 export default function Product() {
+  const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
 
   const {
@@ -26,6 +28,7 @@ export default function Product() {
     return data.product;
   });
 
+  if (sessionLoading || !session) return <div />;
   if (isLoading) return <div>Loading...</div>;
   if (isError) return <div>Error: {error}</div>;
 

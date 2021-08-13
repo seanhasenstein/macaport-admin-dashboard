@@ -1,10 +1,14 @@
 import { useRouter } from 'next/router';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
+import { useSession } from '../../../hooks/useSession';
 import BasicLayout from '../../../components/BasicLayout';
 
 export default function UpdateProduct() {
+  const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
+
+  if (sessionLoading || !session) return <div />;
 
   return (
     <BasicLayout>

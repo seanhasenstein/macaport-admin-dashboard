@@ -1,10 +1,12 @@
 import { useRouter } from 'next/router';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
+import { useSession } from '../../hooks/useSession';
 import { Order } from '../../interfaces';
 import BasicLayout from '../../components/BasicLayout';
 
 export default function UpdateOrder() {
+  const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
   const queryClient = useQueryClient();
   const {
@@ -26,7 +28,7 @@ export default function UpdateOrder() {
 
   const orderUpdateMutation = useMutation(
     async (order: Order) => {
-      const response = await fetch(`/api/orders/update?id=${router.query.id}`, {
+      const response = await fetch(`/api/stores/update?id=${router.query.id}`, {
         method: 'POST',
         body: JSON.stringify(order),
         headers: {
@@ -49,6 +51,8 @@ export default function UpdateOrder() {
       },
     }
   );
+
+  if (sessionLoading || !session) return <div />;
 
   return (
     <BasicLayout>

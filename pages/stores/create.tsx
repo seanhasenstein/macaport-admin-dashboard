@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
+import { useSession } from '../../hooks/useSession';
 import { StoreForm } from '../../interfaces';
 import { unitedStates, months, removeNonDigits } from '../../utils';
 import BasicLayout from '../../components/BasicLayout';
@@ -98,6 +99,7 @@ function formatDataForDb(data: StoreForm) {
 }
 
 export default function CreateStore() {
+  const [session, loading] = useSession({ required: true });
   const router = useRouter();
   const queryClient = useQueryClient();
   const createStoreMutation = useMutation(
@@ -118,8 +120,7 @@ export default function CreateStore() {
       return data.store;
     },
     {
-      onSuccess: (data, variables, context) => {
-        console.log({ data, variables, context });
+      onSuccess: (data, variables) => {
         queryClient.invalidateQueries('stores');
         const route =
           variables.redirectTo === 'add_product'
@@ -129,6 +130,8 @@ export default function CreateStore() {
       },
     }
   );
+
+  if (loading || !session) return <div />;
 
   return (
     <BasicLayout>

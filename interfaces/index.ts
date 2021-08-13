@@ -115,13 +115,12 @@ interface OrderItem {
 export type OrderStatus = 'Unfulfilled' | 'Fulfilled' | 'Completed';
 
 export interface Order {
-  _id: string;
   orderId: string;
   store: {
     id: string;
     name: string;
   };
-  transactionId: string;
+  stripeId: string;
   items: OrderItem[];
   customer: {
     firstName: string;
@@ -132,6 +131,7 @@ export interface Order {
   orderStatus: OrderStatus;
   shippingMethod: 'Primary' | 'Direct' | 'None';
   shippingAddress: {
+    name?: string;
     street: string;
     street2: string;
     city: string;
@@ -153,5 +153,5 @@ export interface Order {
 export interface Request extends NextApiRequest {
   db: Db;
   dbClient: MongoClient;
-  query: { id: string };
+  query: { id: string; storeId: string; orderId: string };
 }

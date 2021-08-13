@@ -3,12 +3,14 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
+import { useSession } from '../../hooks/useSession';
 import { Order as OrderInterface, Note } from '../../interfaces';
 import { formatPhoneNumber, formatToMoney, createId } from '../../utils';
 import Layout from '../../components/Layout';
 import Notes from '../../components/Notes';
 
 export default function Order() {
+  const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -21,7 +23,9 @@ export default function Order() {
     ['order', router.query.id],
     async () => {
       if (!router.query.id) return;
-      const response = await fetch(`/api/orders/${router.query.id}`);
+      const response = await fetch(
+        `/api/orders/${router.query.id}?storeId=${router.query.storeId}`
+      );
 
       if (!response.ok) {
         throw new Error('Failed to fetch the order.');
@@ -33,35 +37,40 @@ export default function Order() {
   );
 
   const addNoteMutation = useMutation(
-    async (text: string) => {
+    async (noteText: string) => {
       if (!order) return;
 
       const note: Note = {
         id: createId('note'),
-        text,
+        text: noteText,
         createdAt: `${new Date()}`,
       };
       const prevNotes = order.notes || [];
-      const updatedNotes = [...prevNotes, note];
-      const response = await fetch(`/api/orders/update?id=${router.query.id}`, {
-        method: 'post',
-        body: JSON.stringify({ notes: updatedNotes }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+
+      const response = await fetch(
+        `/api/orders/update/notes?id=${router.query.storeId}&orderId=${router.query.id}`,
+        {
+          method: 'post',
+          body: JSON.stringify({ notes: [...prevNotes, note] }),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to create the note.');
+        throw new Error('Failed to add the note.');
       }
 
       const data = await response.json();
-      return data.order;
+      return data.store;
     },
     {
       onSuccess: data => {
+        queryClient.invalidateQueries('stores');
+        queryClient.invalidateQueries(['store', data._id]);
         queryClient.invalidateQueries('orders');
-        queryClient.invalidateQueries(['order', data._id]);
+        queryClient.invalidateQueries(['order', router.query.id]);
       },
     }
   );
@@ -76,25 +85,30 @@ export default function Order() {
         }
       });
 
-      const response = await fetch(`/api/orders/update?id=${router.query.id}`, {
-        method: 'post',
-        body: JSON.stringify({ notes }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        `/api/orders/update/notes?id=${router.query.storeId}&orderId=${router.query.id}`,
+        {
+          method: 'post',
+          body: JSON.stringify({ notes }),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error('Failed to update the note.');
       }
 
       const data = await response.json();
-      return data.order;
+      return data.store;
     },
     {
       onSuccess: data => {
+        queryClient.invalidateQueries('stores');
+        queryClient.invalidateQueries(['store', data._id]);
         queryClient.invalidateQueries('orders');
-        queryClient.invalidateQueries(['order', data._id]);
+        queryClient.invalidateQueries(['order', router.query.id]);
       },
     }
   );
@@ -103,28 +117,35 @@ export default function Order() {
     async (id: string) => {
       const notes = order?.notes.filter(n => n.id !== id);
 
-      const response = await fetch(`/api/orders/update?id=${router.query.id}`, {
-        method: 'post',
-        body: JSON.stringify({ notes }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        `/api/orders/update/notes?id=${router.query.storeId}&orderId=${router.query.id}`,
+        {
+          method: 'post',
+          body: JSON.stringify({ notes }),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error('Failed to delete the note.');
       }
 
       const data = await response.json();
-      return data.order;
+      return data.store;
     },
     {
       onSuccess: data => {
+        queryClient.invalidateQueries('stores');
+        queryClient.invalidateQueries(['store', data._id]);
         queryClient.invalidateQueries('orders');
-        queryClient.invalidateQueries(['order', data._id]);
+        queryClient.invalidateQueries(['order', router.query.id]);
       },
     }
   );
+
+  if (sessionLoading || !session) return <div />;
 
   return (
     <Layout>
@@ -240,7 +261,7 @@ export default function Order() {
                       </div>
                       <div className="item screen-only">
                         <div className="label">Transaction Id</div>
-                        <div className="data">ch_1J24XRG8e3KaBMaeGLK2IjKZ</div>
+                        <div className="data">{order.stripeId}</div>
                       </div>
                     </div>
                   </div>
@@ -249,7 +270,9 @@ export default function Order() {
                     <div>www.macaport.com</div>
                   </div>
                   <div className="action-buttons">
-                    <Link href={`/orders/update?id=${order._id}`}>
+                    <Link
+                      href={`/orders/update?id=${order.orderId}?storeId=${order.store.id}`}
+                    >
                       <a className="edit-order-link">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -294,13 +317,13 @@ export default function Order() {
                     <h4>Shipping Details</h4>
                     <div className="info-item">
                       <div className="label">Store</div>
-                      New London High School XC
+                      {order.store.name}
                     </div>
                     <div className="info-item">
                       <div className="label">Method</div>
                       {order.shippingMethod}
                     </div>
-                    {order.shippingMethod === 'Direct' && (
+                    {order.shippingMethod === 'Direct' ? (
                       <div className="info-item">
                         <div className="label">Address</div>
                         <span>
@@ -312,7 +335,21 @@ export default function Order() {
                           {order.shippingAddress?.zipcode}
                         </span>
                       </div>
-                    )}
+                    ) : order.shippingMethod === 'Primary' ? (
+                      <div className="info-item">
+                        <div className="label">Address</div>
+                        <span>
+                          {order.shippingAddress.name}
+                          <br />
+                          {order.shippingAddress?.street}{' '}
+                          {order.shippingAddress?.street2}
+                          <br />
+                          {order.shippingAddress?.city},{' '}
+                          {order.shippingAddress?.state}{' '}
+                          {order.shippingAddress?.zipcode}
+                        </span>
+                      </div>
+                    ) : null}
                   </div>
                   <div>
                     <h4>Order Summary</h4>
@@ -354,9 +391,7 @@ export default function Order() {
                             <tr key={i.sku.productId} className="order-item">
                               <td>
                                 <div className="product-name">{i.name}</div>
-                                <div className="product-id">
-                                  {i.sku.productId}
-                                </div>
+                                <div className="product-id">{i.sku.id}</div>
                               </td>
                               <td>{i.sku.color.label}</td>
                               <td>{i.sku.size.label}</td>

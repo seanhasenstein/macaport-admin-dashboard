@@ -1,11 +1,15 @@
 import React from 'react';
 import Link from 'next/link';
 import styled from 'styled-components';
+import { useSession } from '../hooks/useSession';
 import Layout from '../components/Layout';
 import StoresTable from '../components/StoresTable';
-import OrdersTable from '../components/OrdersTable';
 
 export default function Index() {
+  const [session, loading] = useSession({ required: true });
+
+  if (loading || !session) return <div />;
+
   return (
     <Layout>
       <DashboardStyles>
@@ -29,10 +33,8 @@ export default function Index() {
           </Link>
         </div>
         <div className="main-content">
-          <h3>Stores</h3>
+          <h3>Stores for macaport.com</h3>
           <StoresTable />
-          <h3>Orders</h3>
-          {/* <OrdersTable /> */}
         </div>
       </DashboardStyles>
     </Layout>

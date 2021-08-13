@@ -1,9 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import Cloudinary from 'cloudinary';
+import { withAuth } from '../../../utils/withAuth';
 
 const cloudinary = Cloudinary.v2;
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+function handler(req: NextApiRequest, res: NextApiResponse) {
   // TODO: check for authentication
 
   if (!process.env.CLOUDINARY_SECRET) {
@@ -22,3 +23,5 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   res.status(200).json({ signature, timestamp });
 }
+
+export default withAuth(handler);

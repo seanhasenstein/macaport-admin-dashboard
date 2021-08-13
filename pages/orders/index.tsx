@@ -1,8 +1,12 @@
 import styled from 'styled-components';
+import { useSession } from '../../hooks/useSession';
 import Layout from '../../components/Layout';
-import OrdersTable from '../../components/OrdersTable';
 
 export default function Orders() {
+  const [session, sessionLoading] = useSession({ required: true });
+
+  if (sessionLoading || !session) return <div />;
+
   return (
     <Layout>
       <OrdersStyles>
@@ -12,7 +16,7 @@ export default function Orders() {
           </div>
         </div>
         <div className="main-content">
-          <OrdersTable />
+          TODO: I need to rethink the best way to format this page...
         </div>
       </OrdersStyles>
     </Layout>

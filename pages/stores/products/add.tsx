@@ -5,6 +5,7 @@ import styled from 'styled-components';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
+import { useSession } from '../../../hooks/useSession';
 import { Store, Size, Product, Color } from '../../../interfaces';
 import {
   createId,
@@ -46,6 +47,7 @@ type CloudinaryStatus = 'idle' | 'loading';
 type AddMutationInput = Omit<Product, 'skus'>;
 
 export default function AddProduct() {
+  const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
   const [primaryImageStatus, setPrimaryImageStatus] =
     React.useState<CloudinaryStatus>('idle');
@@ -260,6 +262,7 @@ export default function AddProduct() {
     remove(colorIndex);
   };
 
+  if (sessionLoading || !session) return <div />;
   if (storeQuery.isLoading) return <div />;
   if (storeQuery.isError && storeQuery.error instanceof Error)
     return <div>Error: {storeQuery.error.message}</div>;
@@ -279,7 +282,6 @@ export default function AddProduct() {
           }}
           validationSchema={validationSchema}
           onSubmit={values => {
-            console.log('submitting...');
             addProductMutation.mutate(values);
           }}
         >

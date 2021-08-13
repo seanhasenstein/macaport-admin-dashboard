@@ -2,6 +2,7 @@ import { useRouter } from 'next/router';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import { Formik, Form, Field } from 'formik';
+import { useSession } from '../../hooks/useSession';
 import { Store, StoreForm } from '../../interfaces';
 import { unitedStates, months } from '../../utils';
 import BasicLayout from '../../components/BasicLayout';
@@ -103,6 +104,7 @@ function formatDataForDb(data: StoreForm) {
 }
 
 export default function UpdateStore() {
+  const [session, loading] = useSession({ required: true });
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -148,6 +150,8 @@ export default function UpdateStore() {
       },
     }
   );
+
+  if (loading || !session) return <div />;
 
   return (
     <BasicLayout>

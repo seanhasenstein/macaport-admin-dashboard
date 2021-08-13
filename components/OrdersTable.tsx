@@ -1,8 +1,9 @@
 import React from 'react';
+import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import { formatToMoney } from '../utils';
+import { Order } from '../interfaces';
 import OrdersTableMenu from './OrdersTableMenu';
-import { fakeOrders } from '../data/fake-orders';
 
 type OrderViewOptions =
   | 'allOrders'
@@ -10,7 +11,8 @@ type OrderViewOptions =
   | 'fulfilledOrders'
   | 'completedOrders';
 
-export default function OrdersTable() {
+export default function OrdersTable({ orders }: { orders: Order[] }) {
+  const router = useRouter();
   const [orderViewOption, setOrderViewOption] =
     React.useState<OrderViewOptions>('allOrders');
   const [currentActiveId, setCurrentActiveId] = React.useState<
@@ -19,98 +21,116 @@ export default function OrdersTable() {
 
   return (
     <OrdersTableStyles>
-      <div className="orders section">
-        <div className="buttons">
-          <div className="container">
-            <button
-              type="button"
-              className={orderViewOption === 'allOrders' ? 'active' : ''}
-              onClick={() => setOrderViewOption('allOrders')}
-            >
-              All Orders
-            </button>
-            <button
-              type="button"
-              className={
-                orderViewOption === 'unfulfilledOrders' ? 'active' : ''
-              }
-              onClick={() => setOrderViewOption('unfulfilledOrders')}
-            >
-              Unfulfilled Orders
-            </button>
-            <button
-              type="button"
-              className={orderViewOption === 'fulfilledOrders' ? 'active' : ''}
-              onClick={() => setOrderViewOption('fulfilledOrders')}
-            >
-              Fulfilled Orders
-            </button>
-            <button
-              type="button"
-              className={orderViewOption === 'completedOrders' ? 'active' : ''}
-              onClick={() => setOrderViewOption('completedOrders')}
-            >
-              Completed Orders
-            </button>
+      {orders && (
+        <div>
+          <div className="buttons">
+            <div className="container">
+              <button
+                type="button"
+                className={orderViewOption === 'allOrders' ? 'active' : ''}
+                onClick={() => setOrderViewOption('allOrders')}
+              >
+                All Orders
+              </button>
+              <button
+                type="button"
+                className={
+                  orderViewOption === 'unfulfilledOrders' ? 'active' : ''
+                }
+                onClick={() => setOrderViewOption('unfulfilledOrders')}
+              >
+                Unfulfilled Orders
+              </button>
+              <button
+                type="button"
+                className={
+                  orderViewOption === 'fulfilledOrders' ? 'active' : ''
+                }
+                onClick={() => setOrderViewOption('fulfilledOrders')}
+              >
+                Fulfilled Orders
+              </button>
+              <button
+                type="button"
+                className={
+                  orderViewOption === 'completedOrders' ? 'active' : ''
+                }
+                onClick={() => setOrderViewOption('completedOrders')}
+              >
+                Completed Orders
+              </button>
+            </div>
+          </div>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Order Status</th>
+                  <th>
+                    Customer/
+                    {router.pathname === '/stores/[id]/orders'
+                      ? 'Order ID'
+                      : 'Store'}
+                  </th>
+                  <th>Shipping</th>
+                  <th className="text-center"># of Items</th>
+                  <th className="text-right">Total</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map(o => (
+                  <tr key={o.orderId}>
+                    <td>{new Date(o.createdAt).toDateString()}</td>
+                    <td className="order-status">
+                      <span
+                        className={
+                          o.orderStatus === 'Completed'
+                            ? 'completed'
+                            : o.orderStatus === 'Fulfilled'
+                            ? 'fulfilled'
+                            : o.orderStatus === 'Unfulfilled'
+                            ? 'unfulfilled'
+                            : ''
+                        }
+                      >
+                        {o.orderStatus}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="customer-name">
+                        {o.customer.firstName} {o.customer.lastName}
+                      </div>
+                      {router.pathname === '/stores/[id]/orders' ? (
+                        <div className="order-id">Order #{o.orderId}</div>
+                      ) : (
+                        <div className="store-name">{o.store.name}</div>
+                      )}
+                    </td>
+                    <td>{o.shippingMethod}</td>
+                    <td className="text-center total-items">
+                      {o.items.length}
+                    </td>
+                    <td className="text-right">
+                      {formatToMoney(o.summary.total)}
+                    </td>
+                    <td className="order-actions">
+                      <OrdersTableMenu
+                        storeId={o.store.id}
+                        orderId={o.orderId}
+                        currentActiveId={currentActiveId}
+                        setCurrentActiveId={setCurrentActiveId}
+                        orderStatus={o.orderStatus}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Order Status</th>
-                <th>Customer/Store</th>
-                <th>Shipping</th>
-                <th className="text-center"># of Items</th>
-                <th className="text-right">Total</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {fakeOrders.map(o => (
-                <tr key={o._id}>
-                  <td>{new Date(o.createdAt).toDateString()}</td>
-                  <td className="order-status">
-                    <span
-                      className={
-                        o.orderStatus === 'Completed'
-                          ? 'completed'
-                          : o.orderStatus === 'Fulfilled'
-                          ? 'fulfilled'
-                          : o.orderStatus === 'Unfulfilled'
-                          ? 'unfulfilled'
-                          : ''
-                      }
-                    >
-                      {o.orderStatus}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="customer-name">
-                      {o.customer.firstName} {o.customer.lastName}
-                    </div>
-                    <div className="store-name">{o.store.id}</div>
-                  </td>
-                  <td>{o.shippingMethod}</td>
-                  <td className="text-center total-items">{o.items.length}</td>
-                  <td className="text-right">
-                    {formatToMoney(o.summary.total)}
-                  </td>
-                  <td className="order-actions">
-                    <OrdersTableMenu
-                      orderId={o._id}
-                      currentActiveId={currentActiveId}
-                      setCurrentActiveId={setCurrentActiveId}
-                      orderStatus={o.orderStatus}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      )}
     </OrdersTableStyles>
   );
 }
@@ -120,10 +140,6 @@ const OrdersTableStyles = styled.div`
     margin: 0;
     font-weight: 600;
     color: #111827;
-  }
-
-  .section {
-    margin: 0 0 4rem;
   }
 
   .buttons {
@@ -234,8 +250,13 @@ const OrdersTableStyles = styled.div`
     font-weight: 500;
   }
 
-  .store-name {
-    color: #89909d;
+  .store-name,
+  .order-id {
+    color: #9ea4af;
+  }
+
+  .order-id {
+    font-size: 0.75rem;
   }
 
   .order-status {

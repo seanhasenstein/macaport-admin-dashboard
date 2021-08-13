@@ -5,41 +5,50 @@ import styled from 'styled-components';
 import { OrderStatus } from '../interfaces';
 
 type Props = {
+  storeId: string;
   orderId: string;
   currentActiveId: string | undefined;
   setCurrentActiveId: React.Dispatch<React.SetStateAction<string | undefined>>;
-  orderStatus: 'Unfulfilled' | 'Fulfilled' | 'Completed';
+  orderStatus: OrderStatus;
 };
 
 export default function OrdersTableMenu({
+  storeId,
   orderId,
   currentActiveId,
   setCurrentActiveId,
   orderStatus,
 }: Props) {
   const menuRef = React.useRef<HTMLDivElement>(null);
-  const [status, setStatus] = React.useState<
-    'Unfulfilled' | 'Fulfilled' | 'Completed'
-  >(orderStatus);
+  const [status, setStatus] = React.useState<OrderStatus>(orderStatus);
   const queryClient = useQueryClient();
 
   const orderStatusMutation = useMutation(
-    async (status: OrderStatus) => {
-      const response = await fetch(`/api/orders/update?id=${orderId}`, {
-        method: 'post',
-        body: JSON.stringify({ orderStatus: status }),
-      });
+    async (newStatus: OrderStatus) => {
+      const response = await fetch(
+        `/api/orders/update/status?storeId=${storeId}&orderId=${orderId}`,
+        {
+          method: 'post',
+          body: JSON.stringify({ status: newStatus }),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error('Failed to update the order status.');
       }
 
       const data = await response.json();
-      return data.order;
+      return data.store;
     },
     {
-      onSuccess: () => {
-        queryClient.invalidateQueries('orders');
+      onSuccess: (data, variables) => {
+        setStatus(variables);
+        queryClient.invalidateQueries('stores', { exact: true });
+        queryClient.invalidateQueries(['store', storeId]);
+        queryClient.invalidateQueries('orders', { exact: true });
         queryClient.invalidateQueries(['order', orderId]);
       },
     }
@@ -80,8 +89,7 @@ export default function OrdersTableMenu({
   };
 
   const handleStatusChange = (newStatus: OrderStatus) => {
-    // orderStatusMutation.mutate(newStatus);
-    setStatus(newStatus);
+    orderStatusMutation.mutate(newStatus);
   };
 
   return (
@@ -103,7 +111,7 @@ export default function OrdersTableMenu({
         ref={menuRef}
         className={`menu ${currentActiveId === orderId ? 'show' : ''}`}
       >
-        <Link href={`/orders/${'TODO'}`}>
+        <Link href={`/orders/${orderId}?storeId=${storeId}`}>
           <a className="view-link">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -127,7 +135,7 @@ export default function OrdersTableMenu({
             View Order
           </a>
         </Link>
-        <Link href={`/orders/update?id=${'TODO'}`}>
+        <Link href={`/orders/update?id=${orderId}?storeId=${storeId}`}>
           <a className="edit-link">
             <svg
               xmlns="http://www.w3.org/2000/svg"

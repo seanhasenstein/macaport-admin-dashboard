@@ -1,7 +1,7 @@
 import { NextApiResponse } from 'next';
 import nc from 'next-connect';
-import { Request } from '../../../interfaces';
-import { Store } from '../../../interfaces';
+import { withAuth } from '../../../utils/withAuth';
+import { Request, Store } from '../../../interfaces';
 import database from '../../../middleware/db';
 import { store } from '../../../db';
 
@@ -17,4 +17,4 @@ const handler = nc<Request, NextApiResponse>()
     }
   });
 
-export default handler;
+export default withAuth(handler);

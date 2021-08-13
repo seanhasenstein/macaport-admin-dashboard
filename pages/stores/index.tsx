@@ -1,11 +1,13 @@
 import { useQuery } from 'react-query';
 import Link from 'next/link';
 import styled from 'styled-components';
+import { useSession } from '../../hooks/useSession';
 import { Store } from '../../interfaces';
 import Layout from '../../components/Layout';
 import StoresTable from '../../components/StoresTable';
 
 export default function Stores() {
+  const [session, loading] = useSession({ required: true });
   const {
     isLoading,
     isError,
@@ -19,6 +21,8 @@ export default function Stores() {
     const data = await response.json();
     return data.stores;
   });
+
+  if (loading || !session) return <div />;
 
   return (
     <Layout>
@@ -60,6 +64,7 @@ export default function Stores() {
               </Link>
             </div>
             <div className="main-content">
+              <h3>This page is currently identical to the homepage</h3>
               <StoresTable />
             </div>
           </>

@@ -152,7 +152,8 @@ const LoginStyles = styled.div`
     padding: 0.6875rem 0.75rem;
 
     &:focus {
-      outline-color: #0369a1;
+      outline: 2px solid transparent;
+      outline-offset: 2px;
     }
   }
 

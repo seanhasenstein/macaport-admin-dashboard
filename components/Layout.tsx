@@ -1,8 +1,6 @@
 import Link from 'next/link';
-// import Image from 'next/image';
 import styled, { createGlobalStyle } from 'styled-components';
 import { signOut } from 'next-auth/client';
-// import Logo from '../public/images/logo.png';
 
 const GlobalStyles = createGlobalStyle`
   @font-face {
@@ -310,12 +308,6 @@ export default function Layout({ children }: Props) {
         <div className="logo">
           <Link href="/">
             <a>
-              {/* <Image
-                src={Logo}
-                alt="Macaport logo with mountains"
-                width="200px"
-                height="54px"
-              /> */}
               <img
                 src="/images/logo.png"
                 alt="Macaport logo in front of mountains"
