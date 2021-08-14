@@ -33,7 +33,7 @@ export default function Stores() {
   return (
     <Layout>
       <StoresStyles>
-        {isLoading && <div>Loading...</div>}
+        {isLoading && <div />}
         {isError && error instanceof Error && (
           <>
             <div className="title">

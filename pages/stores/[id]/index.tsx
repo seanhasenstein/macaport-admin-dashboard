@@ -38,8 +38,6 @@ export default function Store() {
         throw new Error('Failed to fetch the store.');
       }
       const data = await response.json();
-      const status = getStoreStatus(data.store.openDate, data.store.closeDate);
-      setStoreStatus(status);
       return data.store;
     },
     {
@@ -50,6 +48,11 @@ export default function Store() {
       },
       initialDataUpdatedAt: () =>
         queryClient.getQueryState('stores')?.dataUpdatedAt,
+      onSuccess: data => {
+        if (data) {
+          setStoreStatus(getStoreStatus(data.openDate, data.closeDate));
+        }
+      },
       staleTime: 600000,
     }
   );
@@ -200,12 +203,18 @@ export default function Store() {
     }
   };
 
+  React.useEffect(() => {
+    if (store) {
+      setStoreStatus(getStoreStatus(store.openDate, store.closeDate));
+    }
+  }, [store]);
+
   if (loading || !session) return <div />;
 
   return (
     <Layout>
       <StoreStyles>
-        {isLoading && <div>Loading...</div>}
+        {isLoading && <div />}
         {isError && error instanceof Error && (
           <>
             <div className="title">

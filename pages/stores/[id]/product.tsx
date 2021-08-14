@@ -44,7 +44,7 @@ export default function Product() {
 
   return (
     <Layout>
-      {isLoading && <div>Loading...</div>}
+      {isLoading && <div />}
       {isError && error instanceof Error && <div>Error: {error.message}</div>}
       {product && (
         <ProductStyles>

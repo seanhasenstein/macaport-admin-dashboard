@@ -28,7 +28,7 @@ export default function StoresTable() {
     }
   );
 
-  storesQuery.isLoading && <div>Loading...</div>;
+  storesQuery.isLoading && <div />;
   storesQuery.isError && storesQuery.error instanceof Error && (
     <div>Error: {storesQuery.error.message}</div>
   );
