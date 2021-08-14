@@ -48,7 +48,6 @@ export default function OrdersTableMenu({
         setStatus(variables);
         queryClient.invalidateQueries('stores', { exact: true });
         queryClient.invalidateQueries(['store', storeId]);
-        queryClient.invalidateQueries('orders', { exact: true });
         queryClient.invalidateQueries(['order', orderId]);
       },
     }
@@ -136,7 +135,7 @@ export default function OrdersTableMenu({
             View Order
           </a>
         </Link>
-        <Link href={`/orders/update?id=${orderId}?storeId=${storeId}`}>
+        <Link href={`/orders/update?id=${orderId}&storeId=${storeId}`}>
           <a className="edit-link">
             <svg
               xmlns="http://www.w3.org/2000/svg"

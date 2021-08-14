@@ -10,16 +10,23 @@ export default function StoresTable() {
   const [currentActiveId, setCurrentActiveId] = React.useState<
     string | undefined
   >(undefined);
-  const storesQuery = useQuery<Store[]>('stores', async () => {
-    const response = await fetch('/api/stores');
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch the stores.');
+  const storesQuery = useQuery<Store[]>(
+    'stores',
+    async () => {
+      const response = await fetch('/api/stores');
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch the stores.');
+      }
+
+      const data = await response.json();
+      return data.stores;
+    },
+    {
+      staleTime: 600000,
     }
-
-    const data = await response.json();
-    return data.stores;
-  });
+  );
 
   storesQuery.isLoading && <div>Loading...</div>;
   storesQuery.isError && storesQuery.error instanceof Error && (

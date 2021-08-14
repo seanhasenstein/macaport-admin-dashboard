@@ -102,6 +102,7 @@ export default function CreateStore() {
   const [session, loading] = useSession({ required: true });
   const router = useRouter();
   const queryClient = useQueryClient();
+
   const createStoreMutation = useMutation(
     async (store: StoreForm) => {
       const response = await fetch(`/api/stores/create`, {
@@ -121,7 +122,7 @@ export default function CreateStore() {
     },
     {
       onSuccess: (data, variables) => {
-        queryClient.invalidateQueries('stores');
+        queryClient.invalidateQueries('stores', { exact: true });
         const route =
           variables.redirectTo === 'add_product'
             ? `/stores/products/add?id=${data._id}`

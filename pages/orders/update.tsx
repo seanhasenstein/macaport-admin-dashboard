@@ -1,30 +1,45 @@
 import { useRouter } from 'next/router';
-import { useQuery } from 'react-query';
+import { useQueryClient, useQuery } from 'react-query';
 import styled from 'styled-components';
 import { useSession } from '../../hooks/useSession';
-import { Order } from '../../interfaces';
+import { Order, Store } from '../../interfaces';
 import BasicLayout from '../../components/BasicLayout';
 
 export default function UpdateOrder() {
   const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
-  // const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
   const {
     isLoading,
     isError,
     data: order,
     error,
-  } = useQuery<Order>(['order', router.query.id], async () => {
-    if (!router.query.id) return;
-    const response = await fetch(`/api/orders/${router.query.id}`);
+  } = useQuery<Order>(
+    ['order', router.query.id],
+    async () => {
+      if (!router.query.id) return;
+      const response = await fetch(`/api/orders/${router.query.id}`);
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch the order.');
+      if (!response.ok) {
+        throw new Error('Failed to fetch the order.');
+      }
+
+      const data = await response.json();
+      return data.order;
+    },
+    {
+      initialData: () => {
+        const store = queryClient
+          .getQueryData<Store[]>('stores')
+          ?.find(s => s._id === router.query.storeId);
+        const order = store?.orders.find(o => o.orderId === router.query.id);
+        return order;
+      },
+      initialDataUpdatedAt: () =>
+        queryClient.getQueryState('stores')?.dataUpdatedAt,
+      staleTime: 600000,
     }
-
-    const data = await response.json();
-    return data.order;
-  });
+  );
 
   // const orderUpdateMutation = useMutation(
   //   async (order: Order) => {
@@ -45,7 +60,7 @@ export default function UpdateOrder() {
   //   },
   //   {
   //     onSuccess: data => {
-  //       queryClient.invalidateQueries('orders');
+  //       queryClient.invalidateQueries('stores');
   //       queryClient.invalidateQueries('order', data._id);
   //       router.push(`/orders/${data._id}`);
   //     },

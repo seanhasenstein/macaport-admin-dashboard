@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { useQuery } from 'react-query';
+import { useQuery, useQueryClient } from 'react-query';
 import { useSession } from '../../../hooks/useSession';
 import { Store } from '../../../interfaces';
 import styled from 'styled-components';
@@ -9,20 +9,36 @@ import Layout from '../../../components/Layout';
 export default function Product() {
   const [session, loading] = useSession({ required: true });
   const router = useRouter();
+  const queryClient = useQueryClient();
+
   const {
     isLoading,
     isError,
     error,
     data: product,
-  } = useQuery(['product', router.query.prodId], async () => {
-    if (!router.query.id || !router.query.prodId) return;
-    const response = await fetch(`/api/stores/${router.query.id}`);
-    if (!response.ok) throw new Error('Failed to fetch the store.');
-    const { store }: { store: Store } = await response.json();
-    const product = store.products.find(p => p.id === router.query.prodId);
-    if (!product) throw new Error('No product found.');
-    return product;
-  });
+  } = useQuery(
+    ['product', router.query.prodId],
+    async () => {
+      if (!router.query.id || !router.query.prodId) return;
+      const response = await fetch(`/api/stores/${router.query.id}`);
+      if (!response.ok) throw new Error('Failed to fetch the store.');
+      const { store }: { store: Store } = await response.json();
+      const product = store.products.find(p => p.id === router.query.prodId);
+      if (!product) throw new Error('No product found.');
+      return product;
+    },
+    {
+      initialData: () => {
+        if (!router.query.id) return;
+        const stores = queryClient.getQueryData<Store[]>(['stores']);
+        const store = stores?.find((s: Store) => s._id === router.query.id);
+        return store?.products.find(p => p.id === router.query.prodId);
+      },
+      initialDataUpdatedAt: () =>
+        queryClient.getQueryState('stores')?.dataUpdatedAt,
+      staleTime: 600000,
+    }
+  );
 
   if (loading || !session) return <div />;
 

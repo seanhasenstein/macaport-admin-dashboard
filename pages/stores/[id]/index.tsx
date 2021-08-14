@@ -29,17 +29,30 @@ export default function Store() {
     isError,
     data: store,
     error,
-  } = useQuery<StoreInterface>(['store', router.query.id], async () => {
-    if (!router.query.id) return;
-    const response = await fetch(`/api/stores/${router.query.id}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch the store.');
+  } = useQuery<StoreInterface>(
+    ['store', router.query.id],
+    async () => {
+      if (!router.query.id) return;
+      const response = await fetch(`/api/stores/${router.query.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch the store.');
+      }
+      const data = await response.json();
+      const status = getStoreStatus(data.store.openDate, data.store.closeDate);
+      setStoreStatus(status);
+      return data.store;
+    },
+    {
+      initialData: () => {
+        return queryClient
+          .getQueryData<StoreInterface[]>('stores')
+          ?.find(s => s._id === router.query.id);
+      },
+      initialDataUpdatedAt: () =>
+        queryClient.getQueryState('stores')?.dataUpdatedAt,
+      staleTime: 600000,
     }
-    const data = await response.json();
-    const status = getStoreStatus(data.store.openDate, data.store.closeDate);
-    setStoreStatus(status);
-    return data.store;
-  });
+  );
 
   const deleteProductMutation = useMutation(
     async (id: string | undefined) => {
@@ -66,7 +79,7 @@ export default function Store() {
     },
     {
       onSuccess: () => {
-        queryClient.invalidateQueries('stores');
+        queryClient.invalidateQueries('stores', { exact: true });
         queryClient.invalidateQueries(['store', router.query.id]);
         setProductIdToDelete(undefined);
         setShowDeleteProductModal(false);
@@ -102,7 +115,7 @@ export default function Store() {
     },
     {
       onSuccess: data => {
-        queryClient.invalidateQueries('stores');
+        queryClient.invalidateQueries('stores', { exact: true });
         queryClient.invalidateQueries(['store', data._id]);
       },
     }
@@ -135,7 +148,7 @@ export default function Store() {
     },
     {
       onSuccess: data => {
-        queryClient.invalidateQueries('stores');
+        queryClient.invalidateQueries('stores', { exact: true });
         queryClient.invalidateQueries(['store', data._id]);
       },
     }
@@ -162,7 +175,7 @@ export default function Store() {
     },
     {
       onSuccess: data => {
-        queryClient.invalidateQueries('stores');
+        queryClient.invalidateQueries('stores', { exact: true });
         queryClient.invalidateQueries(['store', data._id]);
       },
     }
@@ -366,7 +379,7 @@ export default function Store() {
                             {store.products.map(p => (
                               <div key={p.id} className="product">
                                 <Link
-                                  href={`/stores/products/${p.id}`}
+                                  href={`/stores/${router.query.id}/product?prodId=${p.id}`}
                                   key={p.id}
                                 >
                                   <a className="product-name">{p.name}</a>

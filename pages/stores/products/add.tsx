@@ -65,17 +65,31 @@ export default function AddProduct() {
   const [primaryImages, setPrimaryImages] = React.useState<string[]>([]);
   const [secondaryImages, setSecondaryImages] = React.useState<string[][]>([]);
   const queryClient = useQueryClient();
-  const storeQuery = useQuery<Store>(['store', router.query.id], async () => {
-    if (!router.query.id) return;
-    const response = await fetch(`/api/stores/${router.query.id}`);
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch the store.');
+  const storeQuery = useQuery<Store>(
+    ['store', router.query.id],
+    async () => {
+      if (!router.query.id) return;
+      const response = await fetch(`/api/stores/${router.query.id}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch the store.');
+      }
+
+      const data = await response.json();
+      return data.store;
+    },
+    {
+      initialData: () => {
+        return queryClient
+          .getQueryData<Store[]>('store')
+          ?.find(s => s._id === router.query.id);
+      },
+      initialDataUpdatedAt: () =>
+        queryClient.getQueryState('stores')?.dataUpdatedAt,
+      staleTime: 600000,
     }
-
-    const data = await response.json();
-    return data.store;
-  });
+  );
   const addProductMutation = useMutation(
     async (values: AddMutationInput) => {
       const prevProducts = storeQuery?.data?.products || [];
@@ -112,9 +126,8 @@ export default function AddProduct() {
     },
     {
       onSuccess: () => {
-        queryClient.invalidateQueries('stores');
+        queryClient.invalidateQueries('stores', { exact: true });
         queryClient.invalidateQueries(['store', router.query.id]);
-        // TODO: push to single product page
         router.push(`/stores/${router.query.id}#products`);
       },
     }

@@ -1,5 +1,5 @@
-import { useQuery } from 'react-query';
 import Link from 'next/link';
+import { useQuery } from 'react-query';
 import styled from 'styled-components';
 import { useSession } from '../../hooks/useSession';
 import { Store } from '../../interfaces';
@@ -13,14 +13,20 @@ export default function Stores() {
     isError,
     data: stores,
     error,
-  } = useQuery<Store[]>('stores', async () => {
-    const response = await fetch('/api/stores');
-    if (!response.ok) {
-      throw new Error('Failed to fetch the stores.');
+  } = useQuery<Store[]>(
+    'stores',
+    async () => {
+      const response = await fetch('/api/stores');
+      if (!response.ok) {
+        throw new Error('Failed to fetch the stores.');
+      }
+      const data = await response.json();
+      return data.stores;
+    },
+    {
+      staleTime: 600000,
     }
-    const data = await response.json();
-    return data.stores;
-  });
+  );
 
   if (loading || !session) return <div />;
 

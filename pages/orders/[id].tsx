@@ -1,10 +1,10 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQueryClient, useQuery, useMutation } from 'react-query';
 import styled from 'styled-components';
 import { useSession } from '../../hooks/useSession';
-import { Order as OrderInterface, Note } from '../../interfaces';
+import { Store, Order as OrderInterface, Note } from '../../interfaces';
 import { formatPhoneNumber, formatToMoney, createId } from '../../utils';
 import Layout from '../../components/Layout';
 import Notes from '../../components/Notes';
@@ -33,7 +33,16 @@ export default function Order() {
       const data = await response.json();
       return data.order;
     },
-    { staleTime: 600000 }
+    {
+      initialData: () => {
+        const stores = queryClient.getQueryData<Store[]>('stores');
+        const store = stores?.find(s => s._id === router.query.storeId);
+        return store?.orders.find(o => o.orderId === router.query.id);
+      },
+      initialDataUpdatedAt: () =>
+        queryClient.getQueryState('stores')?.dataUpdatedAt,
+      staleTime: 600000,
+    }
   );
 
   const addNoteMutation = useMutation(
@@ -67,9 +76,8 @@ export default function Order() {
     },
     {
       onSuccess: data => {
-        queryClient.invalidateQueries('stores');
+        queryClient.invalidateQueries('stores', { exact: true });
         queryClient.invalidateQueries(['store', data._id]);
-        queryClient.invalidateQueries('orders');
         queryClient.invalidateQueries(['order', router.query.id]);
       },
     }
@@ -105,9 +113,8 @@ export default function Order() {
     },
     {
       onSuccess: data => {
-        queryClient.invalidateQueries('stores');
+        queryClient.invalidateQueries('stores', { exact: true });
         queryClient.invalidateQueries(['store', data._id]);
-        queryClient.invalidateQueries('orders');
         queryClient.invalidateQueries(['order', router.query.id]);
       },
     }
@@ -137,9 +144,8 @@ export default function Order() {
     },
     {
       onSuccess: data => {
-        queryClient.invalidateQueries('stores');
+        queryClient.invalidateQueries('stores', { exact: true });
         queryClient.invalidateQueries(['store', data._id]);
-        queryClient.invalidateQueries('orders');
         queryClient.invalidateQueries(['order', router.query.id]);
       },
     }
@@ -271,7 +277,7 @@ export default function Order() {
                   </div>
                   <div className="action-buttons">
                     <Link
-                      href={`/orders/update?id=${order.orderId}?storeId=${order.store.id}`}
+                      href={`/orders/update?id=${order.orderId}&storeId=${order.store.id}`}
                     >
                       <a className="edit-order-link">
                         <svg
