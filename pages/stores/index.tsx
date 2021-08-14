@@ -1,80 +1,39 @@
 import Link from 'next/link';
-import { useQuery } from 'react-query';
 import styled from 'styled-components';
 import { useSession } from '../../hooks/useSession';
-import { Store } from '../../interfaces';
 import Layout from '../../components/Layout';
 import StoresTable from '../../components/StoresTable';
 
 export default function Stores() {
   const [session, loading] = useSession({ required: true });
-  const {
-    isLoading,
-    isError,
-    data: stores,
-    error,
-  } = useQuery<Store[]>(
-    'stores',
-    async () => {
-      const response = await fetch('/api/stores');
-      if (!response.ok) {
-        throw new Error('Failed to fetch the stores.');
-      }
-      const data = await response.json();
-      return data.stores;
-    },
-    {
-      staleTime: 600000,
-    }
-  );
 
   if (loading || !session) return <div />;
 
   return (
     <Layout>
       <StoresStyles>
-        {isLoading && <div />}
-        {isError && error instanceof Error && (
-          <>
-            <div className="title">
-              <div className="details">
-                <h2>Order Error!</h2>
-              </div>
-            </div>
-            <div className="main-content">
-              <div className="wrapper">
-                <div>Error: {error.message}</div>
-              </div>
-            </div>
-          </>
-        )}
-        {stores && (
-          <>
-            <div className="title">
-              <h2>Stores</h2>
-              <Link href="/stores/create">
-                <a className="create-store-link">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Create a store
-                </a>
-              </Link>
-            </div>
-            <div className="main-content">
-              <h3>This page is currently identical to the homepage</h3>
-              <StoresTable />
-            </div>
-          </>
-        )}
+        <div className="title">
+          <h2>Stores Page (currently identical to the homepage)</h2>
+          <Link href="/stores/create">
+            <a className="create-store-link">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Create a store
+            </a>
+          </Link>
+        </div>
+        <div className="main-content">
+          <StoresTable />
+        </div>
       </StoresStyles>
     </Layout>
   );
@@ -97,9 +56,13 @@ const StoresStyles = styled.div`
   }
 
   h3 {
-    margin: 0 0 1.5rem;
+    margin: 0;
     font-weight: 600;
-    color: #1f2937;
+    color: #111827;
+  }
+
+  .main-content {
+    padding: 3.5rem 3rem 10rem;
   }
 
   .create-store-link {
@@ -133,16 +96,5 @@ const StoresStyles = styled.div`
       height: 1.25rem;
       color: #9ca3af;
     }
-  }
-
-  .main-content {
-    padding: 2rem 3rem;
-    position: relative;
-  }
-
-  .error {
-    font-size: 1.125rem;
-    font-weight: 500;
-    color: #1f2937;
   }
 `;

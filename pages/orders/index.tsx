@@ -16,7 +16,8 @@ export default function Orders() {
           </div>
         </div>
         <div className="main-content">
-          TODO: I need to rethink the best strategy for this page...
+          TODO: I need to rethink the best strategy for this page. Do we need
+          even need this page?
         </div>
       </OrdersStyles>
     </Layout>

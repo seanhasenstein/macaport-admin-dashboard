@@ -6,7 +6,12 @@ import styled from 'styled-components';
 import { format } from 'date-fns';
 import { useSession } from '../../../hooks/useSession';
 import { Store as StoreInterface, Note } from '../../../interfaces';
-import { createId, formatPhoneNumber, getStoreStatus } from '../../../utils';
+import {
+  createId,
+  formatPhoneNumber,
+  getStoreStatus,
+  slugify,
+} from '../../../utils';
 import Layout from '../../../components/Layout';
 import StoreProductMenu from '../../../components/StoreProductMenu';
 import Notes from '../../../components/Notes';
@@ -27,8 +32,8 @@ export default function Store() {
   const {
     isLoading,
     isError,
-    data: store,
     error,
+    data: store,
   } = useQuery<StoreInterface>(
     ['store', router.query.id],
     async () => {
@@ -214,7 +219,20 @@ export default function Store() {
   return (
     <Layout>
       <StoreStyles>
-        {isLoading && <div />}
+        {isLoading && (
+          <>
+            <div className="title">
+              <div className="details">
+                <h2>Store</h2>
+              </div>
+            </div>
+            <div className="main-content">
+              <div className="wrapper">
+                <div>Loading store...</div>
+              </div>
+            </div>
+          </>
+        )}
         {isError && error instanceof Error && (
           <>
             <div className="title">
@@ -274,22 +292,31 @@ export default function Store() {
                     <div className="label">Store Id</div>
                     <div className="data">{store._id}</div>
                   </div>
-                  <div className="item">
-                    <div className="label">Name</div>
-                    <div className="data">
-                      {store.contact.firstName} {store.contact.lastName}
+                  {store.category === 'client' ? (
+                    <>
+                      <div className="item">
+                        <div className="label">Name</div>
+                        <div className="data">
+                          {store.contact.firstName} {store.contact.lastName}
+                        </div>
+                      </div>
+                      <div className="item">
+                        <div className="label">Email</div>
+                        <div className="data">{store.contact.email}</div>
+                      </div>
+                      <div className="item">
+                        <div className="label">Phone</div>
+                        <div className="data">
+                          {formatPhoneNumber(store.contact.phone)}
+                        </div>
+                      </div>
+                    </>
+                  ) : store.category === 'macaport' ? (
+                    <div className="item">
+                      <div className="label">Category</div>
+                      <div className="data">Macaport Store</div>
                     </div>
-                  </div>
-                  <div className="item">
-                    <div className="label">Email</div>
-                    <div className="data">{store.contact.email}</div>
-                  </div>
-                  <div className="item">
-                    <div className="label">Phone</div>
-                    <div className="data">
-                      {formatPhoneNumber(store.contact.phone)}
-                    </div>
-                  </div>
+                  ) : null}
                 </div>
                 <div className="grid-cols-2 section">
                   <div>
@@ -359,7 +386,11 @@ export default function Store() {
                 <div className="products section" id="products">
                   <div className="row">
                     <h4>Store Products</h4>
-                    <Link href={`/stores/products/add?id=${router.query.id}`}>
+                    <Link
+                      href={`/stores/products/add?id=${
+                        router.query.id
+                      }&storeName=${slugify(store.name)}`}
+                    >
                       <a className="add-product-link">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -408,6 +439,7 @@ export default function Store() {
                                 </button>
                                 <StoreProductMenu
                                   storeId={store._id}
+                                  storeName={store.name}
                                   productId={p.id}
                                   showMenu={showMenu}
                                   setShowMenu={setShowMenu}
@@ -580,6 +612,7 @@ const StoreStyles = styled.div`
 
   .title {
     padding: 1.625rem 2.5rem;
+    min-height: 5.875rem;
     display: flex;
     justify-content: space-between;
     align-items: center;

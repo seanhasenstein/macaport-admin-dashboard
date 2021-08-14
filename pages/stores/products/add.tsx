@@ -2,15 +2,14 @@ import React from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import styled from 'styled-components';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useMutation, useQueryClient } from 'react-query';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { useSession } from '../../../hooks/useSession';
-import { Store, Size, Product, Color } from '../../../interfaces';
+import { Size, Product, Color } from '../../../interfaces';
 import {
   createId,
   getCloudinarySignature,
-  slugify,
   removeNonAlphanumeric,
   createSkusFromSizesAndColors,
 } from '../../../utils';
@@ -66,34 +65,8 @@ export default function AddProduct() {
   const [secondaryImages, setSecondaryImages] = React.useState<string[][]>([]);
   const queryClient = useQueryClient();
 
-  const storeQuery = useQuery<Store>(
-    ['store', router.query.id],
-    async () => {
-      if (!router.query.id) return;
-      const response = await fetch(`/api/stores/${router.query.id}`);
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch the store.');
-      }
-
-      const data = await response.json();
-      return data.store;
-    },
-    {
-      initialData: () => {
-        return queryClient
-          .getQueryData<Store[]>('store')
-          ?.find(s => s._id === router.query.id);
-      },
-      initialDataUpdatedAt: () =>
-        queryClient.getQueryState('stores')?.dataUpdatedAt,
-      staleTime: 600000,
-    }
-  );
   const addProductMutation = useMutation(
     async (values: AddMutationInput) => {
-      const prevProducts = storeQuery?.data?.products || [];
-
       const sizes = values.sizes.map(size => {
         const price = Number(size.price) * 100;
 
@@ -107,15 +80,16 @@ export default function AddProduct() {
 
       const product = { ...values, colors, sizes, skus };
 
-      const response = await fetch(`/api/stores/update?id=${router.query.id}`, {
-        method: 'post',
-        body: JSON.stringify({
-          products: [...prevProducts, product],
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        `/api/stores/add-product?id=${router.query.id}`,
+        {
+          method: 'post',
+          body: JSON.stringify(product),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error('Failed to add the product.');
@@ -152,8 +126,8 @@ export default function AddProduct() {
     }
 
     setPrimaryImageStatus('loading');
-    const publicId = `stores/${slugify(storeQuery.data!.name)}/${
-      storeQuery.data?._id
+    const publicId = `stores/${router.query.storeName}/${
+      router.query.id
     }/${productId}/${color.id}/${createId('primary')}`;
     const { signature, timestamp } = await getCloudinarySignature(publicId);
 
@@ -207,8 +181,8 @@ export default function AddProduct() {
     const secImgsCopy = [...secondaryImages];
 
     for (let i = 0; i < e.target.files.length; i++) {
-      const publicId = `stores/${slugify(storeQuery.data!.name)}/${
-        storeQuery.data?._id
+      const publicId = `stores/${router.query.storeName}/${
+        router.query.id
       }/${productId}/${color.id}/${createId('secondary')}`;
 
       const { signature, timestamp } = await getCloudinarySignature(publicId);
@@ -285,9 +259,6 @@ export default function AddProduct() {
   };
 
   if (sessionLoading || !session) return <div />;
-  if (storeQuery.isLoading) return <div />;
-  if (storeQuery.isError && storeQuery.error instanceof Error)
-    return <div>Error: {storeQuery.error.message}</div>;
 
   const initialValues: InitialValues = {
     id: createId('prod'),
@@ -302,6 +273,28 @@ export default function AddProduct() {
   return (
     <BasicLayout>
       <AddProductStyles>
+        <div className="title">
+          <div>
+            <Link href={`/stores/${router.query.id}#products`}>
+              <a className="cancel-link">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </a>
+            </Link>
+            <h2>Add a product</h2>
+          </div>
+        </div>
         <Formik
           initialValues={initialValues}
           validationSchema={validationSchema}

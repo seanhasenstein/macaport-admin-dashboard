@@ -169,17 +169,72 @@ export default function UpdateStore() {
   return (
     <BasicLayout>
       <UpdateStoreStyles>
-        {isLoading && <div>Loading Store...</div>}
-        {isError && error instanceof Error && (
+        {isLoading && (
           <>
             <div className="title">
-              <div className="details">
-                <h2>Store Error!</h2>
+              <div>
+                <button
+                  type="button"
+                  className="cancel-link"
+                  onClick={() => router.back()}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+                <h2>Update Store</h2>
               </div>
             </div>
             <div className="main-content">
               <div className="wrapper">
-                <div>Error: {error.message}</div>
+                <div className="form-container">
+                  <div>Loading Store...</div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+        {isError && error instanceof Error && (
+          <>
+            <div className="title">
+              <div>
+                <button
+                  type="button"
+                  className="cancel-link"
+                  onClick={() => router.back()}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+                <h2>Error!</h2>
+              </div>
+            </div>
+            <div className="main-content">
+              <div className="wrapper">
+                <div className="form-container">
+                  <div>Error: {error.message}</div>
+                </div>
               </div>
             </div>
           </>

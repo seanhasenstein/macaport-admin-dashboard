@@ -21,10 +21,14 @@ export default function Product() {
     async () => {
       if (!router.query.id || !router.query.prodId) return;
       const response = await fetch(`/api/stores/${router.query.id}`);
+
       if (!response.ok) throw new Error('Failed to fetch the store.');
+
       const { store }: { store: Store } = await response.json();
       const product = store.products.find(p => p.id === router.query.prodId);
+
       if (!product) throw new Error('No product found.');
+
       return product;
     },
     {
@@ -44,44 +48,64 @@ export default function Product() {
 
   return (
     <Layout>
-      {isLoading && <div />}
-      {isError && error instanceof Error && <div>Error: {error.message}</div>}
-      {product && (
-        <ProductStyles>
-          <div className="title">
-            <div className="details">
-              <h2>Product - {product.name}</h2>
+      <ProductStyles>
+        {isLoading && (
+          <>
+            <div className="title">
+              <h2>Product</h2>
             </div>
-            <div className="action-buttons">
-              <Link href={`TODO`}>
-                <a className="edit-product-link">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-                    />
-                  </svg>
-                  Edit Product
-                </a>
-              </Link>
+            <div className="main-content">
+              <div>Loading Product...</div>
             </div>
-          </div>
-          <div className="main-content">
-            <div className="wrapper">
-              <h3>Product Details</h3>
-              <p>TODO: This page needs to be finished...</p>
-              <pre>{JSON.stringify(product, null, 2)}</pre>
+          </>
+        )}
+        {isError && error instanceof Error && (
+          <>
+            <div className="title">
+              <h2>Product Error!</h2>
             </div>
-          </div>
-        </ProductStyles>
-      )}
+            <div className="main-content">
+              <div>Error: {error.message}</div>
+            </div>
+          </>
+        )}
+        {product && (
+          <>
+            <div className="title">
+              <div className="details">
+                <h2>Product - {product.name}</h2>
+              </div>
+              <div className="action-buttons">
+                <Link href={`TODO`}>
+                  <a className="edit-product-link">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                      />
+                    </svg>
+                    Edit Product
+                  </a>
+                </Link>
+              </div>
+            </div>
+            <div className="main-content">
+              <div className="wrapper">
+                <h3>Product Details</h3>
+                <p>TODO: This page needs to be finished...</p>
+                <pre>{JSON.stringify(product, null, 2)}</pre>
+              </div>
+            </div>
+          </>
+        )}
+      </ProductStyles>
     </Layout>
   );
 }
@@ -110,6 +134,7 @@ const ProductStyles = styled.div`
 
   .title {
     padding: 1.625rem 2.5rem;
+    min-height: 5.875rem;
     display: flex;
     justify-content: space-between;
     align-items: center;

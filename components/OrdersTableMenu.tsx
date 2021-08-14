@@ -23,7 +23,7 @@ export default function OrdersTableMenu({
   const [status, setStatus] = React.useState<OrderStatus>(orderStatus);
   const queryClient = useQueryClient();
 
-  const orderStatusMutation = useMutation(
+  const updateOrderStatusMutation = useMutation(
     async (newStatus: OrderStatus) => {
       const response = await fetch(
         `/api/orders/update/status?storeId=${storeId}&orderId=${orderId}`,
@@ -88,7 +88,7 @@ export default function OrdersTableMenu({
   };
 
   const handleStatusChange = (newStatus: OrderStatus) => {
-    orderStatusMutation.mutate(newStatus);
+    updateOrderStatusMutation.mutate(newStatus);
     setCurrentActiveId(undefined);
   };
 

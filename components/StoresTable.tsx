@@ -11,7 +11,12 @@ export default function StoresTable() {
     string | undefined
   >(undefined);
 
-  const storesQuery = useQuery<Store[]>(
+  const {
+    isLoading,
+    isError,
+    error,
+    data: stores,
+  } = useQuery<Store[]>(
     'stores',
     async () => {
       const response = await fetch('/api/stores');
@@ -28,13 +33,11 @@ export default function StoresTable() {
     }
   );
 
-  storesQuery.isLoading && <div />;
-  storesQuery.isError && storesQuery.error instanceof Error && (
-    <div>Error: {storesQuery.error.message}</div>
-  );
   return (
     <StoresTableStyles>
-      {storesQuery.data && (
+      {isLoading && <div>Loading...</div>}
+      {isError && error instanceof Error && <div>Error: {error.message}</div>}
+      {stores && (
         <>
           <h3>Stores for macaport.com</h3>
           <div className="stores section">
@@ -64,7 +67,7 @@ export default function StoresTable() {
                   </tr>
                 </thead>
                 <tbody>
-                  {storesQuery.data.map(s => (
+                  {stores.map(s => (
                     <tr key={s._id}>
                       <td className="store-status">
                         {getStoreStatus(s.openDate, s.closeDate) ===

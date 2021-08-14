@@ -1,5 +1,5 @@
 import { Db, ObjectID } from 'mongodb';
-import { Store } from '../interfaces';
+import { Product, Store } from '../interfaces';
 import { createId } from '../utils';
 
 export async function createStore(db: Db, store: Store) {
@@ -55,5 +55,25 @@ export async function getStores(db: Db, filter: Record<string, unknown> = {}) {
   } catch (error) {
     console.error(error);
     throw new Error('An error occurred getting the stores.');
+  }
+}
+
+export async function addProductToStore(
+  db: Db,
+  storeId: string,
+  product: Product
+) {
+  try {
+    const result = await db
+      .collection('stores')
+      .findOneAndUpdate(
+        { _id: new ObjectID(storeId) },
+        { $push: { products: product } },
+        { upsert: true, returnDocument: 'after' }
+      );
+    return result.value;
+  } catch (error) {
+    console.error(error);
+    throw new Error('An error occurred adding the product.');
   }
 }

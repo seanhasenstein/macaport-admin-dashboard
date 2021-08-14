@@ -17,8 +17,8 @@ export default function Order() {
   const {
     isLoading,
     isError,
-    data: order,
     error,
+    data: order,
   } = useQuery<OrderInterface>(
     ['order', router.query.id],
     async () => {
@@ -156,7 +156,20 @@ export default function Order() {
   return (
     <Layout>
       <OrderStyles>
-        {isLoading && <div>Loading Order...</div>}
+        {isLoading && (
+          <>
+            <div className="title">
+              <div className="details">
+                <h2>Order #{router.query.id}</h2>
+              </div>
+            </div>
+            <div className="main-content">
+              <div className="wrapper">
+                <div>Loading Order...</div>
+              </div>
+            </div>
+          </>
+        )}
         {isError && error instanceof Error && (
           <>
             <div className="title">
@@ -193,7 +206,7 @@ export default function Order() {
                   </span>
                 </div>
               </div>
-              <div className="buttons">
+              {/* <div className="buttons">
                 <Link href="#">
                   <a>
                     <svg
@@ -224,7 +237,7 @@ export default function Order() {
                     </svg>
                   </a>
                 </Link>
-              </div>
+              </div> */}
             </div>
             <div className="print-only print-title">
               <div className="print-logo">
@@ -438,6 +451,7 @@ const OrderStyles = styled.div`
 
   .title {
     padding: 1.625rem 2rem;
+    min-height: 5.25rem;
     display: flex;
     justify-content: space-between;
     align-items: center;

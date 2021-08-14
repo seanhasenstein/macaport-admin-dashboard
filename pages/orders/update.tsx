@@ -18,7 +18,9 @@ export default function UpdateOrder() {
     ['order', router.query.id],
     async () => {
       if (!router.query.id) return;
-      const response = await fetch(`/api/orders/${router.query.id}`);
+      const response = await fetch(
+        `/api/orders/${router.query.id}?storeId=${router.query.storeId}`
+      );
 
       if (!response.ok) {
         throw new Error('Failed to fetch the order.');
