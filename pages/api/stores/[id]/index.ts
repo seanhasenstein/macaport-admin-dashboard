@@ -9,7 +9,6 @@ const handler = nc<Request, NextApiResponse>()
   .use(database)
   .get(async (req, res) => {
     try {
-      console.log('*** /api/stores/[id] ***');
       const result: Store = await store.getStoreById(req.db, req.query.id);
       res.json({ store: result });
     } catch (error) {
