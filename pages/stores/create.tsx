@@ -71,7 +71,7 @@ function formatDataForDb(data: StoreForm) {
     ? (closeDate = new Date(
         `${data.closeDate.month} ${data.closeDate.date} ${data.closeDate.year}`
       ))
-    : (closeDate = undefined);
+    : (closeDate = null);
   data.hasCloseDate === 'true' ? (hasCloseDate = true) : (hasCloseDate = false);
   data.shippingMethod === 'inhouse'
     ? (category = 'macaport')

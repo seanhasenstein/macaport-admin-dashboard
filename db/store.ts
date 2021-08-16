@@ -19,7 +19,11 @@ export async function updateStore(db: Db, id: string, updates: Store) {
   try {
     const result = await db
       .collection('stores')
-      .findOneAndUpdate({ _id: new ObjectID(id) }, { $set: { ...updates } });
+      .findOneAndUpdate(
+        { _id: new ObjectID(id) },
+        { $set: { ...updates } },
+        { upsert: true, returnDocument: 'after' }
+      );
     return result.value;
   } catch (error) {
     console.error(error);

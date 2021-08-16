@@ -78,7 +78,7 @@ export interface Store {
   name: string;
   openDate: string;
   hasCloseDate: boolean;
-  closeDate: string | undefined;
+  closeDate: string | null;
   category: 'macaport' | 'client';
   hasPrimaryShippingLocation: boolean;
   primaryShippingLocation: {
