@@ -1,11 +1,24 @@
 import { useRouter } from 'next/router';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
-import { Formik, Form, Field } from 'formik';
+import { Formik, Form, Field, ErrorMessage } from 'formik';
+import * as Yup from 'yup';
 import { useSession } from '../../hooks/useSession';
 import { Store, StoreForm } from '../../interfaces';
-import { unitedStates, months } from '../../utils';
+import { unitedStates, months, removeNonDigits } from '../../utils';
 import BasicLayout from '../../components/BasicLayout';
+
+const updateStoreSchema = Yup.object().shape({
+  name: Yup.string().required('A store name is required.'),
+  contact: Yup.object({
+    email: Yup.string().email('Must be a valid email address'),
+    phone: Yup.string()
+      .transform(value => {
+        return removeNonDigits(value);
+      })
+      .matches(new RegExp(/^\d{10}$/), 'Phone number must be 10 digits'),
+  }),
+});
 
 function formatInitialValues(store: Store): StoreForm {
   const dbOpenDate = new Date(store.openDate);
@@ -242,6 +255,7 @@ export default function UpdateStore() {
         {store && (
           <Formik
             initialValues={formatInitialValues(store)}
+            validationSchema={updateStoreSchema}
             onSubmit={async values => {
               await updateStoreMutation.mutate(values);
             }}
@@ -290,6 +304,11 @@ export default function UpdateStore() {
                           <div className="item">
                             <label htmlFor="name">Store Name</label>
                             <Field name="name" id="name" />
+                            <ErrorMessage
+                              name="name"
+                              component="div"
+                              className="validation-error"
+                            />
                           </div>
                         </div>
                       </div>
@@ -569,12 +588,22 @@ export default function UpdateStore() {
                                 Email Address
                               </label>
                               <Field name="contact.email" id="contact.email" />
+                              <ErrorMessage
+                                name="contact.email"
+                                component="div"
+                                className="validation-error"
+                              />
                             </div>
                             <div className="item">
                               <label htmlFor="contact.phone">
                                 Phone Number
                               </label>
                               <Field name="contact.phone" id="contact.phone" />
+                              <ErrorMessage
+                                name="contact.phone"
+                                component="div"
+                                className="validation-error"
+                              />
                             </div>
                           </div>
                         </>
@@ -724,5 +753,12 @@ const UpdateStoreStyles = styled.div`
     label {
       margin: 0;
     }
+  }
+
+  .validation-error {
+    margin: 0.25rem 0 0;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #b91c1c;
   }
 `;

@@ -563,13 +563,15 @@ const DeleteProductModalStyles = styled.div`
     }
 
     .primary-button {
-      background-color: #be123c;
+      background-color: #b91c1c;
       border: 1px solid transparent;
       color: #fff1f2;
+      box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
+        rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.2) 0px 1px 2px 0px;
 
       &:hover {
         color: #fff;
-        background-color: #b61a40;
+        background-color: #a81919;
       }
     }
 

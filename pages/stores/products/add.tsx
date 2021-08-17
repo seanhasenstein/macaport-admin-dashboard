@@ -1149,6 +1149,6 @@ const AddProductStyles = styled.div`
     margin: 0.25rem 0 0;
     font-size: 0.75rem;
     font-weight: 500;
-    color: #dc2626;
+    color: #b91c1c;
   }
 `;
