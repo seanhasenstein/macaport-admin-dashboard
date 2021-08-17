@@ -1,11 +1,11 @@
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useQuery, useQueryClient } from 'react-query';
-import { useSession } from '../../../hooks/useSession';
-import { Store } from '../../../interfaces';
+import { useSession } from '../../../../hooks/useSession';
+import { Store } from '../../../../interfaces';
 import styled from 'styled-components';
-import Layout from '../../../components/Layout';
-import { formatToMoney } from '../../../utils';
+import Layout from '../../../../components/Layout';
+import { formatToMoney } from '../../../../utils';
 
 export default function Product() {
   const [session, loading] = useSession({ required: true });
@@ -77,7 +77,9 @@ export default function Product() {
                 <h2>Product</h2>
               </div>
               <div className="action-buttons">
-                <Link href={`TODO`}>
+                <Link
+                  href={`/stores/${router.query.id}/product/update?prodId=${router.query.prodId}`}
+                >
                   <a className="edit-product-link">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -150,7 +152,7 @@ export default function Product() {
                         <div className="color-hex">
                           <div className="label">Hex</div>
                           <div className="value">
-                            <span />
+                            <ColorSpan hex={c.hex} />
                             {c.hex}
                           </div>
                         </div>
@@ -187,6 +189,24 @@ export default function Product() {
     </Layout>
   );
 }
+
+type ColorProps = {
+  hex: string;
+};
+
+function ColorSpan(props: ColorProps) {
+  return <ColorSpanStyles {...props} />;
+}
+
+const ColorSpanStyles = styled.span<ColorProps>`
+  margin: 0 0.5rem 0 0;
+  display: block;
+  height: 1rem;
+  width: 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 9999px;
+  background-color: ${props => props.hex};
+`;
 
 const ProductStyles = styled.div`
   h2 {
@@ -351,15 +371,6 @@ const ProductStyles = styled.div`
   .color-label,
   .color-hex {
     width: 50%;
-  }
-
-  .color-hex span {
-    margin: 0 0.5rem 0 0;
-    display: block;
-    height: 1rem;
-    width: 1rem;
-    border: 1px solid #d1d5db;
-    border-radius: 9999px;
   }
 
   .secondary-imgs .value {

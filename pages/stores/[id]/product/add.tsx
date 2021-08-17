@@ -5,15 +5,15 @@ import styled from 'styled-components';
 import { useMutation, useQueryClient } from 'react-query';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import { useSession } from '../../../hooks/useSession';
-import { Size, Product, Color } from '../../../interfaces';
+import { useSession } from '../../../../hooks/useSession';
+import { Size, Product, Color } from '../../../../interfaces';
 import {
   createId,
   getCloudinarySignature,
   removeNonAlphanumeric,
   createSkusFromSizesAndColors,
-} from '../../../utils';
-import BasicLayout from '../../../components/BasicLayout';
+} from '../../../../utils';
+import BasicLayout from '../../../../components/BasicLayout';
 
 type InitialValues = {
   id: string;
@@ -126,9 +126,9 @@ export default function AddProduct() {
     }
 
     setPrimaryImageStatus('loading');
-    const publicId = `stores/${router.query.storeName}/${
-      router.query.id
-    }/${productId}/${color.id}/${createId('primary')}`;
+    const publicId = `stores/${router.query.id}/${productId}/${
+      color.id
+    }/${createId('primary')}`;
     const { signature, timestamp } = await getCloudinarySignature(publicId);
 
     const formData = new FormData();
@@ -181,9 +181,9 @@ export default function AddProduct() {
     const secImgsCopy = [...secondaryImages];
 
     for (let i = 0; i < e.target.files.length; i++) {
-      const publicId = `stores/${router.query.storeName}/${
-        router.query.id
-      }/${productId}/${color.id}/${createId('secondary')}`;
+      const publicId = `stores/${router.query.id}/${productId}/${
+        color.id
+      }/${createId('secondary')}`;
 
       const { signature, timestamp } = await getCloudinarySignature(publicId);
 
@@ -273,28 +273,6 @@ export default function AddProduct() {
   return (
     <BasicLayout>
       <AddProductStyles>
-        <div className="title">
-          <div>
-            <Link href={`/stores/${router.query.id}#products`}>
-              <a className="cancel-link">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </a>
-            </Link>
-            <h2>Add a product</h2>
-          </div>
-        </div>
         <Formik
           initialValues={initialValues}
           validationSchema={validationSchema}

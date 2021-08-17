@@ -6,12 +6,7 @@ import styled from 'styled-components';
 import { format } from 'date-fns';
 import { useSession } from '../../../hooks/useSession';
 import { Store as StoreInterface, Note } from '../../../interfaces';
-import {
-  createId,
-  formatPhoneNumber,
-  getStoreStatus,
-  slugify,
-} from '../../../utils';
+import { createId, formatPhoneNumber, getStoreStatus } from '../../../utils';
 import Layout from '../../../components/Layout';
 import StoreProductMenu from '../../../components/StoreProductMenu';
 import Notes from '../../../components/Notes';
@@ -386,11 +381,7 @@ export default function Store() {
                 <div className="products section" id="products">
                   <div className="row">
                     <h4>Store Products</h4>
-                    <Link
-                      href={`/stores/products/add?id=${
-                        router.query.id
-                      }&storeName=${slugify(store.name)}`}
-                    >
+                    <Link href={`/stores/${router.query.id}/product/add`}>
                       <a className="add-product-link">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -439,7 +430,6 @@ export default function Store() {
                                 </button>
                                 <StoreProductMenu
                                   storeId={store._id}
-                                  storeName={store.name}
                                   productId={p.id}
                                   showMenu={showMenu}
                                   setShowMenu={setShowMenu}

@@ -1,10 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
-import { slugify } from '../utils';
 
 type Props = {
   storeId: string;
-  storeName: string;
   productId: string;
   showMenu: string | undefined;
   setShowMenu: (v: string | undefined) => void;
@@ -13,7 +11,6 @@ type Props = {
 
 export default function StoreProductMenu({
   storeId,
-  storeName,
   productId,
   showMenu,
   setShowMenu,
@@ -75,11 +72,7 @@ export default function StoreProductMenu({
           View Product
         </a>
       </Link>
-      <Link
-        href={`/stores/products/update?id=${productId}&storeName=${slugify(
-          storeName
-        )}`}
-      >
+      <Link href={`/stores/${storeId}/product/update?id=${productId}`}>
         <a className="menu-link">
           <svg
             xmlns="http://www.w3.org/2000/svg"
