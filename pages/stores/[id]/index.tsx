@@ -399,12 +399,11 @@ export default function Store() {
                     </Link>
                   </div>
                   <div>
-                    {!store.products ||
-                      (store.products.length < 1 && (
-                        <div className="empty empty-products">
-                          This store has no products.
-                        </div>
-                      ))}
+                    {(!store.products || store.products.length < 1) && (
+                      <div className="empty empty-products">
+                        This store has no products.
+                      </div>
+                    )}
                     {store.products && (
                       <>
                         {store.products.map(p => (
