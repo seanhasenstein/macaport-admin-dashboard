@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { Size, Color, Sku } from '../interfaces';
+import { Size, Color, Sku, Product } from '../interfaces';
 
 export const months = [
   'January',
@@ -107,6 +107,11 @@ export function formatPhoneNumber(input: string) {
     .join('');
 }
 
+export function formatHexColor(hex: string) {
+  const formattedHex = `#${hex.replace(/[^0-9A-Fa-f]/g, '').toLowerCase()}`;
+  return formattedHex;
+}
+
 export function formatToMoney(input: number, includeDecimal = false) {
   const price = input / 100;
 
@@ -180,4 +185,100 @@ export function createSkusFromSizesAndColors(
   });
 
   return skus;
+}
+
+export function handleProductSkusUpdate(queryData: Product, formData: Product) {
+  // update all current skus
+  let skus = formData.skus.map(sku => {
+    const size = formData.sizes.find(s => s.id === sku.size.id);
+    const color = formData.colors.find(c => c.id === sku.color.id);
+    const result = { ...sku };
+    if (size) result.size = size;
+    if (color) result.color = color;
+    return result;
+  });
+
+  // check for new sizes and creates new skus
+  formData.sizes.forEach(size => {
+    const sizeAlreadyExists = queryData.skus.some(s => s.size.id === size.id);
+    if (!sizeAlreadyExists) {
+      const newSizeSkus = createSkusFromSizesAndColors(
+        [size],
+        // check the prev colors and the new size
+        queryData.colors,
+        formData.id
+      );
+      skus = [...skus, ...newSizeSkus];
+    }
+  });
+
+  // check for new colors and create new skus
+  formData.colors.forEach(color => {
+    const colorAlreadyExists = queryData.skus.some(
+      s => s.color.id === color.id
+    );
+    if (!colorAlreadyExists) {
+      const newColorSkus = createSkusFromSizesAndColors(
+        // check new sizes and new the new colors
+        formData.sizes,
+        [color],
+        formData.id
+      );
+      skus = [...skus, ...newColorSkus];
+    }
+  });
+
+  const sizesToRemove = queryData.sizes.reduce(
+    (acc: Size[], currSize: Size) => {
+      const stillExists = formData.sizes.some(s => s.id === currSize.id);
+      if (!stillExists) {
+        return [...acc, currSize];
+      }
+      return acc;
+    },
+    []
+  );
+
+  const colorsToRemove = queryData.colors.reduce(
+    (acc: Color[], currColor: Color) => {
+      const stillExists = formData.colors.some(s => s.id === currColor.id);
+      if (!stillExists) {
+        return [...acc, currColor];
+      }
+      return acc;
+    },
+    []
+  );
+
+  // loop over the skus and remove if it includes a size or color from remove array
+  const filteredSkus = skus.reduce((acc: Sku[], currSku: Sku) => {
+    let keepSku = true;
+    sizesToRemove.forEach(size => {
+      if (size.id === currSku.size.id) {
+        keepSku = false;
+      }
+    });
+    colorsToRemove.forEach(color => {
+      if (color.id === currSku.color.id) {
+        keepSku = false;
+      }
+    });
+
+    // if (keepSku) {
+    //   return [...acc, currSku];
+    // }
+
+    if (keepSku) {
+      const finalSku = currSku;
+      const hex = formatHexColor(currSku.color.hex);
+      const price = Number(currSku.size.price) * 100;
+      finalSku.size.price = price;
+      finalSku.color.hex = hex;
+      return [...acc, finalSku];
+    }
+
+    return acc;
+  }, []);
+
+  return filteredSkus;
 }

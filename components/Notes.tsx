@@ -199,7 +199,7 @@ export default function Notes({
 }
 
 const NotesStyles = styled.div`
-  padding: 3.5rem 0;
+  padding: 4rem 0;
   border-top: 1px solid #e5e7eb;
 
   .add-note-button {
@@ -320,10 +320,6 @@ const NotesStyles = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-
-    h4 {
-      margin: 0;
-    }
   }
 
   .add-note-section {

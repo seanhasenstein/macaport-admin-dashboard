@@ -67,6 +67,17 @@ export default function StoresTable() {
                   </tr>
                 </thead>
                 <tbody>
+                  {stores.length < 1 && (
+                    <tr>
+                      <td>
+                        There are currently no stores.{' '}
+                        <Link href="/stores/create">
+                          <a className="no-stores-link">Create a store</a>
+                        </Link>
+                        .
+                      </td>
+                    </tr>
+                  )}
                   {stores.map(s => (
                     <tr key={s._id}>
                       <td className="store-status">
@@ -260,6 +271,15 @@ const StoresTableStyles = styled.div`
 
     .dot {
       background-color: #f87171;
+    }
+  }
+
+  .no-stores-link {
+    color: #2563eb;
+    text-decoration: underline;
+
+    &:hover {
+      color: #1d4ed8;
     }
   }
 `;

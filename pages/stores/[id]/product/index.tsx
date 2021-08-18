@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import Link from 'next/link';
+// import Link from 'next/link';
 import { useQuery, useQueryClient } from 'react-query';
 import { useSession } from '../../../../hooks/useSession';
 import { Store } from '../../../../interfaces';
@@ -76,7 +76,7 @@ export default function Product() {
               <div className="details">
                 <h2>Product</h2>
               </div>
-              <div className="action-buttons">
+              {/* <div className="action-buttons">
                 <Link
                   href={`/stores/${router.query.id}/product/update?prodId=${router.query.prodId}`}
                 >
@@ -97,7 +97,7 @@ export default function Product() {
                     Edit Product
                   </a>
                 </Link>
-              </div>
+              </div> */}
             </div>
             <div className="main-content">
               <div className="wrapper">

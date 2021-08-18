@@ -378,7 +378,7 @@ export default function Order() {
                     </div>
                     <div className="info-item">
                       <div className="label">Sales Tax</div>
-                      {formatToMoney(order.summary.shipping, true)}
+                      {formatToMoney(order.summary.salesTax, true)}
                     </div>
                     <div className="info-item">
                       <div className="label">Shipping</div>

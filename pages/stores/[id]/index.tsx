@@ -399,53 +399,47 @@ export default function Store() {
                     </Link>
                   </div>
                   <div>
-                    {store.products ? (
+                    {!store.products ||
+                      (store.products.length < 1 && (
+                        <div className="empty empty-products">
+                          This store has no products.
+                        </div>
+                      ))}
+                    {store.products && (
                       <>
-                        {store.products.length < 1 ? (
-                          <div className="empty empty-products">
-                            This store has no products.
+                        {store.products.map(p => (
+                          <div key={p.id} className="product">
+                            <Link
+                              href={`/stores/${router.query.id}/product?prodId=${p.id}`}
+                              key={p.id}
+                            >
+                              <a className="product-name">{p.name}</a>
+                            </Link>
+                            <button
+                              type="button"
+                              className="menu-button"
+                              onClick={() => handleProductMenuClick(p.id)}
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                              >
+                                <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
+                              </svg>
+                            </button>
+                            <StoreProductMenu
+                              storeId={store._id}
+                              productId={p.id}
+                              showMenu={showMenu}
+                              setShowMenu={setShowMenu}
+                              handleDeleteButtonClick={
+                                handleDeleteProductMenuClick
+                              }
+                            />
                           </div>
-                        ) : (
-                          <>
-                            {store.products.map(p => (
-                              <div key={p.id} className="product">
-                                <Link
-                                  href={`/stores/${router.query.id}/product?prodId=${p.id}`}
-                                  key={p.id}
-                                >
-                                  <a className="product-name">{p.name}</a>
-                                </Link>
-                                <button
-                                  type="button"
-                                  className="menu-button"
-                                  onClick={() => handleProductMenuClick(p.id)}
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                  >
-                                    <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
-                                  </svg>
-                                </button>
-                                <StoreProductMenu
-                                  storeId={store._id}
-                                  productId={p.id}
-                                  showMenu={showMenu}
-                                  setShowMenu={setShowMenu}
-                                  handleDeleteButtonClick={
-                                    handleDeleteProductMenuClick
-                                  }
-                                />
-                              </div>
-                            ))}
-                          </>
-                        )}
+                        ))}
                       </>
-                    ) : (
-                      <div className=" empty-products">
-                        This store has no products.
-                      </div>
                     )}
                   </div>
                 </div>
@@ -454,7 +448,7 @@ export default function Store() {
                   {store.orders ? (
                     <OrdersTable orders={store.orders} />
                   ) : (
-                    <div className=" empty-products">
+                    <div className="empty empty-orders">
                       This store has no orders.
                     </div>
                   )}
@@ -596,7 +590,7 @@ const StoreStyles = styled.div`
   }
 
   h4 {
-    margin: 0 0 1rem;
+    margin: 0 0 1.25rem;
     font-size: 1.125rem;
     font-weight: 600;
     color: #374151;
@@ -713,11 +707,7 @@ const StoreStyles = styled.div`
   }
 
   .section {
-    padding: 3.5rem 0;
-
-    &.products {
-      padding-bottom: 0;
-    }
+    padding: 4rem 0;
   }
 
   .error {
@@ -898,9 +888,6 @@ const StoreStyles = styled.div`
   }
 
   /* PRODUCT STYLES */
-  .empty-products {
-    padding-bottom: 3rem;
-  }
 
   .product {
     position: relative;
@@ -909,19 +896,23 @@ const StoreStyles = styled.div`
     align-items: center;
     border-top: 1px solid #e5e7eb;
 
+    &:first-of-type {
+      border-top: none;
+    }
+
     &:hover {
       background-color: #f9fafb;
     }
   }
 
   .row {
-    margin: 0 0 1.5rem;
+    margin: 0 0 1rem;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-end;
 
     h4 {
-      margin: 0;
+      margin-bottom: 0.25rem;
     }
   }
 
@@ -939,5 +930,12 @@ const StoreStyles = styled.div`
   /* ORDERS STYLES */
   .orders {
     border-top: 1px solid #e5e7eb;
+  }
+
+  .empty {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #89909d;
   }
 `;
