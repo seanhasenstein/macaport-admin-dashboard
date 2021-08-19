@@ -8,7 +8,7 @@ export default function Orders() {
   if (sessionLoading || !session) return <div />;
 
   return (
-    <Layout>
+    <Layout title="Orders | Macaport Dashboard">
       <OrdersStyles>
         <div className="title">
           <div className="details">

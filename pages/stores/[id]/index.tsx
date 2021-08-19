@@ -212,7 +212,7 @@ export default function Store() {
   if (loading || !session) return <div />;
 
   return (
-    <Layout>
+    <Layout title="Store | Macaport Dashboard">
       <StoreStyles>
         {isLoading && (
           <>

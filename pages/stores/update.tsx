@@ -180,7 +180,7 @@ export default function UpdateStore() {
   if (loading || !session) return <div />;
 
   return (
-    <BasicLayout>
+    <BasicLayout title="Update Store | Macaport Dashboard">
       <UpdateStoreStyles>
         {isLoading && (
           <>

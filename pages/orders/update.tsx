@@ -72,7 +72,7 @@ export default function UpdateOrder() {
   if (sessionLoading || !session) return <div />;
 
   return (
-    <BasicLayout>
+    <BasicLayout title="Update Order | Macaport Dashboard">
       <UpdateOrderStyles>
         {isLoading && <div>Loading Order...</div>}
         {isError && error instanceof Error && (

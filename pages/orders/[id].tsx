@@ -154,7 +154,7 @@ export default function Order() {
   if (sessionLoading || !session) return <div />;
 
   return (
-    <Layout>
+    <Layout title="Order | Macaport Dashboard">
       <OrderStyles>
         {isLoading && (
           <>

@@ -135,7 +135,7 @@ export default function CreateStore() {
   if (loading || !session) return <div />;
 
   return (
-    <BasicLayout>
+    <BasicLayout title="Create a Store | Macaport Dashboard">
       <CreateStoreStyles>
         <Formik
           initialValues={initialValues}

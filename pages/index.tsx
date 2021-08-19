@@ -11,7 +11,7 @@ export default function Index() {
   if (loading || !session) return <div />;
 
   return (
-    <Layout>
+    <Layout title="Macaport Dashboard Home">
       <DashboardStyles>
         <div className="title">
           <h2>Dashboard Home</h2>

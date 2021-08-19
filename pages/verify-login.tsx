@@ -3,7 +3,7 @@ import BasicLayout from '../components/BasicLayout';
 
 export default function VerifyLogin() {
   return (
-    <BasicLayout>
+    <BasicLayout title="Verify Login | Macaport Dashboard">
       <VerifyLoginStyles>
         <div className="container">
           <img

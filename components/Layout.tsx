@@ -1,14 +1,22 @@
+import Head from 'next/head';
 import Link from 'next/link';
 import styled from 'styled-components';
 import { signOut } from 'next-auth/client';
 
 type Props = {
   children: React.ReactNode;
+  title: string;
 };
 
-export default function Layout({ children }: Props) {
+export default function Layout({
+  children,
+  title = 'Macaport Dashboard',
+}: Props) {
   return (
     <LayoutStyles>
+      <Head>
+        <title>{title}</title>
+      </Head>
       <header>
         <div className="logo">
           <Link href="/">

@@ -9,7 +9,7 @@ type AuthErrorLayoutProps = {
 
 function AuthErrorLayout({ children }: AuthErrorLayoutProps) {
   return (
-    <BasicLayout>
+    <BasicLayout title="Error | Macaport Dashboard">
       <AuthenticationErrorStyles>
         <div className="container">
           <img

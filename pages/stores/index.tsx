@@ -10,7 +10,7 @@ export default function Stores() {
   if (loading || !session) return <div />;
 
   return (
-    <Layout>
+    <Layout title="Stores | Macaport Dashboard">
       <StoresStyles>
         <div className="title">
           <h2>Stores Page (currently identical to the homepage)</h2>

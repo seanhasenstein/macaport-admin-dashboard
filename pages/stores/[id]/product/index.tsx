@@ -48,7 +48,7 @@ export default function Product() {
   if (loading || !session) return <div />;
 
   return (
-    <Layout>
+    <Layout title="Product | Macaport Dashboard">
       <ProductStyles>
         {isLoading && (
           <>

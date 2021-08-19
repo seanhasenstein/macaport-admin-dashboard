@@ -119,7 +119,7 @@ export default function UpdateProduct() {
   // TODO: Need to check for size/color deletions and handle removing the relevant skus (this is a separate function!)
 
   return (
-    <BasicLayout>
+    <BasicLayout title="Update Product | Macaport Dashboard">
       <UpdateProductStyles>
         <Formik
           initialValues={initialValues}

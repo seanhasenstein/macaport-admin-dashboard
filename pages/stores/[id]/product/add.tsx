@@ -271,7 +271,7 @@ export default function AddProduct() {
   };
 
   return (
-    <BasicLayout>
+    <BasicLayout title="Add Product | Macaport Dashboard">
       <AddProductStyles>
         <Formik
           initialValues={initialValues}
