@@ -125,7 +125,7 @@ export default function CreateStore() {
         queryClient.invalidateQueries('stores', { exact: true });
         const route =
           variables.redirectTo === 'add_product'
-            ? `/stores/products/add?id=${data._id}`
+            ? `/stores/${data._id}/product/add`
             : `/stores/${data._id}`;
         router.push(route);
       },
