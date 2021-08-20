@@ -72,7 +72,7 @@ export default function StoreProductMenu({
           View Product
         </a>
       </Link>
-      {/* <Link href={`/stores/${storeId}/product/update?id=${productId}`}>
+      <Link href={`/stores/${storeId}/product/update?prodId=${productId}`}>
         <a className="menu-link">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -89,7 +89,7 @@ export default function StoreProductMenu({
           </svg>
           Edit Product
         </a>
-      </Link> */}
+      </Link>
       <button
         type="button"
         className="delete-button"

@@ -122,6 +122,10 @@ export function formatToMoney(input: number, includeDecimal = false) {
   }
 }
 
+export function formatFromStripeToPrice(value: number) {
+  return `${value / 100}.00`;
+}
+
 const ALPHA_NUM =
   '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
@@ -264,17 +268,8 @@ export function handleProductSkusUpdate(queryData: Product, formData: Product) {
       }
     });
 
-    // if (keepSku) {
-    //   return [...acc, currSku];
-    // }
-
     if (keepSku) {
-      const finalSku = currSku;
-      const hex = formatHexColor(currSku.color.hex);
-      const price = Number(currSku.size.price) * 100;
-      finalSku.size.price = price;
-      finalSku.color.hex = hex;
-      return [...acc, finalSku];
+      return [...acc, currSku];
     }
 
     return acc;

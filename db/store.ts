@@ -81,3 +81,25 @@ export async function addProductToStore(
     throw new Error('An error occurred adding the product.');
   }
 }
+
+export async function updateStoreProduct(
+  db: Db,
+  storeId: string,
+  productId: string,
+  product: Product
+) {
+  try {
+    const result = await db.collection('stores').findOneAndUpdate(
+      { _id: new ObjectID(storeId) },
+      { $set: { 'products.$[product]': product } },
+      {
+        arrayFilters: [{ 'product.id': productId }],
+        returnDocument: 'after',
+      }
+    );
+    return result.value;
+  } catch (error) {
+    console.error(error);
+    throw new Error('An error occurred updating the product.');
+  }
+}

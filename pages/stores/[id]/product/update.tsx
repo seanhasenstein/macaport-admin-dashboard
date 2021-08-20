@@ -1,14 +1,26 @@
+import React from 'react';
 import { useRouter } from 'next/router';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import styled from 'styled-components';
 import { useSession } from '../../../../hooks/useSession';
-import { Store, Size, Color, Sku, Product } from '../../../../interfaces';
+import {
+  Store,
+  Size,
+  FormSize,
+  Color,
+  Sku,
+  Product,
+  CloudinaryStatus,
+} from '../../../../interfaces';
 import {
   createId,
   removeNonAlphanumeric,
   handleProductSkusUpdate,
+  formatHexColor,
+  getCloudinarySignature,
+  formatFromStripeToPrice,
 } from '../../../../utils';
 import BasicLayout from '../../../../components/BasicLayout';
 
@@ -18,7 +30,7 @@ type InitialValues = {
   description: string;
   tag: string;
   details: string[];
-  sizes: Size[];
+  sizes: FormSize[];
   colors: Color[];
   skus: Sku[];
 };
@@ -54,6 +66,12 @@ export default function UpdateProduct() {
   const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [primaryImageStatus, setPrimaryImageStatus] =
+    React.useState<CloudinaryStatus>('idle');
+  const [secondaryImageStatus, setSecondaryImageStatus] =
+    React.useState<CloudinaryStatus>('idle');
+  const [primaryImages, setPrimaryImages] = React.useState<string[]>([]);
+  const [secondaryImages, setSecondaryImages] = React.useState<string[][]>([]);
 
   const {
     isLoading,
@@ -81,7 +99,11 @@ export default function UpdateProduct() {
           'store',
           router.query.id,
         ]);
-        return store?.products.find(p => p.id === router.query.prodId);
+        if (!store) return;
+        const product = store.products.find(
+          (p: Product) => p.id === router.query.prodId
+        );
+        return product;
       },
       initialDataUpdatedAt: () =>
         queryClient.getQueryState(['store', router.query.id])?.dataUpdatedAt,
@@ -89,13 +111,199 @@ export default function UpdateProduct() {
     }
   );
 
-  const updateProductMutation = useMutation(async (product: Product) => {
-    console.log(product);
-  });
+  const updateProductMutation = useMutation(
+    async (product: Product) => {
+      const response = await fetch(
+        `/api/stores/update-product?id=${router.query.id}&prodId=${router.query.prodId}`,
+        {
+          method: 'post',
+          body: JSON.stringify(product),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-  // const handleRemoveColorClick = (colorIndex, remove) => {
-  //   /**/
-  // };
+      if (!response.ok) {
+        throw new Error('Failed to add the product.');
+      }
+
+      const data = await response.json();
+      return data.store;
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['product', router.query.prodId]);
+        queryClient.invalidateQueries('stores', { exact: true });
+        queryClient.invalidateQueries(['store', router.query.id]);
+        router.push(
+          `/stores/${router.query.id}/product?prodId=${router.query.prodId}`
+        );
+      },
+    }
+  );
+
+  React.useEffect(() => {
+    if (product) {
+      const primaryImages = product.colors.map((c: Color) => c.primaryImage);
+      const secondaryImages = product.colors.map(
+        (c: Color) => c.secondaryImages
+      );
+      setPrimaryImages(primaryImages);
+      setSecondaryImages(secondaryImages);
+    }
+  }, [product]);
+
+  const url = `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_NAME}/image/upload`;
+
+  const handlePrimaryImageChange = async (
+    index: number,
+    productId: string,
+    color: Color,
+    colors: Color[],
+    setFieldValue: (
+      field: string,
+      value: any,
+      shouldValidate?: boolean | undefined
+    ) => void,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    if (e.target.files === null || e.target.files[0] === undefined) {
+      return;
+    }
+
+    setPrimaryImageStatus('loading');
+    const publicId = `stores/${router.query.id}/${productId}/${
+      color.id
+    }/${createId('primary')}`;
+    const { signature, timestamp } = await getCloudinarySignature(publicId);
+
+    const formData = new FormData();
+    formData.append('file', e.target.files[0]);
+    formData.append('api_key', `${process.env.NEXT_PUBLIC_CLOUDINARY_KEY}`);
+    formData.append('public_id', publicId);
+    formData.append('timestamp', `${timestamp}`);
+    formData.append('signature', signature);
+
+    const response = await fetch(url, {
+      method: 'post',
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    const primeImgCopy = [...primaryImages];
+    primeImgCopy[index] = data.secure_url;
+    setPrimaryImages(primeImgCopy);
+
+    const updatedColors = colors.map(c => {
+      if (c.id == color.id) {
+        return { ...color, primaryImage: data.secure_url };
+      }
+
+      return c;
+    });
+
+    setFieldValue('colors', updatedColors);
+    setPrimaryImageStatus('idle');
+  };
+
+  const handleSecondaryImagesChange = async (
+    index: number,
+    productId: string,
+    color: Color,
+    colors: Color[],
+    setFieldValue: (
+      field: string,
+      value: any,
+      shouldValidate?: boolean | undefined
+    ) => void,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    if (e.target.files === null || e.target.files[0] === undefined) {
+      return;
+    }
+
+    setSecondaryImageStatus('loading');
+    const secImgsCopy = [...secondaryImages];
+
+    for (let i = 0; i < e.target.files.length; i++) {
+      const publicId = `stores/${router.query.id}/${productId}/${
+        color.id
+      }/${createId('secondary')}`;
+
+      const { signature, timestamp } = await getCloudinarySignature(publicId);
+
+      const formData = new FormData();
+      formData.append('file', e.target.files[i]);
+      formData.append('api_key', `${process.env.NEXT_PUBLIC_CLOUDINARY_KEY}`);
+      formData.append('public_id', publicId);
+      formData.append('timestamp', `${timestamp}`);
+      formData.append('signature', signature);
+
+      const response = await fetch(url, {
+        method: 'post',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      secImgsCopy[index] = [...(secImgsCopy[index] || []), data.secure_url];
+    }
+
+    setSecondaryImages(secImgsCopy);
+
+    const updatedColors = colors.map(c => {
+      if (c.id === color.id) {
+        return { ...color, secondaryImages: secImgsCopy[index] };
+      }
+      return c;
+    });
+    setFieldValue('colors', updatedColors);
+    setSecondaryImageStatus('idle');
+  };
+
+  const handleRemoveSecondaryImage = (
+    colorIndex: number,
+    secImgIndex: number,
+    color: Color,
+    colors: Color[],
+    setFieldValue: (
+      field: string,
+      value: any,
+      shouldValidate?: boolean | undefined
+    ) => void
+  ) => {
+    const secImgsCopy = [...secondaryImages];
+    const secImgIndexCopy = [...secondaryImages[colorIndex]];
+    secImgIndexCopy.splice(secImgIndex, 1);
+    secImgsCopy[colorIndex] = secImgIndexCopy;
+    setSecondaryImages(secImgsCopy);
+
+    const updatedColors = colors.map(c => {
+      if (c.id === color.id) {
+        return { ...color, secondaryImages: secImgsCopy[colorIndex] };
+      }
+      return c;
+    });
+
+    setFieldValue('colors', updatedColors);
+  };
+
+  const handleRemoveColorClick = (
+    colorIndex: number,
+    remove: (index: number) => void
+  ) => {
+    const primaryImgsCopy = [...primaryImages];
+    primaryImgsCopy.splice(colorIndex, 1);
+    setPrimaryImages(primaryImgsCopy);
+
+    const secondaryImgsCopy = [...secondaryImages];
+    secondaryImgsCopy.splice(colorIndex, 1);
+    setSecondaryImages(secondaryImgsCopy);
+
+    remove(colorIndex);
+  };
 
   if (sessionLoading || !session) return <div />;
   if (isLoading) return <div>Loading...</div>;
@@ -104,19 +312,18 @@ export default function UpdateProduct() {
   if (!product) return <div>TODO: Handle this error!</div>;
 
   const initialValues: InitialValues = {
-    id: createId('prod'),
+    id: product.id,
     name: product.name ? product.name : '',
     description: product.description ? product.description : '',
     tag: product.tag ? product.tag : '',
     details: product.details ? product.details : [],
-    sizes: product.sizes,
+    sizes: product.sizes.map(s => ({
+      ...s,
+      price: formatFromStripeToPrice(s.price),
+    })),
     colors: product.colors,
     skus: product.skus,
   };
-
-  // TODO: handle primaryImages
-  // TODO: handle secondaryImages
-  // TODO: Need to check for size/color deletions and handle removing the relevant skus (this is a separate function!)
 
   return (
     <BasicLayout title="Update Product | Macaport Dashboard">
@@ -125,12 +332,37 @@ export default function UpdateProduct() {
           initialValues={initialValues}
           validationSchema={validationSchema}
           onSubmit={values => {
-            const updatedSkus = handleProductSkusUpdate(product, values);
-            const updatedProduct = { ...values, skus: updatedSkus };
+            const updatedSizes: Size[] = values.sizes.map(size => {
+              return {
+                ...size,
+                price: Number(size.price) * 100,
+              };
+            });
+            const updatedColors: Color[] = values.colors.map(color => {
+              return {
+                ...color,
+                hex: formatHexColor(color.hex),
+              };
+            });
+            const updatedFormValues: Product = {
+              ...values,
+              sizes: updatedSizes,
+              colors: updatedColors,
+            };
+            const updatedSkus = handleProductSkusUpdate(
+              product,
+              updatedFormValues
+            );
+            const updatedProduct = {
+              ...values,
+              sizes: updatedSizes,
+              colors: updatedColors,
+              skus: updatedSkus,
+            };
             updateProductMutation.mutate(updatedProduct);
           }}
         >
-          {({ values }) => (
+          {({ values, setFieldValue }) => (
             <Form>
               <div className="title">
                 <div>
@@ -265,7 +497,7 @@ export default function UpdateProduct() {
                       render={arrayHelpers => (
                         <>
                           {values.sizes.length > 0 &&
-                            values.sizes.map((_size: Size, sizeIndex) => (
+                            values.sizes.map((_size: FormSize, sizeIndex) => (
                               <div key={sizeIndex} className="size-item">
                                 <div>
                                   <div className="item">
@@ -388,7 +620,7 @@ export default function UpdateProduct() {
                                       className="validation-error"
                                     />
                                   </div>
-                                  {/* <div className="item primary-image-item">
+                                  <div className="item primary-image-item">
                                     <h5>Primary image</h5>
                                     <div className="row">
                                       <div className="primary-thumbnail">
@@ -561,17 +793,17 @@ export default function UpdateProduct() {
                                           }
                                         )}
                                     </div>
-                                  </div>*/}
+                                  </div>
                                 </div>
                                 <button
                                   type="button"
                                   className="remove-button"
-                                  // onClick={() =>
-                                  //   handleRemoveColorClick(
-                                  //     colorIndex,
-                                  //     arrayHelpers.remove
-                                  //   )
-                                  // }
+                                  onClick={() =>
+                                    handleRemoveColorClick(
+                                      colorIndex,
+                                      arrayHelpers.remove
+                                    )
+                                  }
                                 >
                                   <svg
                                     xmlns="http://www.w3.org/2000/svg"

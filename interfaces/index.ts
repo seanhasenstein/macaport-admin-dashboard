@@ -13,6 +13,12 @@ export interface Size {
   price: number;
 }
 
+export interface FormSize {
+  id: string;
+  label: string;
+  price: string;
+}
+
 export interface Color {
   id: string;
   label: string;
@@ -150,8 +156,10 @@ export interface Order {
   updatedAt: string;
 }
 
+export type CloudinaryStatus = 'idle' | 'loading';
+
 export interface Request extends NextApiRequest {
   db: Db;
   dbClient: MongoClient;
-  query: { id: string; storeId: string; orderId: string };
+  query: { id: string; storeId: string; orderId: string; prodId: string };
 }

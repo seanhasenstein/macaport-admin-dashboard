@@ -6,7 +6,7 @@ import { useMutation, useQueryClient } from 'react-query';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { useSession } from '../../../../hooks/useSession';
-import { Size, Product, Color } from '../../../../interfaces';
+import { Size, Product, Color, CloudinaryStatus } from '../../../../interfaces';
 import {
   createId,
   getCloudinarySignature,
@@ -24,7 +24,7 @@ type InitialValues = {
   sizes: Size[];
   colors: Color[];
 };
-type CloudinaryStatus = 'idle' | 'loading';
+
 type AddMutationInput = Omit<Product, 'skus'>;
 
 const validationSchema = Yup.object().shape({
@@ -32,11 +32,11 @@ const validationSchema = Yup.object().shape({
   sizes: Yup.array().of(
     Yup.object().shape({
       label: Yup.string().required('A label is required'),
-      price: Yup.string()
-        .matches(
-          /^([0-9]{1,})(\.)([0-9]{2})$/,
-          'Must be a valid price (i.e. 10.00)'
-        )
+      price: Yup.number()
+        // .matches(
+        //   /^([0-9]{1,})(\.)([0-9]{2})$/,
+        //   'Must be a valid price (i.e. 10.00)'
+        // )
         .required('A price is required'),
     })
   ),
