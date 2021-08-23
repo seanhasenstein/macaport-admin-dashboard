@@ -8,8 +8,8 @@ import { useSession } from '../../../hooks/useSession';
 import { Store as StoreInterface, Note } from '../../../interfaces';
 import { createId, formatPhoneNumber, getStoreStatus } from '../../../utils';
 import Layout from '../../../components/Layout';
-import StoreProductMenu from '../../../components/StoreProductMenu';
 import Notes from '../../../components/Notes';
+import StoreProducts from '../../../components/StoreProducts';
 import OrdersTable from '../../../components/OrdersTable';
 
 type StoreStatus = 'upcoming' | 'open' | 'closed';
@@ -18,7 +18,6 @@ export default function Store() {
   const [session, loading] = useSession({ required: true });
   const router = useRouter();
   const [storeStatus, setStoreStatus] = React.useState<StoreStatus>();
-  const [showMenu, setShowMenu] = React.useState<string | undefined>(undefined);
   const [productIdToDelete, setProductIdToDelete] = React.useState<string>();
   const [showDeleteProductModal, setShowDeleteProductModal] =
     React.useState(false);
@@ -184,23 +183,9 @@ export default function Store() {
     }
   );
 
-  const handleDeleteProductMenuClick = (id: string) => {
-    setShowMenu(undefined);
-    setProductIdToDelete(id);
-    setShowDeleteProductModal(true);
-  };
-
   const handleCancelDeleteProductClick = () => {
     setShowDeleteProductModal(false);
     setProductIdToDelete(undefined);
-  };
-
-  const handleProductMenuClick = (id: string) => {
-    if (id === showMenu) {
-      setShowMenu(undefined);
-    } else {
-      setShowMenu(id);
-    }
   };
 
   React.useEffect(() => {
@@ -378,7 +363,7 @@ export default function Store() {
                     </div>
                   </div>
                 </div>
-                <div className="products section" id="products">
+                <div className="section" id="products">
                   <div className="row">
                     <h4>Store Products</h4>
                     <Link href={`/stores/${router.query.id}/product/add`}>
@@ -405,40 +390,12 @@ export default function Store() {
                       </div>
                     )}
                     {store.products && (
-                      <>
-                        {store.products.map(p => (
-                          <div key={p.id} className="product">
-                            <Link
-                              href={`/stores/${router.query.id}/product?prodId=${p.id}`}
-                              key={p.id}
-                            >
-                              <a className="product-name">{p.name}</a>
-                            </Link>
-                            <button
-                              type="button"
-                              className="menu-button"
-                              onClick={() => handleProductMenuClick(p.id)}
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                              >
-                                <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
-                              </svg>
-                            </button>
-                            <StoreProductMenu
-                              storeId={store._id}
-                              productId={p.id}
-                              showMenu={showMenu}
-                              setShowMenu={setShowMenu}
-                              handleDeleteButtonClick={
-                                handleDeleteProductMenuClick
-                              }
-                            />
-                          </div>
-                        ))}
-                      </>
+                      <StoreProducts
+                        products={store.products}
+                        storeId={store._id}
+                        setProductIdToDelete={setProductIdToDelete}
+                        setShowDeleteProductModal={setShowDeleteProductModal}
+                      />
                     )}
                   </div>
                 </div>
@@ -802,7 +759,7 @@ const StoreStyles = styled.div`
 
   .menu-button {
     margin-left: auto;
-    padding: 0.125rem;
+    padding: 1rem 0.5rem;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -886,24 +843,6 @@ const StoreStyles = styled.div`
     }
   }
 
-  /* PRODUCT STYLES */
-
-  .product {
-    position: relative;
-    display: grid;
-    grid-template-columns: 1fr 3rem;
-    align-items: center;
-    border-top: 1px solid #e5e7eb;
-
-    &:first-of-type {
-      border-top: none;
-    }
-
-    &:hover {
-      background-color: #f9fafb;
-    }
-  }
-
   .row {
     margin: 0 0 1rem;
     display: flex;
@@ -913,17 +852,6 @@ const StoreStyles = styled.div`
     h4 {
       margin-bottom: 0.25rem;
     }
-  }
-
-  .product-name {
-    padding: 1rem 0.5rem;
-    font-size: 0.9375rem;
-    font-weight: 500;
-    color: #374151;
-  }
-
-  .menu-button {
-    padding: 1rem 0.5rem;
   }
 
   /* ORDERS STYLES */

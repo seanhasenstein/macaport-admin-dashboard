@@ -134,8 +134,38 @@ export default function Product() {
                   <div className="prod-sizes">
                     {product.sizes.map(s => (
                       <div key={s.id} className="prod-size">
+                        <button type="button" className="drag-button">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
+                            />
+                          </svg>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
+                            />
+                          </svg>
+                        </button>
                         <div>{s.label}</div>
-                        <div>{formatToMoney(s.price)}</div>
+                        <div className="size-price">
+                          {formatToMoney(s.price)}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -144,6 +174,36 @@ export default function Product() {
                   <h4>Colors</h4>
                   {product.colors.map(c => (
                     <div key={c.id} className="prod-color">
+                      {product.colors.length > 1 && (
+                        <button type="button" className="drag-button">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
+                            />
+                          </svg>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
+                            />
+                          </svg>
+                        </button>
+                      )}
                       <div className="color-details">
                         <div className="color-label">
                           <div className="label">Label</div>
@@ -316,13 +376,18 @@ const ProductStyles = styled.div`
 
   .prod-size {
     padding: 0.75rem 0;
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 2.5rem 1fr 0.5fr;
+    align-items: center;
     border-bottom: 1px solid #e5e7eb;
 
     &:last-of-type {
       border-bottom: none;
     }
+  }
+
+  .size-price {
+    text-align: right;
   }
 
   .prod-color {
@@ -337,6 +402,32 @@ const ProductStyles = styled.div`
 
     &:first-of-type {
       border-top: 1px solid #e5e7eb;
+    }
+  }
+
+  .drag-button {
+    display: flex;
+    flex-direction: column;
+    background-color: transparent;
+    border: none;
+    color: #9ca3af;
+
+    &:hover {
+      color: #111827;
+      cursor: grab;
+    }
+
+    &:active {
+      cursor: grabbing;
+    }
+
+    svg {
+      height: 1.125rem;
+      width: 1.125rem;
+
+      &:last-of-type {
+        margin-top: -0.75rem;
+      }
     }
   }
 
