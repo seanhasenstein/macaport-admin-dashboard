@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from 'react-query';
 import Link from 'next/link';
 import styled from 'styled-components';
 import { Product } from '../interfaces';
+import useDragNDrop from '../hooks/useDragNDrop';
 import StoreProductMenu from './StoreProductMenu';
 
 type Props = {
@@ -22,10 +23,6 @@ export default function StoreProducts({
 }: Props) {
   const queryClient = useQueryClient();
   const [showMenu, setShowMenu] = React.useState<string | undefined>(undefined);
-  const [list, setList] = React.useState<Product[]>(products);
-  const [dragging, setDragging] = React.useState(false);
-  const dragItem = React.useRef<number | null>();
-  const dragItemNode = React.useRef<any | null>();
 
   const updateProductMutation = useMutation(
     async (updatedProducts: Product[]) => {
@@ -50,6 +47,16 @@ export default function StoreProducts({
     }
   );
 
+  const {
+    list,
+    dragging,
+    setDragging,
+    handleDragStart,
+    handleDragEnter,
+    handleDrop,
+    getStyles,
+  } = useDragNDrop(products, 'product', updateProductMutation.mutate);
+
   const handleProductMenuClick = (id: string) => {
     if (id === showMenu) {
       setShowMenu(undefined);
@@ -62,50 +69,6 @@ export default function StoreProducts({
     setShowMenu(undefined);
     setProductIdToDelete(id);
     setShowDeleteProductModal(true);
-  };
-
-  const handleDragEnd = () => {
-    setDragging(false);
-    dragItem.current = null;
-    dragItemNode.current.removeEventListener('dragend', handleDragEnd);
-    dragItemNode.current = null;
-  };
-
-  const handleDragStart = (
-    e: React.DragEvent<HTMLDivElement>,
-    item: number
-  ) => {
-    dragItemNode.current = e.target;
-    dragItemNode.current.addEventListener('dragend', handleDragEnd);
-    dragItem.current = item;
-    // setTimeout(() => {
-    //   setDragging(true);
-    // }, 0);
-  };
-
-  const handleDragEnter = (
-    e: React.DragEvent<HTMLDivElement>,
-    targetItem: number
-  ) => {
-    if (dragItemNode.current !== e.target) {
-      const newList = [...list];
-      const [reorderedItem] = newList.splice(dragItem.current!, 1);
-      newList.splice(targetItem, 0, reorderedItem);
-      dragItem.current = targetItem;
-      setList(newList);
-    }
-  };
-
-  const handleDrop = () => {
-    console.log(list);
-    updateProductMutation.mutate(list);
-  };
-
-  const getStyles = (index: number) => {
-    if (dragItem.current === index) {
-      return 'product current';
-    }
-    return 'product';
   };
 
   return (
