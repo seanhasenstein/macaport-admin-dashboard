@@ -1,11 +1,12 @@
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useQuery, useQueryClient } from 'react-query';
+import styled from 'styled-components';
 import { useSession } from '../../../../hooks/useSession';
 import { Store } from '../../../../interfaces';
-import styled from 'styled-components';
 import Layout from '../../../../components/Layout';
-import { formatToMoney } from '../../../../utils';
+import Sizes from '../../../../components/Product/Sizes';
+import Colors from '../../../../components/Product/Colors';
 
 export default function Product() {
   const [session, loading] = useSession({ required: true });
@@ -131,115 +132,34 @@ export default function Product() {
                 )}
                 <div className="section">
                   <h4>Sizes</h4>
-                  <div className="prod-sizes">
-                    {product.sizes.map(s => (
-                      <div key={s.id} className="prod-size">
-                        <button type="button" className="drag-button">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
-                            />
-                          </svg>
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
-                            />
-                          </svg>
-                        </button>
-                        <div>{s.label}</div>
-                        <div className="size-price">
-                          {formatToMoney(s.price)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  {router.query.id ? (
+                    <Sizes
+                      sizes={product.sizes}
+                      storeId={
+                        Array.isArray(router.query.id)
+                          ? router.query.id[0]
+                          : router.query.id
+                      }
+                      product={product}
+                    />
+                  ) : (
+                    <div>A store ID is required.</div>
+                  )}
                 </div>
                 <div className="section">
                   <h4>Colors</h4>
-                  {product.colors.map(c => (
-                    <div key={c.id} className="prod-color">
-                      {product.colors.length > 1 && (
-                        <button type="button" className="drag-button">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
-                            />
-                          </svg>
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
-                            />
-                          </svg>
-                        </button>
-                      )}
-                      <div className="color-details">
-                        <div className="color-label">
-                          <div className="label">Label</div>
-                          <div className="value">{c.label}</div>
-                        </div>
-                        <div className="color-hex">
-                          <div className="label">Hex</div>
-                          <div className="value">
-                            <ColorSpan hex={c.hex} />
-                            {c.hex}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="color-imgs">
-                        <div className="primary-img">
-                          <img
-                            src={c.primaryImage}
-                            alt={`${c.label} primary`}
-                          />
-                        </div>
-                        <div className="secondary-imgs">
-                          <div className="label">Secondary Images</div>
-                          <div className="value">
-                            {c.secondaryImages.map((s, i) => (
-                              <div key={i} className="secondary-img">
-                                <img
-                                  src={s}
-                                  alt={`${c.label} secondary ${i}`}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                  {router.query.id ? (
+                    <Colors
+                      storeId={
+                        Array.isArray(router.query.id)
+                          ? router.query.id[0]
+                          : router.query.id
+                      }
+                      product={product}
+                    />
+                  ) : (
+                    <div>A store ID is required.</div>
+                  )}
                 </div>
               </div>
             </div>
@@ -249,24 +169,6 @@ export default function Product() {
     </Layout>
   );
 }
-
-type ColorProps = {
-  hex: string;
-};
-
-function ColorSpan(props: ColorProps) {
-  return <ColorSpanStyles {...props} />;
-}
-
-const ColorSpanStyles = styled.span<ColorProps>`
-  margin: 0 0.5rem 0 0;
-  display: block;
-  height: 1rem;
-  width: 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 9999px;
-  background-color: ${props => props.hex};
-`;
 
 const ProductStyles = styled.div`
   h2 {
@@ -355,8 +257,7 @@ const ProductStyles = styled.div`
 
   .prod-description,
   .prod-tag,
-  .prod-detail,
-  .prod-size {
+  .prod-detail {
     color: #4b5563;
   }
 
@@ -367,128 +268,5 @@ const ProductStyles = styled.div`
   .prod-detail {
     margin: 0.5rem 0 0;
     color: #4b5563;
-  }
-
-  .prod-sizes {
-    max-width: 16rem;
-    width: 100%;
-  }
-
-  .prod-size {
-    padding: 0.75rem 0;
-    display: grid;
-    grid-template-columns: 2.5rem 1fr 0.5fr;
-    align-items: center;
-    border-bottom: 1px solid #e5e7eb;
-
-    &:last-of-type {
-      border-bottom: none;
-    }
-  }
-
-  .size-price {
-    text-align: right;
-  }
-
-  .prod-color {
-    padding: 1rem 0;
-    max-width: 38rem;
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1.5rem;
-    border-bottom: 1px solid #e5e7eb;
-
-    &:first-of-type {
-      border-top: 1px solid #e5e7eb;
-    }
-  }
-
-  .drag-button {
-    display: flex;
-    flex-direction: column;
-    background-color: transparent;
-    border: none;
-    color: #9ca3af;
-
-    &:hover {
-      color: #111827;
-      cursor: grab;
-    }
-
-    &:active {
-      cursor: grabbing;
-    }
-
-    svg {
-      height: 1.125rem;
-      width: 1.125rem;
-
-      &:last-of-type {
-        margin-top: -0.75rem;
-      }
-    }
-  }
-
-  .color-details {
-    width: 58%;
-  }
-
-  .color-imgs {
-    display: flex;
-    justify-content: space-between;
-    width: 42%;
-  }
-
-  .primary-img {
-    padding: 0.25rem;
-    width: 3.25rem;
-    background-color: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.25rem;
-    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-      rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
-
-    img {
-      width: 100%;
-    }
-  }
-
-  .color-details {
-    display: flex;
-  }
-
-  .color-label,
-  .color-hex {
-    width: 50%;
-  }
-
-  .secondary-imgs .value {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .secondary-img {
-    width: 2rem;
-
-    img {
-      width: 100%;
-    }
-  }
-
-  .label {
-    margin: 0 0 0.375rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #6b7280;
-  }
-
-  .value {
-    display: flex;
-    align-items: center;
-    color: #374151;
   }
 `;

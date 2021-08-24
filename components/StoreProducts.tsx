@@ -50,11 +50,12 @@ export default function StoreProducts({
   const {
     list,
     dragging,
-    setDragging,
     handleDragStart,
     handleDragEnter,
     handleDrop,
     getStyles,
+    handleMouseDown,
+    handleMouseUp,
   } = useDragNDrop(products, 'product', updateProductMutation.mutate);
 
   const handleProductMenuClick = (id: string) => {
@@ -85,8 +86,8 @@ export default function StoreProducts({
         >
           <button
             type="button"
-            onMouseDown={() => setDragging(true)}
-            onMouseUp={() => setDragging(false)}
+            onMouseDown={handleMouseDown}
+            onMouseUp={handleMouseUp}
             className="drag-button"
           >
             <svg

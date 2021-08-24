@@ -10,6 +10,10 @@ export default function useDragNDrop<ListType>(
   const dragItem = React.useRef<number | null>();
   const dragItemNode = React.useRef<any | null>();
 
+  React.useEffect(() => {
+    setList(data);
+  }, [data]);
+
   const handleDragEnd = () => {
     setDragging(false);
     dragItem.current = null;
@@ -40,7 +44,6 @@ export default function useDragNDrop<ListType>(
   };
 
   const handleDrop = () => {
-    console.log(list);
     callback(list);
   };
 
@@ -51,13 +54,22 @@ export default function useDragNDrop<ListType>(
     return `${className}`;
   };
 
+  const handleMouseDown = () => {
+    setDragging(true);
+  };
+
+  const handleMouseUp = () => {
+    setDragging(false);
+  };
+
   return {
     list,
     dragging,
-    setDragging,
     handleDragStart,
     handleDragEnter,
     handleDrop,
     getStyles,
+    handleMouseDown,
+    handleMouseUp,
   };
 }
