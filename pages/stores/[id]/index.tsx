@@ -399,7 +399,7 @@ export default function Store() {
                     )}
                   </div>
                 </div>
-                <div className="section orders">
+                <div className="section orders" id="orders">
                   <h4>Store Orders</h4>
                   {store.orders ? (
                     <OrdersTable orders={store.orders} />

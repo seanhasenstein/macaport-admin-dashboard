@@ -1,5 +1,5 @@
 import { Db, ObjectID } from 'mongodb';
-import { Product, Store } from '../interfaces';
+import { Product, Store, Color } from '../interfaces';
 import { createId } from '../utils';
 
 export async function createStore(db: Db, store: Store) {
@@ -86,12 +86,12 @@ export async function updateStoreProduct(
   db: Db,
   storeId: string,
   productId: string,
-  product: Product
+  updatedProduct: Product
 ) {
   try {
     const result = await db.collection('stores').findOneAndUpdate(
       { _id: new ObjectID(storeId) },
-      { $set: { 'products.$[product]': product } },
+      { $set: { 'products.$[product]': updatedProduct } },
       {
         arrayFilters: [{ 'product.id': productId }],
         returnDocument: 'after',
@@ -101,5 +101,28 @@ export async function updateStoreProduct(
   } catch (error) {
     console.error(error);
     throw new Error('An error occurred updating the product.');
+  }
+}
+
+export async function updateProductColor(
+  db: Db,
+  storeId: string,
+  productId: string,
+  colorId: string,
+  updatedColor: Color
+) {
+  try {
+    const result = await db.collection('stores').findOneAndUpdate(
+      { _id: new ObjectID(storeId) },
+      { $set: { 'products.$[product].colors.$[color]': updatedColor } },
+      {
+        arrayFilters: [{ 'product.id': productId }, { 'color.id': colorId }],
+        returnDocument: 'after',
+      }
+    );
+    return result.value;
+  } catch (error) {
+    console.error(error);
+    throw new Error(error);
   }
 }

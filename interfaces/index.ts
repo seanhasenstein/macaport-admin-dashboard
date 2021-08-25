@@ -161,5 +161,11 @@ export type CloudinaryStatus = 'idle' | 'loading';
 export interface Request extends NextApiRequest {
   db: Db;
   dbClient: MongoClient;
-  query: { id: string; storeId: string; orderId: string; prodId: string };
+  query: {
+    id: string;
+    storeId: string;
+    orderId: string;
+    prodId: string;
+    colorId: string;
+  };
 }

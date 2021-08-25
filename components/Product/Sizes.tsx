@@ -106,7 +106,8 @@ export default function Sizes({ sizes, storeId, product }: Props) {
 }
 
 const SizesStyles = styled.div`
-  max-width: 38rem;
+  max-width: 30rem;
+  width: 100%;
 
   .prod-sizes {
     max-width: 16rem;

@@ -43,7 +43,8 @@ export default function useDragNDrop<ListType>(
     }
   };
 
-  const handleDrop = () => {
+  const handleDrop = (e: React.DragEvent<HTMLElement>) => {
+    e.stopPropagation();
     callback(list);
   };
 

@@ -256,6 +256,22 @@ export default function Order() {
             </div>
             <div className="main-content">
               <div className="wrapper">
+                <Link href={`/stores/${router.query.storeId}#orders`}>
+                  <a className="back-button screen-only">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M7.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l2.293 2.293a1 1 0 010 1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Back to store
+                  </a>
+                </Link>
                 <div className="header">
                   <div>
                     <h3>
@@ -538,6 +554,26 @@ const OrderStyles = styled.div`
 
   .wrapper {
     width: 100%;
+  }
+
+  .back-button {
+    margin: 0 0 3.5rem;
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #6b7280;
+
+    svg {
+      margin: 0 0.25rem 0 0;
+      height: 1.125rem;
+      width: 1.125rem;
+      color: #d1d5db;
+    }
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 
   .header {

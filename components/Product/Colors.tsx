@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import useDragNDrop from '../../hooks/useDragNDrop';
 import { Store, Product, Color } from '../../interfaces';
+import SecondaryImages from './SecondaryImages';
 
 type Props = {
   storeId: string;
@@ -112,17 +113,23 @@ export default function Colors({ storeId, product }: Props) {
           </div>
           <div className="color-imgs">
             <div className="primary-img">
-              <img src={color.primaryImage} alt={`${color.label} primary`} />
+              <div className="label">Primary Image</div>
+              {color.primaryImage ? (
+                <div className="value">
+                  <img
+                    src={color.primaryImage}
+                    alt={`${color.label} primary`}
+                  />
+                </div>
+              ) : null}
             </div>
             <div className="secondary-imgs">
               <div className="label">Secondary Images</div>
-              <div className="value">
-                {color.secondaryImages.map((s, i) => (
-                  <div key={i} className="secondary-img">
-                    <img src={s} alt={`${color.label} secondary ${i}`} />
-                  </div>
-                ))}
-              </div>
+              <SecondaryImages
+                color={color}
+                product={product}
+                storeId={storeId}
+              />
             </div>
           </div>
         </div>
@@ -134,12 +141,12 @@ export default function Colors({ storeId, product }: Props) {
 const ColorsStyles = styled.div`
   .prod-color {
     padding: 1rem 0;
-    max-width: 38rem;
+    max-width: 70rem;
     width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 1.5rem;
+    gap: 2rem;
     border-bottom: 1px solid #e5e7eb;
 
     &:first-of-type {
@@ -174,23 +181,33 @@ const ColorsStyles = styled.div`
   }
 
   .color-details {
-    width: 58%;
+    width: 40%;
   }
 
   .color-imgs {
     display: flex;
     justify-content: space-between;
-    width: 42%;
+    width: 60%;
   }
 
   .primary-img {
-    padding: 0.25rem;
-    width: 3.25rem;
-    background-color: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.25rem;
-    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-      rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+    width: 30%;
+  }
+
+  .secondary-imgs {
+    width: 55%;
+  }
+
+  .primary-img {
+    .value {
+      padding: 0.25rem 0.5rem;
+      width: 3.25rem;
+      background-color: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.25rem;
+      box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
+        rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+    }
 
     img {
       width: 100%;
@@ -204,19 +221,6 @@ const ColorsStyles = styled.div`
   .color-label,
   .color-hex {
     width: 50%;
-  }
-
-  .secondary-imgs .value {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .secondary-img {
-    width: 2rem;
-
-    img {
-      width: 100%;
-    }
   }
 
   .label {
