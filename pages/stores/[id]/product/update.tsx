@@ -23,6 +23,7 @@ import {
   formatFromStripeToPrice,
 } from '../../../../utils';
 import BasicLayout from '../../../../components/BasicLayout';
+import LoadingSpinner from '../../../../components/LoadingSpinner';
 
 type InitialValues = {
   id: string;
@@ -66,55 +67,87 @@ export default function UpdateProduct() {
   const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [initialValues, setInitialValues] = React.useState<InitialValues>({
+    id: '',
+    name: '',
+    description: '',
+    tag: '',
+    details: [],
+    sizes: [],
+    colors: [],
+    skus: [],
+  });
   const [primaryImageStatus, setPrimaryImageStatus] =
     React.useState<CloudinaryStatus>('idle');
   const [secondaryImageStatus, setSecondaryImageStatus] =
     React.useState<CloudinaryStatus>('idle');
   const [primaryImages, setPrimaryImages] = React.useState<string[]>([]);
   const [secondaryImages, setSecondaryImages] = React.useState<string[][]>([]);
+  const [includeCustomName, setIncludeCustomName] = React.useState(false);
+  const [includeCustomNumber, setIncludeCustomNumber] = React.useState(false);
 
-  const {
-    isLoading,
-    isError,
-    error,
-    data: product,
-  } = useQuery(
-    ['product', router.query.prodId],
+  const storeQuery = useQuery(
+    ['stores', 'store', router.query.id, 'product', router.query.pid, 'update'],
     async () => {
-      if (!router.query.id || !router.query.prodId) return;
+      if (!router.query.id) return;
+
       const response = await fetch(`/api/stores/${router.query.id}`);
+
       if (!response.ok) {
         throw new Error('Failed to fetch the store.');
       }
-      const { store }: { store: Store } = await response.json();
-      const product = store.products.find(p => p.id === router.query.prodId);
-      if (!product) {
-        throw new Error('Product not found.');
-      }
-      return product;
+
+      const data = await response.json();
+      const store: Store = data.store;
+      const product = store.products.find(p => p.id === router.query.pid);
+      if (!product) throw Error('No product found.');
+      return { store, product };
     },
     {
       initialData: () => {
         const store = queryClient.getQueryData<Store>([
+          'stores',
           'store',
           router.query.id,
         ]);
-        if (!store) return;
-        const product = store.products.find(
-          (p: Product) => p.id === router.query.prodId
-        );
-        return product;
+        const product = store?.products?.find(p => p.id === router.query.pid);
+        if (store && product) {
+          return { store, product };
+        }
       },
-      initialDataUpdatedAt: () =>
-        queryClient.getQueryState(['store', router.query.id])?.dataUpdatedAt,
-      staleTime: 600000,
+      initialDataUpdatedAt: () => {
+        return queryClient.getQueryState(['stores', 'store', router.query.id])
+          ?.dataUpdatedAt;
+      },
+      staleTime: 1000 * 60 * 10,
     }
   );
+
+  React.useEffect(() => {
+    if (storeQuery?.data?.product) {
+      setInitialValues({
+        id: storeQuery?.data?.product?.id || '',
+        name: storeQuery?.data?.product?.name || '',
+        description: storeQuery?.data?.product?.description || '',
+        tag: storeQuery?.data?.product?.tag || '',
+        details: storeQuery?.data?.product?.details || [],
+        sizes:
+          storeQuery?.data?.product?.sizes.map(s => ({
+            ...s,
+            price: formatFromStripeToPrice(s.price),
+          })) || [],
+        colors: storeQuery?.data?.product?.colors || [],
+        skus: storeQuery?.data?.product?.skus || [],
+      });
+      setIncludeCustomName(storeQuery.data.product.includeCustomName);
+      setIncludeCustomNumber(storeQuery.data.product.includeCustomNumber);
+    }
+  }, [storeQuery?.data?.product]);
 
   const updateProductMutation = useMutation(
     async (product: Product) => {
       const response = await fetch(
-        `/api/stores/update-product?id=${router.query.id}&prodId=${router.query.prodId}`,
+        `/api/stores/update-product?id=${router.query.id}&pid=${router.query.pid}`,
         {
           method: 'post',
           body: JSON.stringify(product),
@@ -132,27 +165,62 @@ export default function UpdateProduct() {
       return data.store;
     },
     {
+      onMutate: async updatedProduct => {
+        await queryClient.cancelQueries(['stores', 'store', router.query.id]);
+        const updatedProducts = storeQuery?.data?.store.products.map(p => {
+          if (p.id === router.query.pid) {
+            return updatedProduct;
+          }
+          return p;
+        });
+        const updatedStore = {
+          ...storeQuery.data?.store,
+          products: updatedProducts,
+        };
+        queryClient.setQueryData(
+          ['stores', 'store', router.query.id],
+          updatedStore
+        );
+        queryClient.setQueryData(
+          ['stores', 'store', 'product', router.query.pid],
+          updatedProduct
+        );
+      },
+      onError: () => {
+        // TODO: trigger a notifcation
+        queryClient.setQueryData(
+          ['stores', 'store', router.query.id],
+          storeQuery.data?.store
+        );
+        queryClient.setQueryData(
+          ['stores', 'store', 'product', router.query.pid],
+          storeQuery.data?.product
+        );
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries('stores');
+      },
       onSuccess: () => {
-        queryClient.invalidateQueries(['product', router.query.prodId]);
-        queryClient.invalidateQueries('stores', { exact: true });
-        queryClient.invalidateQueries(['store', router.query.id]);
+        // TODO: trigger a notication
         router.push(
-          `/stores/${router.query.id}/product?prodId=${router.query.prodId}`
+          `/stores/${router.query.id}/product?pid=${router.query.pid}`
         );
       },
     }
   );
 
   React.useEffect(() => {
-    if (product) {
-      const primaryImages = product.colors.map((c: Color) => c.primaryImage);
-      const secondaryImages = product.colors.map(
+    if (storeQuery?.data?.product) {
+      const primaryImages = storeQuery.data.product.colors.map(
+        (c: Color) => c.primaryImage
+      );
+      const secondaryImages = storeQuery.data.product.colors.map(
         (c: Color) => c.secondaryImages
       );
       setPrimaryImages(primaryImages);
       setSecondaryImages(secondaryImages);
     }
-  }, [product]);
+  }, [storeQuery?.data?.product]);
 
   const url = `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_NAME}/image/upload`;
 
@@ -305,98 +373,104 @@ export default function UpdateProduct() {
     remove(colorIndex);
   };
 
-  if (sessionLoading || !session) return <div />;
-  if (isLoading) return <div>Loading...</div>;
-  if (isError && error instanceof Error)
-    return <div>Error: {error.message}</div>;
-  if (!product) return <div>TODO: Handle this error!</div>;
-
-  const initialValues: InitialValues = {
-    id: product.id,
-    name: product.name ? product.name : '',
-    description: product.description ? product.description : '',
-    tag: product.tag ? product.tag : '',
-    details: product.details ? product.details : [],
-    sizes: product.sizes.map(s => ({
-      ...s,
-      price: formatFromStripeToPrice(s.price),
-    })),
-    colors: product.colors,
-    skus: product.skus,
+  const handleAddClick = async (callback: () => void, selector: string) => {
+    await callback();
+    document.querySelector<HTMLInputElement>(selector)?.focus();
   };
+
+  if (sessionLoading || !session) return <div />;
 
   return (
     <BasicLayout title="Update Product | Macaport Dashboard">
       <UpdateProductStyles>
-        <Formik
-          initialValues={initialValues}
-          validationSchema={validationSchema}
-          onSubmit={values => {
-            const updatedSizes: Size[] = values.sizes.map(size => {
-              return {
-                ...size,
-                price: Number(size.price) * 100,
-              };
-            });
-            const updatedColors: Color[] = values.colors.map(color => {
-              return {
-                ...color,
-                hex: formatHexColor(color.hex),
-              };
-            });
-            const updatedFormValues: Product = {
-              ...values,
-              sizes: updatedSizes,
-              colors: updatedColors,
-            };
-            const updatedSkus = handleProductSkusUpdate(
-              product,
-              updatedFormValues
-            );
-            const updatedProduct = {
-              ...values,
-              sizes: updatedSizes,
-              colors: updatedColors,
-              skus: updatedSkus,
-            };
-            updateProductMutation.mutate(updatedProduct);
-          }}
-        >
-          {({ values, setFieldValue }) => (
-            <Form>
-              <div className="title">
-                <div>
-                  <button
-                    type="button"
-                    className="cancel-link"
-                    onClick={() => router.back()}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
-                  <h2>Edit product</h2>
-                </div>
-                <div className="save-buttons">
-                  <button type="submit" className="primary-button">
-                    Save product
-                  </button>
-                </div>
-              </div>
-              <div className="main-content">
-                <div className="form-container">
+        <div className="main-content">
+          <div className="form-container">
+            {storeQuery.isLoading && (
+              <LoadingSpinner isLoading={storeQuery.isLoading} />
+            )}
+            {storeQuery.isError && storeQuery.error instanceof Error && (
+              <div>Error: {storeQuery.error.message}</div>
+            )}
+            <Formik
+              initialValues={initialValues}
+              enableReinitialize={true}
+              validationSchema={validationSchema}
+              onSubmit={values => {
+                if (!storeQuery?.data?.product) {
+                  throw new Error('Failed to load the product.');
+                }
+
+                const updatedSizes: Size[] = values.sizes.map(size => {
+                  return {
+                    ...size,
+                    price: Number(size.price) * 100,
+                  };
+                });
+
+                const updatedColors: Color[] = values.colors.map(color => {
+                  return {
+                    ...color,
+                    hex: formatHexColor(color.hex),
+                  };
+                });
+
+                const updatedFormValues = {
+                  ...values,
+                  sizes: updatedSizes,
+                  colors: updatedColors,
+                  includeCustomName,
+                  includeCustomNumber,
+                };
+
+                const updatedSkus = handleProductSkusUpdate(
+                  storeQuery.data.product,
+                  updatedFormValues
+                );
+
+                const updatedProduct = {
+                  ...values,
+                  sizes: updatedSizes,
+                  colors: updatedColors,
+                  skus: updatedSkus,
+                  includeCustomName,
+                  includeCustomNumber,
+                };
+
+                updateProductMutation.mutate(updatedProduct);
+              }}
+            >
+              {({ values, setFieldValue }) => (
+                <Form>
+                  <div className="title">
+                    <div>
+                      <button
+                        type="button"
+                        className="cancel-link"
+                        onClick={() => router.back()}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                      <h2>Edit product</h2>
+                    </div>
+                    <div className="save-buttons">
+                      <button type="submit" className="primary-button">
+                        Save product
+                      </button>
+                    </div>
+                  </div>
                   <div className="section">
-                    <h3>Product details</h3>
                     <div className="item">
                       <label htmlFor="name">Product name</label>
                       <Field name="name" id="name" />
@@ -423,6 +497,54 @@ export default function UpdateProduct() {
                       />
                     </div>
                   </div>
+
+                  <div className="section">
+                    <h3>Custom options</h3>
+                    <div className="option">
+                      <button
+                        type="button"
+                        onClick={() => setIncludeCustomName(!includeCustomName)}
+                        role="switch"
+                        aria-checked={includeCustomName}
+                        className={`toggle-button ${
+                          includeCustomName ? 'on' : 'off'
+                        }`}
+                      >
+                        <span aria-hidden="true" className="switch" />
+                        <span className="sr-only">
+                          Turn {includeCustomName ? 'off' : 'on'} include custom
+                          name
+                        </span>
+                      </button>
+                      <span className="toggle-description">
+                        Allow custom names <span>(+$5.00)</span>
+                      </span>
+                    </div>
+
+                    <div className="option">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setIncludeCustomNumber(!includeCustomNumber)
+                        }
+                        role="switch"
+                        aria-checked={includeCustomNumber}
+                        className={`toggle-button ${
+                          includeCustomNumber ? 'on' : 'off'
+                        }`}
+                      >
+                        <span aria-hidden="true" className="switch" />
+                        <span className="sr-only">
+                          Turn {includeCustomNumber ? 'off' : 'on'} include
+                          custom name
+                        </span>
+                      </button>
+                      <div className="toggle-description">
+                        Allow custom numbers <span>(+$5.00)</span>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="section">
                     <h3>Product details</h3>
                     <FieldArray
@@ -470,7 +592,12 @@ export default function UpdateProduct() {
                           <button
                             type="button"
                             className="secondary-button"
-                            onClick={() => arrayHelpers.push('')}
+                            onClick={() =>
+                              handleAddClick(
+                                () => arrayHelpers.push(''),
+                                `#details\\.${values.details.length}`
+                              )
+                            }
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -555,11 +682,15 @@ export default function UpdateProduct() {
                             type="button"
                             className="secondary-button"
                             onClick={() =>
-                              arrayHelpers.push({
-                                id: createId('size'),
-                                label: '',
-                                price: '0.00',
-                              })
+                              handleAddClick(
+                                () =>
+                                  arrayHelpers.push({
+                                    id: createId('size'),
+                                    label: '',
+                                    price: '0.00',
+                                  }),
+                                `#sizes\\.${values.sizes.length}\\.label`
+                              )
                             }
                           >
                             <svg
@@ -824,13 +955,17 @@ export default function UpdateProduct() {
                             type="button"
                             className="secondary-button"
                             onClick={() =>
-                              arrayHelpers.push({
-                                id: createId('color'),
-                                label: '',
-                                hex: '',
-                                primaryImage: '',
-                                secondaryImages: [],
-                              })
+                              handleAddClick(
+                                () =>
+                                  arrayHelpers.push({
+                                    id: createId('color'),
+                                    label: '',
+                                    hex: '',
+                                    primaryImage: '',
+                                    secondaryImages: [],
+                                  }),
+                                `#colors\\.${values.colors.length}\\.label`
+                              )
                             }
                           >
                             <svg
@@ -851,11 +986,11 @@ export default function UpdateProduct() {
                       )}
                     />
                   </div>
-                </div>
-              </div>
-            </Form>
-          )}
-        </Formik>
+                </Form>
+              )}
+            </Formik>
+          </div>
+        </div>
       </UpdateProductStyles>
     </BasicLayout>
   );
@@ -865,6 +1000,8 @@ const UpdateProductStyles = styled.div`
   .title {
     padding: 1.5rem 2.5rem;
     position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
     display: flex;
     justify-content: space-between;
@@ -988,7 +1125,7 @@ const UpdateProductStyles = styled.div`
   }
 
   .main-content {
-    padding: 10rem 3rem 3rem;
+    padding: 7rem 3rem 3rem;
     position: relative;
   }
 
@@ -1061,20 +1198,16 @@ const UpdateProductStyles = styled.div`
     justify-content: center;
     align-items: center;
     background-color: transparent;
-    border: 1px solid transparent;
+    border: none;
     color: #6b7280;
-    border-radius: 0.25rem;
+    border-radius: 9999px;
     cursor: pointer;
     box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
       rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 1px 3px 0px,
       rgba(0, 0, 0, 0) 0px 1px 2px 0px;
 
     &:hover {
-      color: #374151;
-      border-color: #e5e7eb;
-      box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 1px 3px 0px,
-        rgba(0, 0, 0, 0.06) 0px 1px 2px 0px;
+      color: #111827;
     }
   }
 
@@ -1137,7 +1270,11 @@ const UpdateProductStyles = styled.div`
       align-items: center;
       width: 5rem;
       height: 5rem;
-      border: 1px solid #e5e7eb;
+      background-color: #fff;
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
+        rgba(17, 24, 39, 0.05) 0px 0px 0px 1px,
+        rgba(0, 0, 0, 0.1) 0px 4px 6px -1px,
+        rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
       border-radius: 0.125rem;
 
       .placeholder {
@@ -1169,7 +1306,11 @@ const UpdateProductStyles = styled.div`
       .thumbnail {
         padding: 0.5rem 0.875rem;
         position: relative;
-        border: 1px solid #e5e7eb;
+        background-color: #fff;
+        box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
+          rgba(17, 24, 39, 0.05) 0px 0px 0px 1px,
+          rgba(0, 0, 0, 0.1) 0px 4px 6px -1px,
+          rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
         border-radius: 0.125rem;
         width: 5rem;
         height: 5rem;
@@ -1183,11 +1324,15 @@ const UpdateProductStyles = styled.div`
     .remove-img-button {
       padding: 0;
       position: absolute;
-      top: -0.875rem;
-      right: -0.875rem;
+      top: -0.75rem;
+      right: -0.75rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #1f2937;
       background-color: #fff;
-      color: #6b7280;
       border: none;
+      border-radius: 9999px;
       cursor: pointer;
 
       &:hover {
@@ -1195,8 +1340,8 @@ const UpdateProductStyles = styled.div`
       }
 
       svg {
-        height: 1.625rem;
-        width: 1.625rem;
+        height: 1.5rem;
+        width: 1.5rem;
       }
     }
   }
@@ -1206,5 +1351,88 @@ const UpdateProductStyles = styled.div`
     font-size: 0.75rem;
     font-weight: 500;
     color: #b91c1c;
+  }
+
+  .option {
+    padding: 0.75rem 0;
+    max-width: 20rem;
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    border-top: 1px solid #e5e7eb;
+
+    &:last-of-type {
+      margin: 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+  }
+
+  .toggle-button {
+    padding: 0;
+    position: relative;
+    flex-shrink: 0;
+    display: inline-flex;
+    height: 1.5rem;
+    width: 2.75rem;
+    border: 2px solid transparent;
+    border-radius: 9999px;
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-duration: 0.2s;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+
+    &:focus {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+
+    &:focus-visible {
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
+        rgb(99, 102, 241) 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+    }
+
+    &.on {
+      background-color: #4338ca;
+
+      & .switch {
+        transform: translateX(1.25rem);
+      }
+    }
+
+    &.off {
+      background-color: #e5e7eb;
+
+      & .switch {
+        transform: translateX(0rem);
+      }
+    }
+  }
+
+  .switch {
+    display: inline-block;
+    width: 1.25rem;
+    height: 1.25rem;
+    background-color: #fff;
+    border-radius: 9999px;
+    box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
+      rgba(59, 130, 246, 0.5) 0px 0px 0px 0px,
+      rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.06) 0px 1px 2px 0px;
+    pointer-events: none;
+    transition-duration: 0.2s;
+    transition-property: background-color, border-color, color, fill, stroke,
+      opacity, box-shadow, transform, filter, backdrop-filter,
+      -webkit-backdrop-filter;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .toggle-description {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #111827;
+    line-height: 1;
+
+    span {
+      color: #6b7280;
+    }
   }
 `;

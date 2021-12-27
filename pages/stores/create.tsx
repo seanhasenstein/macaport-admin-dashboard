@@ -1,12 +1,26 @@
 import React from 'react';
 import { useRouter } from 'next/router';
-import { useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
-import { Formik, Form, Field, ErrorMessage } from 'formik';
+import {
+  Formik,
+  Form,
+  Field,
+  FieldArray,
+  ErrorMessage,
+  FieldArrayRenderProps,
+} from 'formik';
 import * as Yup from 'yup';
 import { useSession } from '../../hooks/useSession';
-import { StoreForm } from '../../interfaces';
-import { unitedStates, months, removeNonDigits } from '../../utils';
+import { Store, StoreForm } from '../../interfaces';
+import {
+  createId,
+  formatGroups,
+  formatGroupTerm,
+  months,
+  removeNonDigits,
+  unitedStates,
+} from '../../utils';
 import BasicLayout from '../../components/BasicLayout';
 
 const createStoreSchema = Yup.object().shape({
@@ -51,6 +65,9 @@ const initialValues: StoreForm = {
     email: '',
     phone: '',
   },
+  requireGroupSelection: false,
+  groupTerm: '',
+  groups: [''],
   redirectTo: 'store',
 };
 
@@ -84,7 +101,7 @@ function formatDataForDb(data: StoreForm) {
     : (allowDirectShipping = false);
 
   return {
-    name: data.name,
+    name: data.name.trim(),
     openDate,
     hasCloseDate,
     closeDate,
@@ -93,6 +110,9 @@ function formatDataForDb(data: StoreForm) {
     primaryShippingLocation: data.primaryShippingLocation,
     allowDirectShipping,
     contact: data.contact,
+    requireGroupSelection: data.requireGroupSelection,
+    groupTerm: formatGroupTerm(data.requireGroupSelection, data.groupTerm),
+    groups: formatGroups(data.requireGroupSelection, data.groups),
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -102,6 +122,29 @@ export default function CreateStore() {
   const [session, loading] = useSession({ required: true });
   const router = useRouter();
   const queryClient = useQueryClient();
+
+  const storesQuery = useQuery<Store[]>(
+    'stores',
+    async () => {
+      const response = await fetch('/api/stores');
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch the stores.');
+      }
+
+      const data = await response.json();
+      return data.stores;
+    },
+    {
+      initialData: () => {
+        return queryClient.getQueryData(['stores']);
+      },
+      initialDataUpdatedAt: () => {
+        return queryClient.getQueryState(['stores'])?.dataUpdatedAt;
+      },
+      staleTime: 1000 * 60 * 10,
+    }
+  );
 
   const createStoreMutation = useMutation(
     async (store: StoreForm) => {
@@ -121,8 +164,25 @@ export default function CreateStore() {
       return data.store;
     },
     {
+      onMutate: async newStore => {
+        await queryClient.cancelQueries(['stores']);
+        const formattedNewStore = formatDataForDb(newStore);
+        const previousStores = storesQuery.data || [];
+        const stores = [
+          previousStores,
+          { ...formattedNewStore, _id: createId() },
+        ];
+        queryClient.setQueryData(['stores'], stores);
+        return { previousStores, newStore };
+      },
+      onError: () => {
+        // TODO: trigger a notification
+        queryClient.setQueryData(['stores'], storesQuery.data);
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries('stores');
+      },
       onSuccess: (data, variables) => {
-        queryClient.invalidateQueries('stores', { exact: true });
         const route =
           variables.redirectTo === 'add_product'
             ? `/stores/${data._id}/product/add`
@@ -131,6 +191,17 @@ export default function CreateStore() {
       },
     }
   );
+
+  const handleAddGroupClick = async (
+    arrayHelpers: FieldArrayRenderProps,
+    groupsLength: number
+  ) => {
+    await arrayHelpers.push('');
+
+    document
+      .querySelector<HTMLInputElement>(`#groups\\.${groupsLength}`)
+      ?.focus();
+  };
 
   if (loading || !session) return <div />;
 
@@ -194,22 +265,19 @@ export default function CreateStore() {
               <div className="main-content">
                 <div className="form-container">
                   <Form>
-                    <h3>Store Information</h3>
                     <div className="section">
-                      <div className="grid-col-1">
-                        <div className="item">
-                          <label htmlFor="name">Store Name</label>
-                          <Field name="name" id="name" />
-                          <ErrorMessage
-                            name="name"
-                            component="div"
-                            className="validation-error"
-                          />
-                        </div>
+                      <div className="item">
+                        <label htmlFor="name">Store Name</label>
+                        <Field name="name" id="name" />
+                        <ErrorMessage
+                          name="name"
+                          component="div"
+                          className="validation-error"
+                        />
                       </div>
                     </div>
                     <div className="section">
-                      <h4>When will this store open?</h4>
+                      <h4>Store Open Date</h4>
                       <div className="grid-col-1">
                         <div className="checkbox-item">
                           <Field
@@ -262,7 +330,7 @@ export default function CreateStore() {
                               value="true"
                             />
                             <label htmlFor="hasAClosingDate">
-                              Yes, this store will have a close date
+                              This store will close
                             </label>
                           </div>
                           <div className="radio-item">
@@ -273,7 +341,7 @@ export default function CreateStore() {
                               value="false"
                             />
                             <label htmlFor="permanentlyOpen">
-                              No, this store will be open permanently
+                              This store will be open permanently
                             </label>
                           </div>
                         </div>
@@ -321,7 +389,7 @@ export default function CreateStore() {
                               value="ship"
                             />
                             <label htmlFor="ship">
-                              We will be shipping orders to a primary location
+                              Orders will be shipped to a primary location
                             </label>
                           </div>
                           <div className="radio-item">
@@ -332,8 +400,7 @@ export default function CreateStore() {
                               value="noship"
                             />
                             <label htmlFor="noship">
-                              We will NOT be shipping orders to a primary
-                              location
+                              Orders will NOT be shipped to a primary location
                             </label>
                           </div>
                           <div className="radio-item">
@@ -344,7 +411,7 @@ export default function CreateStore() {
                               value="inhouse"
                             />
                             <label htmlFor="inhouse">
-                              This is a store for Macaport (no client)
+                              This store is for Macaport (in-house/no client)
                             </label>
                           </div>
                         </div>
@@ -434,7 +501,7 @@ export default function CreateStore() {
                                   value="true"
                                 />
                                 <label htmlFor="allowDirectShipping">
-                                  Yes, customers can ship directly to themselves
+                                  Allow customers to ship directly to themselves
                                 </label>
                               </div>
                               <div className="radio-item">
@@ -445,15 +512,15 @@ export default function CreateStore() {
                                   value="false"
                                 />
                                 <label htmlFor="noDirectShipping">
-                                  No, all orders will be sent togther to the
-                                  primary location
+                                  No, all orders will be sent to the primary
+                                  location
                                 </label>
                               </div>
                             </div>
                           </div>
                         </div>
                         <div className="section">
-                          <h3>Store Contact</h3>
+                          <h3>Store Contact Person</h3>
                           <div className="grid-col-2">
                             <div className="item">
                               <label htmlFor="contact.firstName">
@@ -492,6 +559,104 @@ export default function CreateStore() {
                               className="validation-error"
                             />
                           </div>
+                        </div>
+                        <div className="section">
+                          <div className="item">
+                            <h3>Group selection at checkout</h3>
+                            <div className="checkbox-item">
+                              <Field
+                                type="checkbox"
+                                name="requireGroupSelection"
+                                id="requireGroupSelection"
+                              />
+                              <label htmlFor="requireGroupSelection">
+                                Require customers to select a group at checkout
+                              </label>
+                            </div>
+                          </div>
+                          {values.requireGroupSelection && (
+                            <>
+                              <div className="item">
+                                <label htmlFor="groupTerm">
+                                  Group term (team, organization, category,
+                                  etc.)
+                                </label>
+                                <Field name="groupTerm" id="groupTerm" />
+                              </div>
+                              <div className="item">
+                                <label htmlFor="groups">Groups</label>
+                                <FieldArray
+                                  name="groups"
+                                  render={arrayHelpers => (
+                                    <>
+                                      <div className="group-items">
+                                        {values.groups.length > 0 &&
+                                          values.groups.map((g, i) => (
+                                            <div key={i} className="group-item">
+                                              <Field
+                                                name={`groups.${i}`}
+                                                id={`groups.${i}`}
+                                              />
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  arrayHelpers.remove(i)
+                                                }
+                                                className="remove-group-button"
+                                              >
+                                                <span className="sr-only">
+                                                  Remove
+                                                </span>
+                                                <svg
+                                                  xmlns="http://www.w3.org/2000/svg"
+                                                  viewBox="0 0 20 20"
+                                                  fill="currentColor"
+                                                >
+                                                  <path
+                                                    fillRule="evenodd"
+                                                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                                    clipRule="evenodd"
+                                                  />
+                                                </svg>
+                                              </button>
+                                            </div>
+                                          ))}
+                                      </div>
+                                      {values.groups.length > 0 ? (
+                                        <div className="add-row">
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleAddGroupClick(
+                                                arrayHelpers,
+                                                values.groups.length
+                                              )
+                                            }
+                                            className="add-group-button"
+                                          >
+                                            <span>Add another group</span>
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            handleAddGroupClick(
+                                              arrayHelpers,
+                                              values.groups.length
+                                            )
+                                          }
+                                          className="add-group-button"
+                                        >
+                                          Add a group
+                                        </button>
+                                      )}
+                                    </>
+                                  )}
+                                />
+                              </div>
+                            </>
+                          )}
                         </div>
                       </>
                     )}
@@ -617,7 +782,7 @@ const CreateStoreStyles = styled.div`
   }
 
   .main-content {
-    padding: 10rem 3rem 3rem;
+    padding: 10rem 3rem 6rem;
     position: relative;
   }
 
@@ -670,6 +835,103 @@ const CreateStoreStyles = styled.div`
 
     label {
       margin: 0;
+    }
+  }
+
+  .group-items {
+    background-color: #fff;
+    border-radius: 0.375rem;
+    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
+      rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+  }
+
+  .group-item {
+    margin: -1px 0 0;
+    position: relative;
+
+    &:first-of-type input {
+      border-top-left-radius: 0.375rem;
+      border-top-right-radius: 0.375rem;
+    }
+
+    &:last-of-type input {
+      border-bottom-left-radius: 0.375rem;
+      border-bottom-right-radius: 0.375rem;
+    }
+
+    input {
+      position: relative;
+      width: 100%;
+      background-color: transparent;
+      border: 1px solid #d1d5db;
+      box-shadow: none;
+      border-radius: 0;
+
+      &:focus {
+        z-index: 100;
+      }
+    }
+  }
+
+  .remove-group-button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 0.875rem 1rem;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    color: #6b7280;
+    z-index: 200;
+
+    svg {
+      height: 0.8125rem;
+      width: 0.8125rem;
+    }
+
+    &:hover {
+      color: #111827;
+    }
+  }
+
+  .add-row {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .add-group-button {
+    margin: 1rem 0 0;
+    padding: 0.5rem 0.75rem;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    color: #475569;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: center;
+    line-height: 1;
+    background-color: #e2e8f0;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.3125rem;
+    box-shadow: inset 0 1px 1px #fff, 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    cursor: pointer;
+
+    &:hover {
+      border-color: #bfcbda;
+      box-shadow: inset 0 1px 1px #fff, 0 1px 2px 0 rgb(0 0 0 / 0.1);
+    }
+
+    &:focus {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+
+    &:focus-visible {
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
+        rgb(99, 102, 241) 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
   }
 

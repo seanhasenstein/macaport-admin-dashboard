@@ -1,35 +1,39 @@
 import React from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import { format } from 'date-fns';
+import useActiveNavTab from '../../../hooks/useActiveNavTab';
 import { useSession } from '../../../hooks/useSession';
 import { Store as StoreInterface, Note } from '../../../interfaces';
-import { createId, formatPhoneNumber, getStoreStatus } from '../../../utils';
+import { formatPhoneNumber, getStoreStatus } from '../../../utils';
 import Layout from '../../../components/Layout';
 import Notes from '../../../components/Notes';
 import StoreProducts from '../../../components/StoreProducts';
 import OrdersTable from '../../../components/OrdersTable';
+import LoadingSpinner from '../../../components/LoadingSpinner';
 
+const navValues = ['details', 'products', 'orders', 'notes'];
+type NavValue = typeof navValues[number];
 type StoreStatus = 'upcoming' | 'open' | 'closed';
 
 export default function Store() {
   const [session, loading] = useSession({ required: true });
   const router = useRouter();
+  const { activeNav, setActiveNav } = useActiveNavTab(
+    navValues,
+    `/stores/${router.query.id}?`
+  );
+  const queryClient = useQueryClient();
+
   const [storeStatus, setStoreStatus] = React.useState<StoreStatus>();
   const [productIdToDelete, setProductIdToDelete] = React.useState<string>();
   const [showDeleteProductModal, setShowDeleteProductModal] =
     React.useState(false);
-  const queryClient = useQueryClient();
 
-  const {
-    isLoading,
-    isError,
-    error,
-    data: store,
-  } = useQuery<StoreInterface>(
-    ['store', router.query.id],
+  const storeQuery = useQuery<StoreInterface>(
+    ['stores', 'store', router.query.id],
     async () => {
       if (!router.query.id) return;
       const response = await fetch(`/api/stores/${router.query.id}`);
@@ -52,17 +56,19 @@ export default function Store() {
           setStoreStatus(getStoreStatus(data.openDate, data.closeDate));
         }
       },
-      staleTime: 600000,
+      staleTime: 1000 * 60 * 10,
     }
   );
 
   const deleteProductMutation = useMutation(
     async (id: string | undefined) => {
-      if (id === undefined) {
+      if (!id) {
         setShowDeleteProductModal(false);
         throw new Error('No product id was provided.');
       }
-      const filteredProducts = store?.products.filter(p => p.id !== id);
+      const filteredProducts = storeQuery.data?.products.filter(
+        p => p.id !== id
+      );
 
       const response = await fetch(`/api/stores/update?id=${router.query.id}`, {
         method: 'post',
@@ -80,29 +86,38 @@ export default function Store() {
       return data.store;
     },
     {
-      onSuccess: () => {
-        queryClient.invalidateQueries('stores', { exact: true });
-        queryClient.invalidateQueries(['store', router.query.id]);
-        setProductIdToDelete(undefined);
-        setShowDeleteProductModal(false);
+      onMutate: async id => {
+        await queryClient.cancelQueries(['stores', 'store', router.query.id]);
+        const updatedProducts = storeQuery.data?.products.filter(
+          p => p.id !== id
+        );
+        const updatedStore = { ...storeQuery.data, products: updatedProducts };
+        queryClient.setQueryData(
+          ['stores', 'store', router.query.id],
+          updatedStore
+        );
+      },
+      onError: () => {
+        // TODO: trigger a notafication
+        queryClient.setQueryData(
+          ['stores', 'store', router.query.id],
+          storeQuery.data
+        );
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries('stores');
       },
     }
   );
 
   const addNoteMutation = useMutation(
-    async (text: string) => {
-      if (!store) return;
+    async (note: Note) => {
+      if (!storeQuery.data) return;
+      const prevNotes = storeQuery.data.notes || [];
 
-      const note: Note = {
-        id: createId('note'),
-        text,
-        createdAt: `${new Date()}`,
-      };
-      const prevNotes = store.notes || [];
-      const updatedNotes = [...prevNotes, note];
       const response = await fetch(`/api/stores/update?id=${router.query.id}`, {
         method: 'post',
-        body: JSON.stringify({ notes: updatedNotes }),
+        body: JSON.stringify({ notes: [...prevNotes, note] }),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -116,16 +131,31 @@ export default function Store() {
       return data.store;
     },
     {
-      onSuccess: data => {
-        queryClient.invalidateQueries('stores', { exact: true });
-        queryClient.invalidateQueries(['store', data._id]);
+      onMutate: async newNote => {
+        await queryClient.cancelQueries(['stores', 'store', router.query.id]);
+        const previousNotes = storeQuery.data?.notes || [];
+        queryClient.setQueryData(['stores', 'store', router.query.id], {
+          ...storeQuery.data,
+          notes: [...previousNotes, newNote],
+        });
+        return { previousNotes, newNote };
+      },
+      onError: () => {
+        // TODO: trigger a notification that the mutation failed.
+        queryClient.setQueryData(
+          ['stores', 'store', router.query.id],
+          storeQuery.data
+        );
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries('stores');
       },
     }
   );
 
   const updateNoteMutation = useMutation(
     async (note: Note) => {
-      const notes = store?.notes.map(n => {
+      const notes = storeQuery.data?.notes.map(n => {
         if (n.id === note.id) {
           return note;
         } else {
@@ -149,16 +179,34 @@ export default function Store() {
       return data.store;
     },
     {
-      onSuccess: data => {
-        queryClient.invalidateQueries('stores', { exact: true });
-        queryClient.invalidateQueries(['store', data._id]);
+      onMutate: async updatedNote => {
+        await queryClient.cancelQueries(['stores', 'store', router.query.id]);
+        const previousNotes = storeQuery.data?.notes;
+        const updatedNotes = previousNotes?.map(n =>
+          n.id === updatedNote.id ? updatedNote : n
+        );
+        queryClient.setQueryData(['stores', 'store', router.query.id], {
+          ...storeQuery.data,
+          notes: updatedNotes,
+        });
+        return { previousNotes, updatedNote };
+      },
+      onError: () => {
+        // TODO: trigger a notification
+        queryClient.setQueryData(
+          ['stores', 'store', router.query.id],
+          storeQuery.data
+        );
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries('stores');
       },
     }
   );
 
   const deleteNoteMutation = useMutation(
     async (id: string) => {
-      const notes = store?.notes.filter(n => n.id !== id);
+      const notes = storeQuery.data?.notes.filter(n => n.id !== id);
 
       const response = await fetch(`/api/stores/update?id=${router.query.id}`, {
         method: 'post',
@@ -176,9 +224,25 @@ export default function Store() {
       return data.store;
     },
     {
-      onSuccess: data => {
-        queryClient.invalidateQueries('stores', { exact: true });
-        queryClient.invalidateQueries(['store', data._id]);
+      onMutate: async id => {
+        await queryClient.cancelQueries(['stores', 'store', router.query.id]);
+        const previousNotes = storeQuery.data?.notes;
+        const updatedNotes = previousNotes?.filter(n => n.id !== id);
+        queryClient.setQueryData(['stores', 'store', router.query.id], {
+          ...storeQuery.data,
+          notes: updatedNotes,
+        });
+        return { previousNotes };
+      },
+      onError: () => {
+        // TODO: trigger a notification?
+        queryClient.setQueryData(
+          ['stores', 'store', router.query.id],
+          storeQuery.data
+        );
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries('stores');
       },
     }
   );
@@ -188,248 +252,284 @@ export default function Store() {
     setProductIdToDelete(undefined);
   };
 
+  const handleDeleteProductClick = () => {
+    deleteProductMutation.mutate(productIdToDelete);
+    setShowDeleteProductModal(false);
+    setProductIdToDelete(undefined);
+  };
+
   React.useEffect(() => {
-    if (store) {
-      setStoreStatus(getStoreStatus(store.openDate, store.closeDate));
+    if (storeQuery.data) {
+      setStoreStatus(
+        getStoreStatus(storeQuery.data.openDate, storeQuery.data.closeDate)
+      );
     }
-  }, [store]);
+  }, [storeQuery.data]);
+
+  const handleNavClick = (value: NavValue) => {
+    setActiveNav(value);
+    router.push(`/stores/${router.query.id}?active=${value}`, undefined, {
+      shallow: true,
+    });
+  };
 
   if (loading || !session) return <div />;
 
   return (
-    <Layout title="Store | Macaport Dashboard">
+    <Layout title={`${storeQuery.data?.name} | Macaport Dashboard`}>
       <StoreStyles>
-        {isLoading && (
-          <>
-            <div className="title">
-              <div className="details">
-                <h2>Store</h2>
+        <div className="container">
+          {storeQuery.isLoading && (
+            <LoadingSpinner isLoading={storeQuery.isLoading} />
+          )}
+          {storeQuery.isError && storeQuery.error instanceof Error && (
+            <div>Error: {storeQuery.error}</div>
+          )}
+          {storeQuery.data && (
+            <>
+              <Link href="/">
+                <a className="back-link">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Back to stores
+                </a>
+              </Link>
+              <Link href={`/stores/update?id=${router.query.id}`}>
+                <a className="edit-store-link">Edit Store</a>
+              </Link>
+              <div className="store-header">
+                <h2>{storeQuery.data.name}</h2>
+                <p>{storeQuery.data.storeId}</p>
               </div>
-            </div>
-            <div className="main-content">
-              <div className="wrapper">
-                <div>Loading store...</div>
+
+              <div className="store-nav">
+                <button
+                  type="button"
+                  onClick={() => handleNavClick('details')}
+                  className={activeNav === 'details' ? 'active' : ''}
+                >
+                  <span>Details</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleNavClick('products')}
+                  className={activeNav === 'products' ? 'active' : ''}
+                >
+                  <span>Products</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleNavClick('orders')}
+                  className={activeNav === 'orders' ? 'active' : ''}
+                >
+                  <span>Orders</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleNavClick('notes')}
+                  className={activeNav === 'notes' ? 'active' : ''}
+                >
+                  <span>Notes</span>
+                </button>
               </div>
-            </div>
-          </>
-        )}
-        {isError && error instanceof Error && (
-          <>
-            <div className="title">
-              <div className="details">
-                <h2>Store Error!</h2>
-              </div>
-            </div>
-            <div className="main-content">
-              <div className="wrapper">
-                <div>Error: {error.message}</div>
-              </div>
-            </div>
-          </>
-        )}
-        {store && (
-          <>
-            <div className="title">
-              <div className="details">
-                <h2>{store.name}</h2>
-                <div className="store-status">
-                  <span className={storeStatus}>
-                    <div className="dot" />
-                    {storeStatus === 'upcoming'
-                      ? 'Upcoming'
-                      : storeStatus === 'open'
-                      ? 'Open'
-                      : 'Closed'}
-                  </span>
-                </div>
-              </div>
-              <div className="action-buttons">
-                <Link href={`/stores/update?id=${store._id}`}>
-                  <a className="edit-store-link">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-                      />
-                    </svg>
-                    Edit Store
-                  </a>
-                </Link>
-              </div>
-            </div>
-            <div className="main-content">
-              <div className="wrapper">
-                <h3>Store Details</h3>
-                <div className="contact-info">
-                  <div className="item">
-                    <div className="label">Store Id</div>
-                    <div className="data">{store._id}</div>
-                  </div>
-                  {store.category === 'client' ? (
-                    <>
-                      <div className="item">
-                        <div className="label">Name</div>
-                        <div className="data">
-                          {store.contact.firstName} {store.contact.lastName}
+
+              <div className="body">
+                <FetchingSpinner isLoading={storeQuery.isFetching} />
+                {activeNav === 'details' && (
+                  <>
+                    <h3>Store Details</h3>
+                    <div className="store-details">
+                      <div className="section">
+                        <div className="info-item">
+                          <div className="label">Status</div>
+                          <div className="value">
+                            <div className="store-status">
+                              <span className={storeStatus}>
+                                <div className="dot" />
+                                {storeStatus === 'upcoming'
+                                  ? 'Upcoming'
+                                  : storeStatus === 'open'
+                                  ? 'Open'
+                                  : 'Closed'}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="item">
-                        <div className="label">Email</div>
-                        <div className="data">{store.contact.email}</div>
-                      </div>
-                      <div className="item">
-                        <div className="label">Phone</div>
-                        <div className="data">
-                          {formatPhoneNumber(store.contact.phone)}
-                        </div>
-                      </div>
-                    </>
-                  ) : store.category === 'macaport' ? (
-                    <div className="item">
-                      <div className="label">Category</div>
-                      <div className="data">Macaport Store</div>
-                    </div>
-                  ) : null}
-                </div>
-                <div className="grid-cols-2 section">
-                  <div>
-                    <h4>Store Dates</h4>
-                    <div className="info-item">
-                      <div className="label">Status</div>
-                      <div className="data">
-                        {storeStatus === 'upcoming'
-                          ? 'Upcoming'
-                          : storeStatus === 'open'
-                          ? 'Open'
-                          : 'Closed'}
-                      </div>
-                    </div>
-                    <div className="info-item">
-                      <div className="label">Open Date</div>
-                      <div className="data">
-                        {format(
-                          new Date(store.openDate),
-                          'LLL dd, yyyy, h:mm a'
-                        )}
-                      </div>
-                    </div>
-                    <div className="info-item">
-                      <div className="label">Close Date</div>
-                      <div className="data">
-                        {store.closeDate
-                          ? format(
-                              new Date(store.closeDate),
+                        <div className="info-item">
+                          <div className="label">Open Date</div>
+                          <div className="value">
+                            {format(
+                              new Date(storeQuery.data.openDate),
                               'LLL dd, yyyy, h:mm a'
-                            )
-                          : 'Open Permanently'}
+                            )}
+                          </div>
+                        </div>
+                        <div className="info-item">
+                          <div className="label">Close Date</div>
+                          <div className="value">
+                            {storeQuery.data.closeDate
+                              ? format(
+                                  new Date(storeQuery.data.closeDate),
+                                  'LLL dd, yyyy, h:mm a'
+                                )
+                              : 'Open Permanently'}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  <div>
-                    <h4>Shipping Details</h4>
-                    <div className="info-item">
-                      <div className="label">Primary Shipping Address</div>
-                      <div className="data">
-                        {store.hasPrimaryShippingLocation ? (
-                          <>
-                            {store.primaryShippingLocation.name} <br />
-                            {store.primaryShippingLocation.street} <br />
-                            {store.primaryShippingLocation.street2 ? (
+
+                      <div className="section">
+                        <div className="info-item">
+                          <div className="label">Primary Shipping Address</div>
+                          <div className="value">
+                            {storeQuery.data.hasPrimaryShippingLocation ? (
                               <>
-                                {store.primaryShippingLocation.street2} <br />
+                                {storeQuery.data.primaryShippingLocation.name}{' '}
+                                <br />
+                                {
+                                  storeQuery.data.primaryShippingLocation.street
+                                }{' '}
+                                <br />
+                                {storeQuery.data.primaryShippingLocation
+                                  .street2 ? (
+                                  <>
+                                    {
+                                      storeQuery.data.primaryShippingLocation
+                                        .street2
+                                    }{' '}
+                                    <br />
+                                  </>
+                                ) : null}
+                                {storeQuery.data.primaryShippingLocation.city},{' '}
+                                {storeQuery.data.primaryShippingLocation.state}{' '}
+                                {
+                                  storeQuery.data.primaryShippingLocation
+                                    .zipcode
+                                }
                               </>
-                            ) : null}
-                            {store.primaryShippingLocation.city},{' '}
-                            {store.primaryShippingLocation.state}{' '}
-                            {store.primaryShippingLocation.zipcode}
+                            ) : (
+                              'None'
+                            )}
+                          </div>
+                        </div>
+                        <div className="info-item">
+                          <div className="label">Allows Direct Shipping</div>
+                          <div className="value">
+                            {storeQuery.data.allowDirectShipping ? 'Yes' : 'No'}
+                          </div>
+                        </div>
+                        <div className="info-item">
+                          <div className="label">Require group at checkout</div>
+                          <div className="value capitalize">
+                            {storeQuery.data.requireGroupSelection
+                              ? storeQuery.data.groupTerm
+                              : 'No'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="section">
+                        {storeQuery.data.category === 'client' ? (
+                          <>
+                            <div className="info-item">
+                              <div className="label">Name</div>
+                              <div className="value">
+                                {storeQuery.data.contact.firstName}{' '}
+                                {storeQuery.data.contact.lastName}
+                              </div>
+                            </div>
+                            <div className="info-item">
+                              <div className="label">Email</div>
+                              <div className="value">
+                                <a
+                                  href={`mailto:${storeQuery.data.contact.email}`}
+                                >
+                                  {storeQuery.data.contact.email}
+                                </a>
+                              </div>
+                            </div>
+                            <div className="info-item">
+                              <div className="label">Phone</div>
+                              <div className="value">
+                                {formatPhoneNumber(
+                                  storeQuery.data.contact.phone
+                                )}
+                              </div>
+                            </div>
                           </>
-                        ) : (
-                          'None'
-                        )}
+                        ) : storeQuery.data.category === 'macaport' ? (
+                          <div className="info-item">
+                            <div className="label">Category</div>
+                            <div className="value">Macaport Store</div>
+                          </div>
+                        ) : null}
                       </div>
                     </div>
-                    <div className="info-item">
-                      <div className="label">Allows Direct Shipping</div>
-                      <div className="data">
-                        {store.allowDirectShipping ? 'Yes' : 'No'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="section" id="products">
-                  <div className="row">
-                    <h4>Store Products</h4>
-                    <Link href={`/stores/${router.query.id}/product/add`}>
-                      <a className="add-product-link">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        Add a product
-                      </a>
-                    </Link>
-                  </div>
-                  <div>
-                    {(!store.products || store.products.length < 1) && (
-                      <div className="empty empty-products">
-                        This store has no products.
-                      </div>
-                    )}
-                    {store.products && (
+                  </>
+                )}
+
+                {activeNav === 'products' && (
+                  <div className="section" id="products">
+                    <div>
                       <StoreProducts
-                        products={store.products}
-                        storeId={store._id}
+                        products={storeQuery.data.products}
+                        storeId={storeQuery.data._id}
                         setProductIdToDelete={setProductIdToDelete}
                         setShowDeleteProductModal={setShowDeleteProductModal}
                       />
+                      {(!storeQuery.data.products ||
+                        storeQuery.data.products.length < 1) && (
+                        <div className="empty empty-products">
+                          This store has no products.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {activeNav === 'orders' && (
+                  <div className="section orders" id="orders">
+                    <h3>Store Orders</h3>
+                    {storeQuery.data.orders ? (
+                      <OrdersTable
+                        store={storeQuery.data}
+                        orders={storeQuery.data.orders}
+                      />
+                    ) : (
+                      <div className="empty empty-orders">
+                        This store has no orders.
+                      </div>
                     )}
                   </div>
-                </div>
-                <div className="section orders" id="orders">
-                  <h4>Store Orders</h4>
-                  {store.orders ? (
-                    <OrdersTable orders={store.orders} />
-                  ) : (
-                    <div className="empty empty-orders">
-                      This store has no orders.
-                    </div>
-                  )}
-                </div>
-                <Notes
-                  label="Store"
-                  notes={store.notes}
-                  addNote={addNoteMutation.mutate}
-                  updateNote={updateNoteMutation.mutate}
-                  deleteNote={deleteNoteMutation.mutate}
-                />
+                )}
+
+                {activeNav === 'notes' && (
+                  <Notes
+                    label="Store"
+                    notes={storeQuery.data.notes}
+                    addNote={addNoteMutation}
+                    updateNote={updateNoteMutation}
+                    deleteNote={deleteNoteMutation}
+                  />
+                )}
               </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
+        </div>
       </StoreStyles>
       {showDeleteProductModal && (
         <DeleteProductModalStyles>
           <div className="modal">
             <div>
               <h3>Delete Product</h3>
-              <p>
-                Are you sure you want to delete this product? This can&apos;t be
-                undone.
-              </p>
+              <p>Are you sure you want to delete this product?</p>
             </div>
             <div className="buttons">
               <button
@@ -442,9 +542,9 @@ export default function Store() {
               <button
                 type="button"
                 className="primary-button"
-                onClick={() => deleteProductMutation.mutate(productIdToDelete)}
+                onClick={handleDeleteProductClick}
               >
-                Delete Product
+                Delete the product
               </button>
             </div>
           </div>
@@ -454,131 +554,174 @@ export default function Store() {
   );
 }
 
-const DeleteProductModalStyles = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: rgba(0, 0, 0, 0.5);
-
-  .modal {
-    margin: -12rem 0 0;
-    padding: 1.375rem 1.75rem;
-    max-width: 24rem;
-    background-color: #fff;
-    border-radius: 0.375rem;
-
-    h3 {
-      margin: 0 0 0.75rem;
-      font-size: 1.125rem;
-      font-weight: 600;
-      color: #111827;
-    }
-
-    p {
-      margin: 0;
-      font-size: 0.9375rem;
-      color: #374151;
-      line-height: 1.5;
-    }
-
-    .buttons {
-      margin: 1.25rem 0 0;
-      display: flex;
-      justify-content: flex-end;
-      gap: 0.5rem;
-    }
-
-    .primary-button,
-    .secondary-button {
-      padding: 0.25rem 0.625rem;
-      border-radius: 0.25rem;
-      font-size: 0.875rem;
-      font-weight: 500;
-      cursor: pointer;
-    }
-
-    .primary-button {
-      background-color: #b91c1c;
-      border: 1px solid transparent;
-      color: #fff1f2;
-      box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.2) 0px 1px 2px 0px;
-
-      &:hover {
-        color: #fff;
-        background-color: #a81919;
-      }
-    }
-
-    .secondary-button {
-      background-color: #fff;
-      border: 1px solid #d1d5db;
-      color: #374151;
-      box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
-
-      &:hover {
-        color: #111827;
-        background-color: #f9fafb;
-      }
-    }
-  }
-`;
-
 const StoreStyles = styled.div`
+  position: relative;
+
   h2 {
     margin: 0;
-    font-size: 1.375rem;
+    font-size: 1.5rem;
     font-weight: 600;
     color: #111827;
   }
 
   h3 {
-    margin: 0;
-    font-size: 1.5rem;
+    margin: 0 0 1.25rem;
+    font-size: 1.25rem;
     font-weight: 600;
-    color: #1f2937;
+    color: #111827;
   }
 
   h4 {
-    margin: 0 0 1.25rem;
+    margin: 0 0 1rem;
     font-size: 1.125rem;
     font-weight: 600;
-    color: #374151;
+    color: #111827;
   }
 
-  .title {
-    padding: 1.625rem 2.5rem;
-    min-height: 5.875rem;
+  .container {
+    margin: 0 auto;
+    padding: 3rem 0 0;
+    max-width: 70rem;
+    width: 100%;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-weight: 500;
+    color: #4b5563;
+
+    svg {
+      margin: 1px 0 0;
+      height: 1rem;
+      width: 1rem;
+      color: #9ca3af;
+    }
+
+    &:hover {
+      color: #1f2937;
+    }
+
+    &:focus {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+
+    &:focus-visible {
+      text-decoration: underline;
+      color: #2c33bb;
+
+      svg {
+        color: #2c33bb;
+      }
+    }
+  }
+
+  .edit-store-link {
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+    padding: 0.5rem 0.75rem;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    color: #475569;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: center;
+    line-height: 1;
+    background-color: #e2e8f0;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.3125rem;
+    box-shadow: inset 0 1px 1px #fff, 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    cursor: pointer;
+
+    &:hover {
+      border-color: #bfcbda;
+      box-shadow: inset 0 1px 1px #fff, 0 1px 2px 0 rgb(0 0 0 / 0.1);
+    }
+
+    &:focus {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+
+    &:focus-visible {
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
+        rgb(99, 102, 241) 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+    }
+  }
+
+  .store-header {
+    margin: 3rem 0 2.25rem;
+
+    p {
+      margin: 0.25rem 0 0;
+      color: #6b7280;
+    }
+  }
+
+  .store-nav {
+    padding: 0.625rem 0;
     display: flex;
-    justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid #e5e7eb;
+    border-top: 1px solid #e5e7eb;
+
+    button {
+      margin: 0 0.75rem 0 0;
+      padding: 0.4375rem 0.75rem;
+      background-color: transparent;
+      border: none;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      line-height: 1;
+      color: #374151;
+      cursor: pointer;
+
+      &:hover {
+        background-color: #e5e7eb;
+        color: #111827;
+      }
+
+      &.active {
+        background-color: #2c33bb;
+        color: #fff;
+      }
+    }
+
+    a {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #374151;
+    }
   }
 
-  .details {
-    display: flex;
-    align-items: center;
-    gap: 1.25rem;
+  .body {
+    position: relative;
+    padding: 3.5rem 0;
+  }
+
+  .store-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
   }
 
   .store-status {
     span {
+      padding: 0.375rem 0.8125rem 0.375rem 0.75rem;
       display: inline-flex;
       align-items: center;
-      padding: 0.375rem 0.875rem;
-      font-size: 0.875rem;
-      font-weight: 600;
-      letter-spacing: 0.025em;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
       color: #374151;
       border-radius: 9999px;
       background: #fff;
-      border: 1px solid #d1d5db;
+      line-height: 1;
 
       .dot {
         margin: 0 0.5rem 0 0;
@@ -589,81 +732,41 @@ const StoreStyles = styled.div`
       }
 
       &.closed {
-        background-color: #fef2f2;
-        border-color: #fee2e2;
+        background-color: #fee2e2;
+        border: 1px solid #fecaca;
+        box-shadow: inset 0 1px 1px #fff;
         color: #991b1b;
 
         .dot {
           background-color: #ef4444;
-          border: 2px solid #fecaca;
+          border: 2px solid #fca5a5;
         }
       }
 
       &.open {
-        background-color: #ecfdf5;
-        border-color: #d1fae5;
+        background-color: #d1fae5;
+        border: 1px solid #a7f3d0;
+        box-shadow: inset 0 1px 1px #fff;
         color: #065f46;
 
         .dot {
           background-color: #10b981;
-          border: 2px solid #a7f3d0;
+          border: 2px solid #6ee7b7;
         }
       }
 
       &.upcoming {
-        background-color: #fffbeb;
-        border-color: #fef3c7;
+        background-color: #fef3c7;
+        border: 1px solid #fef08a;
+        box-shadow: inset 0 1px 1px #fff;
         color: #92400e;
 
         .dot {
           background-color: #f59e0b;
-          border: 2px solid #fde68a;
+          border: 2px solid #fcd34d;
         }
       }
     }
-  }
-
-  .action-buttons {
-    display: flex;
-    gap: 1rem;
-
-    a {
-      padding: 0.625rem 1.25rem;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 0.9375rem;
-      font-weight: 500;
-      color: #374151;
-      border: 1px solid #d1d5db;
-      border-radius: 0.25rem;
-      box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
-
-      &:hover {
-        background-color: #f9fafb;
-      }
-    }
-
-    svg {
-      margin: 0 0.375rem 0 0;
-      height: 1.125rem;
-      width: 1.125rem;
-      color: #9ca3af;
-    }
-  }
-
-  .main-content {
-    padding: 3.5rem 3rem;
-    position: relative;
-  }
-
-  .wrapper {
-    width: 100%;
-  }
-
-  .section {
-    padding: 4rem 0;
   }
 
   .error {
@@ -673,50 +776,11 @@ const StoreStyles = styled.div`
   }
 
   .contact-info {
-    padding: 2rem 0;
     display: flex;
-    border-bottom: 1px solid #e5e7eb;
-
-    > div {
-      padding: 0 2rem;
-
-      &:first-of-type {
-        padding-left: 0;
-      }
-
-      &:last-of-type {
-        padding-right: 0;
-      }
-
-      &:not(:last-of-type) {
-        border-right: 1px solid #e5e7eb;
-      }
-    }
-  }
-
-  .label {
-    margin: 0 0 0.375rem;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.0375em;
-    color: #89909d;
-  }
-
-  .data {
-    color: #111827;
-    line-height: 1.5;
-  }
-
-  .grid-cols-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    width: 100%;
-    border-bottom: 1px solid #e5e7eb;
   }
 
   .info-item {
-    padding: 1rem 0;
+    padding: 1.25rem 0;
     display: flex;
     flex-direction: column;
     font-size: 1rem;
@@ -728,32 +792,22 @@ const StoreStyles = styled.div`
     }
   }
 
-  /* NOTE/PRODUCT STYLES */
+  .label {
+    margin: 0 0 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.0375em;
+    color: #89909d;
+  }
 
-  .add-product-link {
-    padding: 0.625rem 1.25rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 0.9375rem;
-    font-weight: 500;
-    color: #374151;
-    background-color: #fff;
-    border: 1px solid #d1d5db;
-    border-radius: 0.25rem;
-    cursor: pointer;
-    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-      rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+  .value {
+    color: #111827;
+    line-height: 1.5;
 
-    &:hover {
-      background-color: #f9fafb;
-    }
-
-    svg {
-      margin: 0 0.375rem 0 0;
-      height: 1.125rem;
-      width: 1.125rem;
-      color: #9ca3af;
+    a:hover {
+      text-decoration: underline;
+      color: #2c33bb;
     }
   }
 
@@ -779,19 +833,16 @@ const StoreStyles = styled.div`
   }
 
   .menu {
-    padding: 0.125rem 0.5rem;
+    padding: 0 1rem;
     position: absolute;
-    right: 0;
-    top: 3rem;
     display: none;
     flex-direction: column;
     align-items: flex-start;
     background-color: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.25rem;
-    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-      rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 10px 15px -3px,
-      rgba(0, 0, 0, 0.02) 0px 4px 6px -2px;
+    border-radius: 0.5rem;
+    box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
+      rgba(17, 24, 39, 0.05) 0px 0px 0px 1px,
+      rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
 
     &.show {
       display: flex;
@@ -802,31 +853,31 @@ const StoreStyles = styled.div`
   .menu-link,
   .edit-button,
   .delete-button {
-    padding: 0.75rem 2rem 0.75rem 0.25rem;
+    padding: 0.75rem 2rem 0.75rem 0;
     width: 100%;
     display: flex;
     align-items: center;
-    gap: 0.375rem;
+    gap: 0.5rem;
     background-color: transparent;
     border: none;
     font-size: 0.875rem;
-    font-weight: 500;
-    color: #6b7280;
+    font-weight: 400;
+    color: #111827;
     text-align: left;
     cursor: pointer;
 
     &:hover {
-      color: #111827;
+      color: #4338ca;
 
       svg {
-        color: #9ca3af;
+        color: #4338ca;
       }
     }
 
     svg {
-      height: 0.9375rem;
-      width: 0.9375rem;
-      color: #d1d5db;
+      height: 1rem;
+      width: 1rem;
+      color: #9ca3af;
     }
   }
 
@@ -839,30 +890,126 @@ const StoreStyles = styled.div`
     color: #b91c1c;
 
     svg {
-      color: #e3bebe;
+      color: #b91c1c;
     }
-  }
-
-  .row {
-    margin: 0 0 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-
-    h4 {
-      margin-bottom: 0.25rem;
-    }
-  }
-
-  /* ORDERS STYLES */
-  .orders {
-    border-top: 1px solid #e5e7eb;
   }
 
   .empty {
-    margin: 0;
+    margin: 2rem 0 0;
     font-size: 1rem;
     font-weight: 500;
     color: #89909d;
   }
+
+  .capitalize {
+    text-transform: capitalize;
+  }
+`;
+
+const DeleteProductModalStyles = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+
+  .modal {
+    position: relative;
+    padding: 2.5rem 3rem 2rem;
+    max-width: 26rem;
+    width: 100%;
+    text-align: left;
+    background-color: #fff;
+    border-radius: 0.25rem;
+    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
+      rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px,
+      rgba(0, 0, 0, 0.04) 0px 10px 10px -5px;
+
+    h3 {
+      margin: 0 0 1.125rem;
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: #111827;
+    }
+
+    p {
+      margin: 0 0 1.5rem;
+      font-size: 1rem;
+      color: #4b5563;
+      line-height: 1.5;
+    }
+
+    .buttons {
+      margin: 1.25rem 0 0;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.625rem;
+    }
+
+    .primary-button,
+    .secondary-button {
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .primary-button {
+      padding: 0.5rem 1.25rem;
+      color: #b91c1c;
+      background-color: #fee2e2;
+      border: 1px solid #fdcfcf;
+      box-shadow: inset 0 1px 1px #fff;
+      border-radius: 0.25rem;
+
+      &:hover {
+        color: #a81919;
+        border-color: #fcbcbc;
+        box-shadow: inset 0 1px 1px #fff, rgba(0, 0, 0, 0) 0px 0px 0px 0px,
+          rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+      }
+
+      &:focus {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+      }
+
+      &:focus-visible {
+        text-decoration: underline;
+      }
+    }
+
+    .secondary-button {
+      color: #4b5563;
+      background-color: transparent;
+      border: none;
+
+      &:hover {
+        color: #1f2937;
+        text-decoration: underline;
+      }
+
+      &:focus {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+      }
+
+      &:focus-visible {
+        text-decoration: underline;
+      }
+    }
+  }
+`;
+
+const FetchingSpinner = styled(LoadingSpinner)`
+  position: absolute;
+  top: 2rem;
+  right: 0;
 `;

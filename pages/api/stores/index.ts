@@ -8,13 +8,8 @@ import { store } from '../../../db';
 const handler = nc<Request, NextApiResponse>()
   .use(database)
   .get(async (req, res) => {
-    try {
-      const result: Store[] = await store.getStores(req.db);
-      res.json({ stores: result });
-    } catch (error) {
-      console.error(error);
-      res.json({ error: error.message });
-    }
+    const result: Store[] = await store.getStores(req.db);
+    res.json({ stores: result });
   });
 
 export default withAuth(handler);

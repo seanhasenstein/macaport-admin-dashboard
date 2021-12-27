@@ -3,61 +3,86 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useQueryClient, useQuery, useMutation } from 'react-query';
 import styled from 'styled-components';
+import useActiveNavTab from '../../hooks/useActiveNavTab';
 import { useSession } from '../../hooks/useSession';
-import { Store, Order as OrderInterface, Note } from '../../interfaces';
-import { formatPhoneNumber, formatToMoney, createId } from '../../utils';
+import { Note, Order as OrderInterface, Store } from '../../interfaces';
+import {
+  formatPhoneNumber,
+  formatToMoney,
+  calculateStripeFee,
+} from '../../utils';
 import Layout from '../../components/Layout';
 import Notes from '../../components/Notes';
+import LoadingSpinner from '../../components/LoadingSpinner';
+
+const navValues = ['details', 'items', 'notes'];
+type NavValue = typeof navValues[number];
 
 export default function Order() {
   const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
+  const { activeNav, setActiveNav } = useActiveNavTab(
+    navValues,
+    `/orders/${router.query.id}?sid=${router.query.id}&`
+  );
   const queryClient = useQueryClient();
+  const [options, setOptions] = React.useState({
+    includesName: false,
+    includesNumber: true,
+  });
 
-  const {
-    isLoading,
-    isError,
-    error,
-    data: order,
-  } = useQuery<OrderInterface>(
-    ['order', router.query.id],
+  const { isLoading, isFetching, isError, error, data } = useQuery(
+    ['stores', 'store', 'order', router.query.id],
     async () => {
-      if (!router.query.id) return;
-      const response = await fetch(
-        `/api/orders/${router.query.id}?storeId=${router.query.storeId}`
-      );
+      if (!router.query.sid) return;
+      const response = await fetch(`/api/stores/${router.query.sid}`);
 
       if (!response.ok) {
         throw new Error('Failed to fetch the order.');
       }
+
       const data = await response.json();
-      return data.order;
+      const store: Store = data.store;
+      const order = store.orders.find(
+        (o: OrderInterface) => o.orderId === router.query.id
+      );
+      return { store, order };
     },
     {
       initialData: () => {
-        const stores = queryClient.getQueryData<Store[]>('stores');
-        const store = stores?.find(s => s._id === router.query.storeId);
-        return store?.orders.find(o => o.orderId === router.query.id);
+        const store = queryClient.getQueryData<Store>([
+          'stores',
+          'store',
+          router.query.sid,
+        ]);
+        const order = store?.orders.find(o => o.orderId === router.query.id);
+        if (store && order) {
+          return { store, order };
+        }
       },
-      initialDataUpdatedAt: () =>
-        queryClient.getQueryState('stores')?.dataUpdatedAt,
-      staleTime: 600000,
+      initialDataUpdatedAt: () => {
+        return queryClient.getQueryState(['stores', 'store', router.query.sid])
+          ?.dataUpdatedAt;
+      },
+      staleTime: 1000 * 60 * 10,
     }
   );
 
-  const addNoteMutation = useMutation(
-    async (noteText: string) => {
-      if (!order) return;
+  React.useEffect(() => {
+    if (data?.order) {
+      const includesName = data.order.items.some(i => i.customName);
+      const includesNumber = data.order.items.some(i => i.customNumber);
+      setOptions({ includesName, includesNumber });
+    }
+  }, [data?.order]);
 
-      const note: Note = {
-        id: createId('note'),
-        text: noteText,
-        createdAt: `${new Date()}`,
-      };
-      const prevNotes = order.notes || [];
+  const addNoteMutation = useMutation(
+    async (note: Note) => {
+      if (!data?.order) return;
+      const prevNotes = data?.order.notes || [];
 
       const response = await fetch(
-        `/api/orders/update/notes?id=${router.query.storeId}&orderId=${router.query.id}`,
+        `/api/orders/update/notes?id=${router.query.sid}&oid=${router.query.id}`,
         {
           method: 'post',
           body: JSON.stringify({ notes: [...prevNotes, note] }),
@@ -71,13 +96,44 @@ export default function Order() {
         throw new Error('Failed to add the note.');
       }
 
-      const data = await response.json();
-      return data.store;
+      const responseData = await response.json();
+      return responseData.store;
     },
     {
-      onSuccess: data => {
-        queryClient.invalidateQueries('stores', { exact: true });
-        queryClient.invalidateQueries(['store', data._id]);
+      onMutate: async newNote => {
+        await queryClient.cancelQueries([
+          'stores',
+          'store',
+          'order',
+          router.query.id,
+        ]);
+        const previousNotes = data?.order?.notes || [];
+        const updatedOrders = data?.store.orders.map(o => {
+          if (o.orderId === router.query.id) {
+            return { ...o, notes: [...o.notes, newNote] };
+          }
+          return o;
+        });
+
+        queryClient.setQueryData(
+          ['stores', 'store', 'order', router.query.id],
+          {
+            store: { ...data?.store, orders: updatedOrders },
+            order: { ...data?.order, notes: [...previousNotes, newNote] },
+          }
+        );
+
+        return { previousNotes, newNote };
+      },
+      onError: () => {
+        // TODO: trigger a notification
+        queryClient.setQueryData(
+          ['stores', 'store', 'order', router.query.id],
+          { store: data?.store, order: data?.order }
+        );
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries('stores');
         queryClient.invalidateQueries(['order', router.query.id]);
       },
     }
@@ -85,7 +141,7 @@ export default function Order() {
 
   const updateNoteMutation = useMutation(
     async (note: Note) => {
-      const notes = order?.notes.map(n => {
+      const notes = data?.order?.notes.map(n => {
         if (n.id === note.id) {
           return note;
         } else {
@@ -94,7 +150,7 @@ export default function Order() {
       });
 
       const response = await fetch(
-        `/api/orders/update/notes?id=${router.query.storeId}&orderId=${router.query.id}`,
+        `/api/orders/update/notes?id=${router.query.sid}&oid=${router.query.id}`,
         {
           method: 'post',
           body: JSON.stringify({ notes }),
@@ -108,24 +164,62 @@ export default function Order() {
         throw new Error('Failed to update the note.');
       }
 
-      const data = await response.json();
-      return data.store;
+      const responseData = await response.json();
+      return responseData.store;
     },
     {
-      onSuccess: data => {
-        queryClient.invalidateQueries('stores', { exact: true });
-        queryClient.invalidateQueries(['store', data._id]);
-        queryClient.invalidateQueries(['order', router.query.id]);
+      onMutate: async updatedNote => {
+        await queryClient.cancelQueries([
+          'stores',
+          'store',
+          'order',
+          router.query.id,
+        ]);
+        const previousNotes = data?.order?.notes;
+        const updatedNotes = previousNotes?.map(n =>
+          n.id === updatedNote.id ? updatedNote : n
+        );
+        const updatedOrders = data?.store.orders.map(o => {
+          if (o.orderId === router.query.id) {
+            return { ...o, notes: updatedNotes };
+          }
+          return o;
+        });
+        queryClient.setQueryData(
+          ['stores', 'store', 'order', router.query.id],
+          {
+            store: { ...data?.store, orders: updatedOrders },
+            order: { ...data?.order, notes: updatedNotes },
+          }
+        );
+        return { previousNotes, updatedNote };
+      },
+      onError: () => {
+        // TODO: trigger a notifaction
+        queryClient.setQueryData(
+          ['stores', 'store', 'order', router.query.id],
+          { store: data?.store, order: data?.order }
+        );
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries('stores');
+        // TODO: do I need this second invalidation?
+        queryClient.invalidateQueries([
+          'stores',
+          'store',
+          'order',
+          router.query.id,
+        ]);
       },
     }
   );
 
   const deleteNoteMutation = useMutation(
     async (id: string) => {
-      const notes = order?.notes.filter(n => n.id !== id);
+      const notes = data?.order?.notes.filter(n => n.id !== id);
 
       const response = await fetch(
-        `/api/orders/update/notes?id=${router.query.storeId}&orderId=${router.query.id}`,
+        `/api/orders/update/notes?id=${router.query.sid}&oid=${router.query.id}`,
         {
           method: 'post',
           body: JSON.stringify({ notes }),
@@ -139,521 +233,537 @@ export default function Order() {
         throw new Error('Failed to delete the note.');
       }
 
-      const data = await response.json();
-      return data.store;
+      const responseData = await response.json();
+      return responseData.store;
     },
     {
-      onSuccess: data => {
-        queryClient.invalidateQueries('stores', { exact: true });
-        queryClient.invalidateQueries(['store', data._id]);
-        queryClient.invalidateQueries(['order', router.query.id]);
+      onMutate: async id => {
+        await queryClient.cancelQueries([
+          'stores',
+          'store',
+          'order',
+          router.query.id,
+        ]);
+        const previousNotes = data?.order?.notes;
+        const updatedNotes = previousNotes?.filter(n => n.id !== id);
+        const updatedOrder = { ...data?.order, notes: updatedNotes };
+        const updatedOrders = data?.store.orders.map(o => {
+          if (o.orderId === router.query.id) {
+            return { ...o, notes: updatedNotes };
+          }
+          return o;
+        });
+        const updatedStore = { ...data?.store, orders: updatedOrders };
+        queryClient.setQueryData(
+          ['stores', 'store', 'order', router.query.id],
+          { store: updatedStore, order: updatedOrder }
+        );
+        return { previousNotes };
+      },
+      onError: () => {
+        // TODO: trigger a notification
+        queryClient.setQueryData(
+          ['stores', 'store', 'order', router.query.id],
+          { store: data?.store, order: data?.order }
+        );
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries('stores');
+        // TODO: do I need this 2nd invalidation?
+        queryClient.invalidateQueries([
+          'stores',
+          'store',
+          'order',
+          router.query.id,
+        ]);
       },
     }
   );
 
+  const handleNavClick = (value: NavValue) => {
+    setActiveNav(value);
+    router.push(
+      `/orders/${router.query.id}?sid=${router.query.sid}&active=${value}`,
+      undefined,
+      {
+        shallow: true,
+      }
+    );
+  };
+
   if (sessionLoading || !session) return <div />;
 
   return (
-    <Layout title="Order | Macaport Dashboard">
+    <Layout title={`Order #${data?.order?.orderId} | Macaport Dashboard`}>
       <OrderStyles>
-        {isLoading && (
-          <>
-            <div className="title">
-              <div className="details">
-                <h2>Order #{router.query.id}</h2>
-              </div>
-            </div>
-            <div className="main-content">
-              <div className="wrapper">
-                <div>Loading Order...</div>
-              </div>
-            </div>
-          </>
-        )}
-        {isError && error instanceof Error && (
-          <>
-            <div className="title">
-              <div className="details">
-                <h2>Order Error!</h2>
-              </div>
-            </div>
-            <div className="main-content">
-              <div className="wrapper">
-                <div>Error: {error.message}</div>
-              </div>
-            </div>
-          </>
-        )}
-        {order && (
-          <>
-            <div className="title">
-              <div className="details">
-                <h2>Order #{order.orderId}</h2>
-                <div className="order-status">
-                  <span
-                    className={
-                      order.orderStatus === 'Unfulfilled'
-                        ? 'unfulfilled'
-                        : order.orderStatus === 'Fulfilled'
-                        ? 'fulfilled'
-                        : order.orderStatus === 'Completed'
-                        ? 'completed'
-                        : ''
-                    }
+        <div className="container">
+          {isLoading && <LoadingSpinner isLoading={isLoading} />}
+          {isError && error instanceof Error && <div>Error: {error}</div>}
+          {data?.order && (
+            <>
+              <Link href={`/stores/${router.query.sid}?active=orders`}>
+                <a className="back-link">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
                   >
-                    <div className="dot" />
-                    {order.orderStatus}
-                  </span>
-                </div>
+                    <path
+                      fillRule="evenodd"
+                      d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Back to store
+                </a>
+              </Link>
+              <div className="order-header">
+                <h2>Order #{data.order.orderId}</h2>
+                <p>{data.order.store.name}</p>
               </div>
-              {/* <div className="buttons">
-                <Link href="#">
-                  <a>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </a>
-                </Link>
-                <Link href="#">
-                  <a>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </a>
-                </Link>
-              </div> */}
-            </div>
-            <div className="print-only print-title">
-              <div className="print-logo">
-                <img src="/images/logo.png" alt="Macaport logo" />
+
+              <div className="order-nav">
+                <button
+                  type="button"
+                  onClick={() => handleNavClick('details')}
+                  className={activeNav === 'details' ? 'active' : ''}
+                >
+                  <span>Details</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleNavClick('items')}
+                  className={activeNav === 'items' ? 'active' : ''}
+                >
+                  <span>Order Items</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleNavClick('notes')}
+                  className={activeNav === 'notes' ? 'active' : ''}
+                >
+                  <span>Notes</span>
+                </button>
               </div>
-              <div className="print-title-details">
-                <div className="print-item order-number">
-                  <span>Order #</span>
-                  {order.orderId}
-                </div>
-                <div className="print-item">
-                  <span>Date:</span>
-                  {new Date(order.createdAt).toDateString()}
-                </div>
-              </div>
-            </div>
-            <div className="main-content">
-              <div className="wrapper">
-                <Link href={`/stores/${router.query.storeId}#orders`}>
-                  <a className="back-button screen-only">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M7.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l2.293 2.293a1 1 0 010 1.414z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Back to store
-                  </a>
-                </Link>
-                <div className="header">
-                  <div>
-                    <h3>
-                      {order.customer.firstName} {order.customer.lastName}
-                    </h3>
-                    <div className="contact-info">
-                      <div className="item screen-only">
-                        <div className="label">Order Date</div>
-                        <div className="data">
-                          {new Date(order.createdAt).toDateString()}
-                        </div>
-                      </div>
-                      <div className="item">
-                        <div className="label">Email</div>
-                        <div className="data">{order.customer.email}</div>
-                      </div>
-                      <div className="item">
-                        <div className="label">Phone</div>
-                        <div className="data">
-                          {formatPhoneNumber(order.customer.phone)}
-                        </div>
-                      </div>
-                      <div className="item screen-only">
-                        <div className="label">Transaction Id</div>
-                        <div className="data">{order.stripeId}</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="print-only macaport-contact">
-                    <div>support@macaport.com</div>
-                    <div>www.macaport.com</div>
-                  </div>
-                  <div className="action-buttons">
-                    <Link
-                      href={`/orders/update?id=${order.orderId}&storeId=${order.store.id}`}
-                    >
-                      <a className="edit-order-link">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
+
+              <div className="body">
+                <FetchingSpinner isLoading={isFetching} />
+                {activeNav === 'details' && (
+                  <>
+                    <div className="customer-info">
+                      <h3>
+                        {data.order.customer.firstName}{' '}
+                        {data.order.customer.lastName}
+                      </h3>
+                      <p>
+                        <a
+                          href={`mailto:${data.order.customer.email}`}
+                          target="_blank"
+                          rel="noreferrer"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-                          />
-                        </svg>
-                        Edit Order
-                      </a>
-                    </Link>
-                    <button
-                      type="button"
-                      className="print-button"
-                      onClick={() => window.print()}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-                        />
-                      </svg>
-                      Print Order
-                    </button>
-                  </div>
-                </div>
-                <div className="grid-cols-2 section">
-                  <div>
-                    <h4>Shipping Details</h4>
-                    <div className="info-item">
-                      <div className="label">Store</div>
-                      {order.store.name}
+                          {data.order.customer.email}
+                        </a>
+                      </p>
+                      <p>{formatPhoneNumber(data.order.customer.phone)}</p>
                     </div>
-                    <div className="info-item">
-                      <div className="label">Method</div>
-                      {order.shippingMethod}
-                    </div>
-                    {order.shippingMethod === 'Direct' ? (
-                      <div className="info-item">
-                        <div className="label">Address</div>
-                        <span>
-                          {order.shippingAddress?.street}{' '}
-                          {order.shippingAddress?.street2}
-                          <br />
-                          {order.shippingAddress?.city},{' '}
-                          {order.shippingAddress?.state}{' '}
-                          {order.shippingAddress?.zipcode}
-                        </span>
+                    <div className="order-details-grid">
+                      <div>
+                        <div className="info-item">
+                          <div className="label">Order Status</div>
+                          <div className="value">
+                            <div className="order-status">
+                              <span
+                                className={
+                                  data.order.orderStatus === 'Unfulfilled'
+                                    ? 'unfulfilled'
+                                    : data.order.orderStatus === 'Fulfilled'
+                                    ? 'fulfilled'
+                                    : data.order.orderStatus === 'Completed'
+                                    ? 'completed'
+                                    : ''
+                                }
+                              >
+                                <div className="dot" />
+                                {data.order.orderStatus}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="info-item">
+                          <div className="label">Order Date</div>
+                          <div className="value">
+                            {new Date(data.order.createdAt).toDateString()}
+                          </div>
+                        </div>
+                        <div className="info-item">
+                          <div className="label">Transaction Id</div>
+                          <div className="value">{data.order.stripeId}</div>
+                        </div>
                       </div>
-                    ) : order.shippingMethod === 'Primary' ? (
-                      <div className="info-item">
-                        <div className="label">Address</div>
-                        <span>
-                          {order.shippingAddress.name}
-                          <br />
-                          {order.shippingAddress?.street}{' '}
-                          {order.shippingAddress?.street2}
-                          <br />
-                          {order.shippingAddress?.city},{' '}
-                          {order.shippingAddress?.state}{' '}
-                          {order.shippingAddress?.zipcode}
-                        </span>
+                      <div>
+                        {data.store.requireGroupSelection && (
+                          <div className="info-item">
+                            <div className="label">{data.store.groupTerm}</div>
+                            <div className="value">{data.order.group}</div>
+                          </div>
+                        )}
+                        <div className="info-item">
+                          <div className="label">Shipping Method</div>
+                          {data.order.shippingMethod}
+                        </div>
+                        {data.order.shippingMethod === 'Direct' ? (
+                          <div className="info-item">
+                            <div className="label">Shipping Address</div>
+                            <span>
+                              {data.order.shippingAddress?.street}{' '}
+                              {data.order.shippingAddress?.street2}
+                              <br />
+                              {data.order.shippingAddress?.city},{' '}
+                              {data.order.shippingAddress?.state}{' '}
+                              {data.order.shippingAddress?.zipcode}
+                            </span>
+                          </div>
+                        ) : data.order.shippingMethod === 'Primary' ? (
+                          <div className="info-item">
+                            <div className="label">Primary Address</div>
+                            <span>
+                              {data.order.shippingAddress.name}
+                              <br />
+                              {data.order.shippingAddress?.street}{' '}
+                              {data.order.shippingAddress?.street2}
+                              <br />
+                              {data.order.shippingAddress?.city},{' '}
+                              {data.order.shippingAddress?.state}{' '}
+                              {data.order.shippingAddress?.zipcode}
+                            </span>
+                          </div>
+                        ) : null}
                       </div>
-                    ) : null}
-                  </div>
-                  <div>
-                    <h4>Order Summary</h4>
-                    <div className="info-item">
-                      <div className="label">Subtotal</div>
-                      {formatToMoney(order.summary.subtotal, true)}
+                      <div>
+                        <div className="order-summary-row">
+                          <div className="order-summary">
+                            <div className="summary-item">
+                              <div className="summary-label">Subtotal</div>
+                              <div className="summary-value">
+                                {formatToMoney(
+                                  data.order.summary.subtotal,
+                                  true
+                                )}
+                              </div>
+                            </div>
+                            <div className="summary-item">
+                              <div className="summary-label">Sales Tax</div>
+                              <div className="summary-value">
+                                {formatToMoney(
+                                  data.order.summary.salesTax,
+                                  true
+                                )}
+                              </div>
+                            </div>
+                            <div className="summary-item">
+                              <div className="summary-label">Shipping</div>
+                              <div className="summary-value">
+                                {formatToMoney(
+                                  data.order.summary.shipping,
+                                  true
+                                )}
+                              </div>
+                            </div>
+                            <div className="summary-item total">
+                              <div className="summary-label">Total</div>
+                              <div className="summary-value">
+                                {formatToMoney(data.order.summary.total, true)}
+                              </div>
+                            </div>
+                            <div className="summary-item">
+                              <div className="summary-label">Stripe Fee</div>
+                              <div className="summary-value">
+                                -
+                                {formatToMoney(
+                                  calculateStripeFee(data.order.summary.total),
+                                  true
+                                )}
+                              </div>
+                            </div>
+                            <div className="summary-item">
+                              <div className="summary-label">Net</div>
+                              <div className="summary-value">
+                                {formatToMoney(
+                                  data.order.summary.total -
+                                    calculateStripeFee(
+                                      data.order.summary.total
+                                    ),
+                                  true
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="info-item">
-                      <div className="label">Sales Tax</div>
-                      {formatToMoney(order.summary.salesTax, true)}
-                    </div>
-                    <div className="info-item">
-                      <div className="label">Shipping</div>
-                      {formatToMoney(order.summary.shipping, true)}
-                    </div>
-                    <div className="info-item">
-                      <div className="label">Total</div>
-                      {formatToMoney(order.summary.total, true)}
-                    </div>
-                  </div>
-                </div>
-                <div className="section">
-                  <h4>Order Items</h4>
-                  <div className="order-items">
-                    <div className="table-container">
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>Name</th>
-                            <th>Color</th>
-                            <th>Size</th>
-                            <th>Price</th>
-                            <th className="text-center">Qty.</th>
-                            <th className="text-right">Item Total</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {order.items.map(i => (
-                            <tr key={i.sku.productId} className="order-item">
-                              <td>
-                                <div className="product-name">{i.name}</div>
-                                <div className="product-id">{i.sku.id}</div>
-                              </td>
-                              <td>{i.sku.color.label}</td>
-                              <td>{i.sku.size.label}</td>
-                              <td>{formatToMoney(i.price)}</td>
-                              <td className="text-center">{i.quantity}</td>
-                              <td className="text-right">
-                                {formatToMoney(i.itemTotal, true)}
-                              </td>
+                  </>
+                )}
+                {activeNav === 'items' && (
+                  <>
+                    <h4>Order Items</h4>
+                    <div className="order-items">
+                      <div className="table-container">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>Name</th>
+                              <th>Color</th>
+                              <th>Size</th>
+                              {options.includesName && <th>Name</th>}
+                              {options.includesNumber && (
+                                <th className="text-center">Number</th>
+                              )}
+                              <th>Price</th>
+                              <th className="text-center">Qty.</th>
+                              <th className="text-right">Item Total</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {data.order.items.map(i => (
+                              <tr
+                                key={`${i.sku.id}-${i.customName}-${i.customNumber}`}
+                                className="order-item"
+                              >
+                                <td>
+                                  <div className="product-name">
+                                    <Link
+                                      href={`/stores/${router.query.sid}/product?pid=${i.sku.productId}`}
+                                    >
+                                      {i.name}
+                                    </Link>
+                                  </div>
+                                  <div className="product-id">{i.sku.id}</div>
+                                </td>
+                                <td>{i.sku.color.label}</td>
+                                <td>{i.sku.size.label}</td>
+                                {options.includesName && (
+                                  <td>{i.customName ? i.customName : '-'}</td>
+                                )}
+                                {options.includesNumber && (
+                                  <td className="text-center">
+                                    {i.customNumber ? i.customNumber : '-'}
+                                  </td>
+                                )}
+                                <td>{formatToMoney(i.price)}</td>
+                                <td className="text-center">{i.quantity}</td>
+                                <td className="text-right">
+                                  {formatToMoney(i.itemTotal, true)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
-                  </div>
-                </div>
-                <div className="notes">
+                    <div className="order-summary-row">
+                      <div className="order-summary">
+                        <div className="summary-item">
+                          <div className="summary-label">Subtotal</div>
+                          <div className="summary-value">
+                            {formatToMoney(data.order.summary.subtotal, true)}
+                          </div>
+                        </div>
+                        <div className="summary-item">
+                          <div className="summary-label">Sales Tax</div>
+                          <div className="summary-value">
+                            {formatToMoney(data.order.summary.salesTax, true)}
+                          </div>
+                        </div>
+                        <div className="summary-item">
+                          <div className="summary-label">Shipping</div>
+                          <div className="summary-value">
+                            {formatToMoney(data.order.summary.shipping, true)}
+                          </div>
+                        </div>
+                        <div className="summary-item total">
+                          <div className="summary-label">Total</div>
+                          <div className="summary-value">
+                            {formatToMoney(data.order.summary.total, true)}
+                          </div>
+                        </div>
+                        <div className="summary-item">
+                          <div className="summary-label">Stripe Fee</div>
+                          <div className="summary-value">
+                            -
+                            {formatToMoney(
+                              calculateStripeFee(data.order.summary.total),
+                              true
+                            )}
+                          </div>
+                        </div>
+                        <div className="summary-item">
+                          <div className="summary-label">Net</div>
+                          <div className="summary-value">
+                            {formatToMoney(
+                              data.order.summary.total -
+                                calculateStripeFee(data.order.summary.total),
+                              true
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+                {activeNav === 'notes' && (
                   <Notes
                     label="Order"
-                    notes={order.notes}
-                    addNote={addNoteMutation.mutate}
-                    updateNote={updateNoteMutation.mutate}
-                    deleteNote={deleteNoteMutation.mutate}
+                    notes={data.order.notes}
+                    addNote={addNoteMutation}
+                    updateNote={updateNoteMutation}
+                    deleteNote={deleteNoteMutation}
                   />
-                </div>
+                )}
               </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
+        </div>
       </OrderStyles>
     </Layout>
   );
 }
 
 const OrderStyles = styled.div`
-  .print-only {
-    display: none;
-  }
-
-  .title {
-    padding: 1.625rem 2rem;
-    min-height: 5.25rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #e5e7eb;
-
-    .details {
-      display: flex;
-      align-items: center;
-      gap: 1.25rem;
-    }
-
-    .buttons {
-      display: flex;
-      align-items: center;
-      box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
-
-      a {
-        padding: 0.5rem 1rem;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        border: 1px solid #d1d5db;
-
-        &:hover {
-          background-color: #f9fafb;
-        }
-
-        &:focus {
-          outline: 2px solid transparent;
-          outline-offset: 2px;
-          border-color: #2563eb;
-          box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
-            rgb(37, 99, 235) 0px 0px 0px 1px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
-          z-index: 100;
-        }
-
-        &:first-of-type {
-          margin-right: -1px;
-          border-radius: 0.375rem 0 0 0.375rem;
-        }
-
-        &:last-of-type {
-          border-radius: 0 0.375rem 0.375rem 0;
-        }
-      }
-    }
-
-    svg {
-      height: 1.25rem;
-      width: 1.25rem;
-      color: #6b7280;
-    }
-  }
-
   h2 {
     margin: 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 1.375rem;
+    font-size: 1.5rem;
     font-weight: 600;
     color: #111827;
   }
 
   h3 {
-    margin: 0;
-    font-size: 1.5rem;
+    margin: 0 0 1.25rem;
+    font-size: 1.25rem;
     font-weight: 600;
-    color: #1f2937;
+    color: #111827;
   }
 
   h4 {
     margin: 0 0 1rem;
     font-size: 1.125rem;
     font-weight: 600;
-    color: #374151;
+    color: #111827;
   }
 
-  .main-content {
-    padding: 3.5rem 3rem 10rem;
+  .container,
+  .order-summary-row {
     position: relative;
-  }
-
-  .wrapper {
+    margin: 0 auto;
+    max-width: 70rem;
     width: 100%;
   }
 
-  .back-button {
-    margin: 0 0 3.5rem;
+  .container {
+    padding: 3rem 0 0;
+  }
+
+  .back-link {
     display: inline-flex;
     align-items: center;
-    font-size: 0.9375rem;
-    font-weight: 600;
-    color: #6b7280;
+    gap: 0.25rem;
+    font-weight: 500;
+    color: #4b5563;
 
     svg {
-      margin: 0 0.25rem 0 0;
-      height: 1.125rem;
-      width: 1.125rem;
-      color: #d1d5db;
+      margin: 1px 0 0;
+      height: 1rem;
+      width: 1rem;
+      color: #9ca3af;
     }
 
     &:hover {
+      color: #1f2937;
+    }
+
+    &:focus {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+
+    &:focus-visible {
       text-decoration: underline;
+      color: #2c33bb;
+
+      svg {
+        color: #2c33bb;
+      }
     }
   }
 
-  .header {
-    padding: 0 0 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  .order-header {
+    padding: 3rem 0 2.25rem;
+
+    p {
+      margin: 0.25rem 0 0;
+      color: #6b7280;
+    }
+  }
+
+  .order-nav {
+    padding: 0.625rem 0;
     border-bottom: 1px solid #e5e7eb;
-  }
+    border-top: 1px solid #e5e7eb;
 
-  .contact-info {
-    margin: 2rem 0 0;
-    display: flex;
-
-    > div {
-      padding: 0 2rem;
-
-      &:first-of-type {
-        padding-left: 0;
-      }
-
-      &:last-of-type {
-        padding-right: 0;
-      }
-
-      &:not(:last-of-type) {
-        border-right: 1px solid #e5e7eb;
-      }
-    }
-  }
-
-  .action-buttons {
-    display: flex;
-    gap: 1rem;
-    position: absolute;
-    top: 2rem;
-    right: 2rem;
-
-    a,
     button {
-      padding: 0.625rem 1.25rem;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 0.9375rem;
+      margin: 0 0.75rem 0 0;
+      padding: 0.4375rem 0.75rem;
+      background-color: transparent;
+      border: none;
+      border-radius: 9999px;
+      font-size: 0.875rem;
       font-weight: 500;
+      line-height: 1;
       color: #374151;
-      background-color: #fff;
-      border: 1px solid #d1d5db;
-      border-radius: 0.25rem;
       cursor: pointer;
-      box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
 
       &:hover {
-        background-color: #f9fafb;
+        background-color: #e5e7eb;
+        color: #111827;
+      }
+
+      &.active {
+        background-color: #2c33bb;
+        color: #fff;
       }
     }
+  }
 
-    svg {
-      margin: 0 0.375rem 0 0;
-      height: 1.125rem;
-      width: 1.125rem;
-      color: #9ca3af;
+  .body {
+    position: relative;
+    padding: 3.5rem 0 2.5rem;
+  }
+
+  .customer-info {
+    margin: 0 0 3rem;
+
+    h3 {
+      margin: 0;
+    }
+
+    p {
+      margin: 0;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+
+    a:hover {
+      text-decoration: underline;
+      color: #2c33bb;
     }
   }
 
-  .section {
-    padding: 3.5rem 0;
-  }
-
-  .grid-cols-2 {
+  .order-details-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    width: 100%;
-    border-bottom: 1px solid #e5e7eb;
+    grid-template-columns: 1fr 0.9fr 0.9fr;
   }
 
   .info-item {
-    padding: 1rem 0;
+    padding: 0 0 2rem;
     display: flex;
     flex-direction: column;
     font-size: 1rem;
@@ -680,19 +790,20 @@ const OrderStyles = styled.div`
 
   .order-status {
     span {
+      padding: 0.375rem 0.8125rem 0.375rem 0.75rem;
       display: inline-flex;
       align-items: center;
-      padding: 0.375rem 0.875rem;
-      font-size: 0.875rem;
-      font-weight: 600;
-      letter-spacing: 0.025em;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
       color: #374151;
       border-radius: 9999px;
       background: #fff;
-      border: 1px solid #d1d5db;
+      line-height: 1;
 
       .dot {
-        margin: 0 0.75rem 0 0;
+        margin: 0 0.5rem 0 0;
         height: 0.625rem;
         width: 0.625rem;
         border-radius: 9999px;
@@ -700,35 +811,38 @@ const OrderStyles = styled.div`
       }
 
       &.unfulfilled {
-        background-color: #fef2f2;
-        border-color: #fee2e2;
+        background-color: #fee2e2;
+        border: 1px solid #fecaca;
+        box-shadow: inset 0 1px 1px #fff;
         color: #991b1b;
 
         .dot {
           background-color: #ef4444;
-          border: 2px solid #fecaca;
+          border: 2px solid #fca5a5;
         }
       }
 
       &.fulfilled {
-        background-color: #fffbeb;
-        border-color: #fef3c7;
+        background-color: #fef3c7;
+        border: 1px solid #fef08a;
+        box-shadow: inset 0 1px 1px #fff;
         color: #92400e;
 
         .dot {
           background-color: #f59e0b;
-          border: 2px solid #fde68a;
+          border: 2px solid #fcd34d;
         }
       }
 
       &.completed {
-        background-color: #ecfdf5;
-        border-color: #d1fae5;
+        background-color: #d1fae5;
+        border: 1px solid #a7f3d0;
+        box-shadow: inset 0 1px 1px #fff;
         color: #065f46;
 
         .dot {
           background-color: #10b981;
-          border: 2px solid #a7f3d0;
+          border: 2px solid #6ee7b7;
         }
       }
     }
@@ -736,9 +850,11 @@ const OrderStyles = styled.div`
 
   /****  ORDER ITEMS ****/
   .table-container {
+    margin: 0 0 2.5rem;
     width: 100%;
+    background-color: #fff;
     border: 1px solid #e5e7eb;
-    border-radius: 0.375rem;
+    border-radius: 0.25rem;
     box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
       rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
   }
@@ -764,7 +880,7 @@ const OrderStyles = styled.div`
   }
 
   th {
-    padding: 1rem;
+    padding: 0.875rem 1rem;
     background-color: #f3f4f6;
     font-size: 0.75rem;
     font-weight: 700;
@@ -774,11 +890,11 @@ const OrderStyles = styled.div`
     text-align: left;
 
     &:first-of-type {
-      border-top-left-radius: 0.375rem;
+      border-top-left-radius: 0.25rem;
     }
 
     &:last-of-type {
-      border-top-right-radius: 0.375rem;
+      border-top-right-radius: 0.25rem;
     }
   }
 
@@ -788,207 +904,85 @@ const OrderStyles = styled.div`
 
   td {
     padding: 0.875rem 1rem;
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
     font-weight: 500;
-    color: #1f2937;
+    color: #4b5563;
 
     .product-name {
-      margin: 0 0 0.125rem;
-      font-size: 1rem;
+      margin: 0 0 1px;
       font-weight: 500;
+      color: #111827;
     }
 
     .product-id {
-      color: #89909d;
+      font-size: 0.75rem;
+      color: #9ca3af;
+    }
+
+    a {
+      &:hover {
+        text-decoration: underline;
+      }
+
+      &:focus {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+      }
+
+      &:focus-visible {
+        text-decoration: underline;
+        color: #2c33bb;
+      }
     }
   }
 
-  @media print {
-    @media (resolution: 300dpi) {
-      .print-only {
-        display: block;
+  .order-summary-row {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .order-summary {
+    margin: 0 0 3rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .summary-item {
+    padding: 0.3125rem 0;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9375rem;
+    font-weight: 500;
+
+    &.total {
+      margin-bottom: 0.3125rem;
+      padding-bottom: 0.75rem;
+      font-weight: 600;
+      border-bottom: 1px solid #d1d5db;
+
+      .summary-label {
+        color: #111827;
       }
 
-      .screen-only {
-        display: none;
-      }
-
-      .order-status,
-      .title,
-      .action-buttons,
-      .notes {
-        display: none;
-      }
-
-      .print-title {
-        display: flex;
-        justify-content: space-between;
-      }
-
-      .print-title-details {
-        margin: 10px 0 0;
-        padding: 0 0 20px;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        justify-content: flex-end;
-      }
-
-      .print-logo {
-        img {
-          width: 200px;
-        }
-      }
-
-      .print-item {
-        font-size: 13px;
-        color: #171717;
-
-        span {
-          margin-right: 6px;
-          font-weight: 600;
-          color: #171717;
-        }
-
-        &.order-number {
-          margin: 0 0 6px;
-          font-size: 16px;
-          font-weight: 600;
-          color: #171717;
-
-          span {
-            margin-right: 14px;
-          }
-        }
-      }
-
-      .main-content {
-        padding: 0;
-      }
-
-      .header {
-        padding: 28px 0 12px;
-        border-top: 1px solid #dadade;
-        border-bottom: none;
-
-        h3 {
-          font-size: 20px;
-          color: #171717;
-        }
-      }
-
-      h4 {
-        margin: 0 0 14px;
-        font-size: 14px;
-        color: #171717;
-      }
-
-      .contact-info {
-        margin: 0;
-        flex-direction: column;
-
-        .item {
-          padding: 0;
-          font-size: 13px;
-          color: #404040;
-
-          &:not(:last-of-type) {
-            margin: 0 0 2px;
-            border-right: none;
-          }
-        }
-
-        .data {
-          color: #171717;
-        }
-
-        .label {
-          display: none;
-        }
-      }
-
-      .macaport-contact {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 4px;
-        font-size: 13px;
-        color: #525252;
-      }
-
-      .section {
-        padding: 32px 0 0;
-      }
-
-      .section.grid-cols-2 {
-        border-bottom: none;
-
-        > div:last-of-type {
-          padding-left: 42px;
-        }
-      }
-
-      .info-item {
-        padding: 2px 0;
-        flex-direction: row;
-        gap: 8px;
-        font-size: 13px;
-        color: #171717;
-
-        .label {
-          margin: 0;
-          width: 80px;
-          font-size: 11px;
-          color: #a3a3a3;
-          line-height: 1.5;
-        }
-      }
-
-      .table-container {
-        border-radius: 2px;
-        box-shadow: none;
-      }
-
-      .table-container,
-      td,
-      th {
-        border-color: #dadade;
-      }
-
-      td,
-      th {
-        background-color: transparent;
-
-        &:first-of-type {
-          padding-left: 16px;
-        }
-
-        &:last-of-type {
-          padding-right: 16px;
-        }
-      }
-
-      th {
-        padding: 12px 8px;
-        font-size: 10px;
-        color: #737373;
-      }
-
-      td {
-        padding: 8px;
-        font-size: 12px;
-        color: #262626;
-
-        .product-name {
-          font-size: 12px;
-          color: #171717;
-        }
-
-        .product-id {
-          font-size: 10px;
-          color: #bbb;
-        }
+      .summary-value {
+        color: #059669;
       }
     }
   }
+
+  .summary-label {
+    width: 14rem;
+    color: #4b5563;
+  }
+
+  .summary-value {
+    text-align: right;
+    color: #111827;
+  }
+`;
+
+const FetchingSpinner = styled(LoadingSpinner)`
+  position: absolute;
+  top: 2rem;
+  right: 0;
 `;

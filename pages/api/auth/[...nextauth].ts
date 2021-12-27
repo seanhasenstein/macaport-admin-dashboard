@@ -377,7 +377,7 @@ const html = ({ url }: { url: string }) => {
                                 This link expires in 24 hours and can only be used
                                 once. After that you will need to
                                 <a
-                                  href="http://localhost:3000/login"
+                                  href="https://dashboard.macaport.com/login"
                                   style="
                                     color: #2563eb;
                                     text-decoration: underline;

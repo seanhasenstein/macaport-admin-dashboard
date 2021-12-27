@@ -110,6 +110,24 @@ export default function StoresTableMenu({
             Edit Store
           </a>
         </Link>
+        <Link href={`/stores/${storeId}?active=orders`}>
+          <a className="link">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+              />
+            </svg>
+            Store Orders
+          </a>
+        </Link>
       </div>
     </StoresTableMenuStyles>
   );
@@ -138,20 +156,19 @@ const StoresTableMenuStyles = styled.div`
   }
 
   .menu {
-    padding: 0 0.875rem;
+    padding: 0 1rem;
     position: absolute;
-    right: 1rem;
-    top: 2.75rem;
-    width: 11rem;
+    right: 1.5rem;
+    top: 2.25rem;
+    width: 10.75rem;
     display: none;
     flex-direction: column;
     align-items: flex-start;
     background-color: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.25rem;
-    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-      rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 10px 15px -3px,
-      rgba(0, 0, 0, 0.02) 0px 4px 6px -2px;
+    border-radius: 0.5rem;
+    box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
+      rgba(17, 24, 39, 0.05) 0px 0px 0px 1px,
+      rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
 
     &.show {
       display: flex;
@@ -160,16 +177,17 @@ const StoresTableMenuStyles = styled.div`
   }
 
   .link {
-    padding: 0.625rem 0 0.625rem 0.375rem;
+    padding: 0.75rem 2rem 0.75rem 0;
     width: 100%;
     display: flex;
     align-items: center;
-    gap: 0.375rem;
+    gap: 0.5rem;
     background-color: transparent;
     border: none;
     font-size: 0.875rem;
-    font-weight: 500;
-    color: #6b7280;
+    font-weight: 400;
+    color: #111827;
+    line-height: 1;
     text-align: left;
     cursor: pointer;
     border-bottom: 1px solid #e5e7eb;
@@ -179,17 +197,17 @@ const StoresTableMenuStyles = styled.div`
     }
 
     &:hover {
-      color: #111827;
+      color: #4338ca;
 
       svg {
-        color: #9ca3af;
+        color: #4338ca;
       }
     }
 
     svg {
       height: 1rem;
       width: 1rem;
-      color: #d1d5db;
+      color: #9ca3af;
     }
   }
 `;

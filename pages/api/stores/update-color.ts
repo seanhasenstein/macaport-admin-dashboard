@@ -8,19 +8,14 @@ import { store } from '../../../db';
 const handler = nc<Request, NextApiResponse>()
   .use(database)
   .post(async (req, res) => {
-    try {
-      const result: Store = await store.updateProductColor(
-        req.db,
-        req.query.storeId,
-        req.query.prodId,
-        req.query.colorId,
-        req.body
-      );
-      res.json({ store: result });
-    } catch (error) {
-      console.error(error);
-      res.json({ error: error.message });
-    }
+    const result: Store = await store.updateProductColor(
+      req.db,
+      req.query.sid,
+      req.query.pid,
+      req.query.cid,
+      req.body
+    );
+    res.json({ store: result });
   });
 
 export default withAuth(handler);

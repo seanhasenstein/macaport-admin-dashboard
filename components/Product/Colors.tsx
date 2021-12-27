@@ -15,7 +15,7 @@ export default function Colors({ storeId, product }: Props) {
   const colorsMutation = useMutation(
     async (colors: Color[]) => {
       const response = await fetch(
-        `/api/stores/update-product?id=${storeId}&prodId=${product.id}`,
+        `/api/stores/update-product?id=${storeId}&pid=${product.id}`,
         {
           method: 'post',
           body: JSON.stringify({ ...product, colors }),
@@ -33,41 +33,36 @@ export default function Colors({ storeId, product }: Props) {
     },
     {
       onSuccess: () => {
-        queryClient.invalidateQueries(['product', product.id]);
-        queryClient.invalidateQueries('stores', { exact: true });
-        queryClient.invalidateQueries(['store', storeId]);
+        queryClient.invalidateQueries('stores');
       },
     }
   );
 
-  const {
-    list,
-    dragging,
-    handleDragStart,
-    handleDragEnter,
-    handleDrop,
-    getStyles,
-    handleMouseDown,
-    handleMouseUp,
-  } = useDragNDrop(product?.colors, 'prod-color', colorsMutation.mutate);
+  const dnd = useDragNDrop(
+    product?.colors,
+    'prod-color',
+    colorsMutation.mutate
+  );
 
   return (
     <ColorsStyles>
-      {list.map((color, index) => (
+      {dnd.list.map((color, index) => (
         <div
           key={color.id}
-          draggable={dragging}
-          onDragStart={e => handleDragStart(e, index)}
-          onDragEnter={dragging ? e => handleDragEnter(e, index) : undefined}
+          draggable={dnd.dragging}
+          onDragStart={e => dnd.handleDragStart(e, index)}
+          onDragEnter={
+            dnd.dragging ? e => dnd.handleDragEnter(e, index) : undefined
+          }
           onDragOver={e => e.preventDefault()}
-          onDrop={handleDrop}
-          className={dragging ? getStyles(index) : 'prod-color'}
+          onDrop={dnd.handleDrop}
+          className={dnd.dragging ? dnd.getStyles(index) : 'prod-color'}
         >
-          {list.length > 1 && (
+          {dnd.list.length > 1 && (
             <button
               type="button"
-              onMouseDown={handleMouseDown}
-              onMouseUp={handleMouseUp}
+              onMouseDown={dnd.handleMouseDown}
+              onMouseUp={dnd.handleMouseUp}
               className="drag-button"
             >
               <svg
@@ -139,18 +134,21 @@ export default function Colors({ storeId, product }: Props) {
 }
 
 const ColorsStyles = styled.div`
+  background: #fff;
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+
   .prod-color {
-    padding: 1rem 0;
+    padding: 0.875rem 1rem;
     max-width: 70rem;
     width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 2rem;
-    border-bottom: 1px solid #e5e7eb;
 
-    &:first-of-type {
-      border-top: 1px solid #e5e7eb;
+    &:not(:last-of-type) {
+      border-bottom: 1px solid #e5e7eb;
     }
   }
 
@@ -201,7 +199,7 @@ const ColorsStyles = styled.div`
   .primary-img {
     .value {
       padding: 0.25rem 0.5rem;
-      width: 3.25rem;
+      width: 2.75rem;
       background-color: #fff;
       border: 1px solid #e5e7eb;
       border-radius: 0.25rem;
@@ -255,4 +253,5 @@ const ColorSpanStyles = styled.span<ColorProps>`
   border: 1px solid #d1d5db;
   border-radius: 9999px;
   background-color: ${props => props.hex};
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 `;

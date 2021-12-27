@@ -19,7 +19,7 @@ export default function UpdateOrder() {
     async () => {
       if (!router.query.id) return;
       const response = await fetch(
-        `/api/orders/${router.query.id}?storeId=${router.query.storeId}`
+        `/api/orders/${router.query.id}?sid=${router.query.sid}`
       );
 
       if (!response.ok) {
@@ -33,7 +33,7 @@ export default function UpdateOrder() {
       initialData: () => {
         const store = queryClient
           .getQueryData<Store[]>('stores')
-          ?.find(s => s._id === router.query.storeId);
+          ?.find(s => s._id === router.query.sid);
         const order = store?.orders.find(o => o.orderId === router.query.id);
         return order;
       },
@@ -42,32 +42,6 @@ export default function UpdateOrder() {
       staleTime: 600000,
     }
   );
-
-  // const orderUpdateMutation = useMutation(
-  //   async (order: Order) => {
-  //     const response = await fetch(`/api/stores/update?id=${router.query.id}`, {
-  //       method: 'POST',
-  //       body: JSON.stringify(order),
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //     });
-
-  //     if (!response.ok) {
-  //       throw new Error('Failed to update the order.');
-  //     }
-
-  //     const data = await response.json();
-  //     return data.order;
-  //   },
-  //   {
-  //     onSuccess: data => {
-  //       queryClient.invalidateQueries('stores');
-  //       queryClient.invalidateQueries('order', data._id);
-  //       router.push(`/orders/${data._id}`);
-  //     },
-  //   }
-  // );
 
   if (sessionLoading || !session) return <div />;
 
@@ -125,7 +99,7 @@ export default function UpdateOrder() {
               </div>
             </div>
             <div className="main-content">
-              <p>TODO: This page needs work...</p>
+              <p>TODO: Add this page...</p>
               <pre>{JSON.stringify(order, null, 2)}</pre>
             </div>
           </>

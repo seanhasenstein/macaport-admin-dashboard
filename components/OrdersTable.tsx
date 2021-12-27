@@ -1,14 +1,19 @@
 import React from 'react';
-import { useRouter } from 'next/router';
+import Link from 'next/link';
 import styled from 'styled-components';
-import { formatToMoney } from '../utils';
-import { Order } from '../interfaces';
+import { format } from 'date-fns';
+import { calculateTotalItems, formatToMoney } from '../utils';
+import { Order, Store } from '../interfaces';
 import OrdersTableMenu from './OrdersTableMenu';
 
 type OrderViewOptions = 'All' | 'Unfulfilled' | 'Fulfilled' | 'Completed';
 
-export default function OrdersTable({ orders }: { orders: Order[] }) {
-  const router = useRouter();
+type Props = {
+  store: Store;
+  orders: Order[];
+};
+
+export default function OrdersTable({ store, orders }: Props) {
   const [orderViewOption, setOrderViewOption] =
     React.useState<OrderViewOptions>('All');
   const [filteredOrders, setFilteredOrders] = React.useState(orders);
@@ -68,16 +73,13 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
               <thead>
                 <tr>
                   <th>Date</th>
-                  <th>Order Status</th>
-                  <th>
-                    Customer/
-                    {router.pathname === '/stores/[id]/orders'
-                      ? 'Order ID'
-                      : 'Store'}
-                  </th>
+                  <th>Customer</th>
+                  {store.requireGroupSelection && <th>{store.groupTerm}</th>}
                   <th>Shipping</th>
-                  <th className="text-center"># of Items</th>
+                  <th className="text-center">Unique Items</th>
+                  <th className="text-center">Total Items</th>
                   <th className="text-right">Total</th>
+                  <th className="text-center">Order Status</th>
                   <th />
                 </tr>
               </thead>
@@ -92,8 +94,31 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
                   <>
                     {filteredOrders.map(o => (
                       <tr key={o.orderId}>
-                        <td>{new Date(o.createdAt).toDateString()}</td>
-                        <td className="order-status">
+                        <td>{format(new Date(o.createdAt), 'M/d/yy')}</td>
+                        <td>
+                          <div className="customer-name">
+                            <Link
+                              href={`/orders/${o.orderId}?sid=${store._id}`}
+                            >
+                              <a>
+                                {o.customer.firstName} {o.customer.lastName}
+                              </a>
+                            </Link>
+                          </div>
+                          <div className="order-id">#{o.orderId}</div>
+                        </td>
+                        {store.requireGroupSelection && <td>{o.group}</td>}
+                        <td>{o.shippingMethod}</td>
+                        <td className="text-center total-items">
+                          {o.items.length}
+                        </td>
+                        <td className="text-center">
+                          {calculateTotalItems(o.items)}
+                        </td>
+                        <td className="text-right">
+                          {formatToMoney(o.summary.total, true)}
+                        </td>
+                        <td className="order-status text-center">
                           <span
                             className={
                               o.orderStatus === 'Completed'
@@ -108,27 +133,10 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
                             {o.orderStatus}
                           </span>
                         </td>
-                        <td>
-                          <div className="customer-name">
-                            {o.customer.firstName} {o.customer.lastName}
-                          </div>
-                          {router.pathname === '/stores/[id]/orders' ? (
-                            <div className="order-id">Order #{o.orderId}</div>
-                          ) : (
-                            <div className="store-name">{o.store.name}</div>
-                          )}
-                        </td>
-                        <td>{o.shippingMethod}</td>
-                        <td className="text-center total-items">
-                          {o.items.length}
-                        </td>
-                        <td className="text-right">
-                          {formatToMoney(o.summary.total)}
-                        </td>
                         <td className="order-actions">
                           <OrdersTableMenu
-                            storeId={o.store.id}
-                            orderId={o.orderId}
+                            store={store}
+                            order={o}
                             currentActiveId={currentActiveId}
                             setCurrentActiveId={setCurrentActiveId}
                             orderStatus={o.orderStatus}
@@ -148,21 +156,18 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
 }
 
 const OrdersTableStyles = styled.div`
-  h3 {
-    margin: 0;
-    font-weight: 600;
-    color: #111827;
-  }
+  margin: 0 0 5rem;
 
   .buttons {
-    padding: 1.5rem 0 2rem;
+    margin: 0 0 1.125rem;
+    display: inline-flex;
 
     .container {
-      padding: 0.375rem;
+      padding: 0.1875rem;
       display: inline-flex;
       background-color: #f3f4f6;
       border: 1px solid #e5e7eb;
-      border-radius: 0.375rem;
+      border-radius: 0.125rem;
     }
 
     button {
@@ -172,7 +177,7 @@ const OrdersTableStyles = styled.div`
       font-size: 0.875rem;
       font-weight: 500;
       color: #6b7280;
-      border-radius: 0.375rem;
+      border-radius: 0.125rem;
       cursor: pointer;
 
       &:hover {
@@ -195,10 +200,12 @@ const OrdersTableStyles = styled.div`
 
   .table-container {
     width: 100%;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.375rem;
-    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-      rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+    background-color: #fff;
+    border-width: 1px 1px 0 1px;
+    border-style: solid;
+    border-color: #e5e7eb;
+    border-radius: 0.25rem;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
   }
 
   table {
@@ -227,34 +234,38 @@ const OrdersTableStyles = styled.div`
     }
   }
 
-  tr:last-of-type td {
-    border-bottom: none;
+  tr {
+    &:first-of-type {
+      th:first-of-type {
+        border-radius: 0.25rem 0 0 0;
+      }
+
+      th:last-of-type {
+        border-radius: 0 0.25rem 0 0;
+      }
+    }
+
+    &:last-of-type td {
+      border-bottom: none;
+    }
   }
 
   th {
     padding: 0.875rem 1rem;
     background-color: #f3f4f6;
     font-size: 0.75rem;
-    font-weight: 700;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.0375em;
-    color: #6b7280;
+    color: #4b5563;
     text-align: left;
-
-    &:first-of-type {
-      border-top-left-radius: 0.375rem;
-    }
-
-    &:last-of-type {
-      border-top-right-radius: 0.375rem;
-    }
   }
 
   td {
-    padding: 0.875rem 1rem;
+    padding: 0.75rem 1rem;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #1f2937;
+    color: #4b5563;
 
     &.empty {
       padding: 1.25rem 2rem;
@@ -263,16 +274,30 @@ const OrdersTableStyles = styled.div`
 
   .customer-name {
     margin: 0 0 0.125rem;
+    font-size: 0.875rem;
     font-weight: 500;
-  }
+    color: #111827;
 
-  .store-name,
-  .order-id {
-    color: #9ea4af;
+    a {
+      &:hover {
+        text-decoration: underline;
+      }
+
+      &:focus {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+      }
+
+      &:focus-visible {
+        color: #2c33bb;
+        text-decoration: underline;
+      }
+    }
   }
 
   .order-id {
     font-size: 0.75rem;
+    color: #9ea4af;
   }
 
   .order-status {
@@ -288,26 +313,29 @@ const OrdersTableStyles = styled.div`
 
       &.unfulfilled {
         background-color: #fee2e2;
-        color: #b91c1c;
+        border: 1px solid #fecaca;
+        box-shadow: inset 0 1px 1px #fff;
+        color: #991b1b;
       }
 
       &.fulfilled {
         background-color: #fef3c7;
-        color: #b45309;
+        border: 1px solid #fde68a;
+        box-shadow: inset 0 1px 1px #fff;
+        color: #92400e;
       }
 
       &.completed {
-        background-color: #cffafe;
-        color: #0e7490;
+        background-color: #d1fae5;
+        border: 1px solid #a7f3d0;
+        box-shadow: inset 0 1px 1px #fff;
+        color: #065f46;
       }
     }
   }
 
-  .total-items {
-    color: #6b7280;
-  }
-
   .order-actions {
+    padding-left: 0;
     position: relative;
   }
 `;

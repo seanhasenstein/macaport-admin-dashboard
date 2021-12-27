@@ -1,15 +1,41 @@
 import React from 'react';
+import { UseMutationResult } from 'react-query';
 import styled from 'styled-components';
 import { format } from 'date-fns';
 import { Note } from '../interfaces';
+import { createId } from '../utils';
 import NoteMenu from '../components/NoteMenu';
+import LoadingSpinner from './LoadingSpinner';
 
 type Props = {
   label: string;
   notes: Note[];
-  addNote: (n: string) => void;
-  updateNote: (n: Note) => void;
-  deleteNote: (id: string) => void;
+  addNote: UseMutationResult<
+    any,
+    unknown,
+    Note,
+    {
+      previousNotes: Note[];
+      newNote: Note;
+    }
+  >;
+  updateNote: UseMutationResult<
+    any,
+    unknown,
+    Note,
+    {
+      previousNotes: Note[] | undefined;
+      updatedNote: Note;
+    }
+  >;
+  deleteNote: UseMutationResult<
+    any,
+    unknown,
+    string,
+    {
+      previousNotes: Note[] | undefined;
+    }
+  >;
 };
 
 export default function Notes({
@@ -26,13 +52,8 @@ export default function Notes({
   const [newNoteText, setNewNoteText] = React.useState('');
   const [updateNoteText, setUpdateNoteText] = React.useState('');
 
-  const handleMenuButtonClick = (id: string) => {
-    if (id === showMenu) {
-      setShowMenu(undefined);
-    } else {
-      setShowMenu(id);
-    }
-  };
+  const handleMenuButtonClick = (id: string) =>
+    id === showMenu ? setShowMenu(undefined) : setShowMenu(id);
 
   const handleEditButtonClick = (note: Note) => {
     setShowMenu(undefined);
@@ -41,21 +62,26 @@ export default function Notes({
   };
 
   const handleAddNoteButtonClick = () => {
-    addNote(newNoteText);
+    const newNote = {
+      id: createId('note'),
+      text: newNoteText,
+      createdAt: `${new Date()}`,
+    };
+    addNote.mutate(newNote);
     setNewNoteText('');
     setShowNoteTextArea(undefined);
   };
 
   const handleUpdateNoteButtonClick = (note: Note) => {
-    updateNote({ ...note, text: updateNoteText });
+    updateNote.mutate({ ...note, text: updateNoteText });
     setUpdateNoteText('');
     setShowNoteTextArea(undefined);
   };
 
-  const handleAddCancelButtonClick = () => {
-    setShowNoteTextArea(undefined);
-    setNewNoteText('');
-  };
+  // const handleAddCancelButtonClick = () => {
+  //   setShowNoteTextArea(undefined);
+  //   setNewNoteText('');
+  // };
 
   const handleUpdateCancelButtonClick = () => {
     setShowNoteTextArea(undefined);
@@ -64,57 +90,12 @@ export default function Notes({
 
   return (
     <NotesStyles>
-      <div className="row">
-        <h4>{label} Notes</h4>
-        <button
-          type="button"
-          className="add-note-button"
-          onClick={() => setShowNoteTextArea('new')}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Add a note
-        </button>
+      <div className="notes-header">
+        <h3>{label} Notes</h3>
       </div>
       <div>
-        {showNoteTextArea === 'new' ? (
-          <div className="add-note-section">
-            <textarea
-              name="new-note"
-              id="new-note"
-              placeholder="Add a note..."
-              value={newNoteText}
-              onChange={e => setNewNoteText(e.target.value)}
-            />
-            <div className="actions">
-              <button
-                type="button"
-                className="cancel-button"
-                onClick={handleAddCancelButtonClick}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="save-button"
-                onClick={handleAddNoteButtonClick}
-              >
-                Add Note
-              </button>
-            </div>
-          </div>
-        ) : null}
         {notes?.length > 0 ? (
-          <>
+          <div className="notes">
             {notes.map(n => (
               <div key={n.id} className="note">
                 <div className="icon">
@@ -167,7 +148,7 @@ export default function Notes({
                     </div>
                     <button
                       type="button"
-                      className="menu-button"
+                      className="note-menu-button"
                       onClick={() => handleMenuButtonClick(n.id)}
                     >
                       <svg
@@ -182,54 +163,57 @@ export default function Notes({
                       note={n}
                       showMenu={showMenu}
                       setShowMenu={setShowMenu}
-                      deleteNote={deleteNote}
+                      deleteNote={deleteNote.mutate}
                       handleEditButtonClick={handleEditButtonClick}
                     />
                   </>
                 )}
               </div>
             ))}
-          </>
+          </div>
         ) : (
-          <div className="empty">This {label.toLowerCase()} has no notes.</div>
+          <div className="empty-notes">
+            This {label.toLowerCase()} has no notes.
+          </div>
         )}
+        <div className="new-add add-note-section">
+          <textarea
+            name="new-note"
+            id="new-note"
+            placeholder="Add a note..."
+            value={newNoteText}
+            onChange={e => setNewNoteText(e.target.value)}
+          />
+          <div className="actions">
+            <LoadingSpinner isLoading={addNote.isLoading} />
+            <button
+              type="button"
+              className="save-button"
+              onClick={handleAddNoteButtonClick}
+            >
+              Add Note
+            </button>
+          </div>
+        </div>
       </div>
     </NotesStyles>
   );
 }
 
 const NotesStyles = styled.div`
-  padding: 4rem 0;
-  border-top: 1px solid #e5e7eb;
+  max-width: 40rem;
 
-  .add-note-button {
-    padding: 0.625rem 1.25rem;
+  .notes-header {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 0.9375rem;
-    font-weight: 500;
-    color: #374151;
-    background-color: #fff;
-    border: 1px solid #d1d5db;
-    border-radius: 0.25rem;
-    cursor: pointer;
-    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-      rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+    justify-content: space-between;
+    align-items: flex-end;
 
-    &:hover {
-      background-color: #f9fafb;
-    }
-
-    svg {
-      margin: 0 0.375rem 0 0;
-      height: 1.125rem;
-      width: 1.125rem;
-      color: #9ca3af;
+    h3 {
+      margin: 0;
     }
   }
 
-  .menu-button {
+  .note-menu-button {
     margin-left: auto;
     padding: 0.125rem;
     display: flex;
@@ -251,19 +235,18 @@ const NotesStyles = styled.div`
   }
 
   .menu {
-    padding: 0.125rem 0.5rem;
+    padding: 0 1rem;
     position: absolute;
-    right: 0;
-    top: 3rem;
+    right: 1rem;
+    top: 2.75rem;
     display: none;
     flex-direction: column;
     align-items: flex-start;
     background-color: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.25rem;
-    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-      rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 10px 15px -3px,
-      rgba(0, 0, 0, 0.02) 0px 4px 6px -2px;
+    border-radius: 0.5rem;
+    box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
+      rgba(17, 24, 39, 0.05) 0px 0px 0px 1px,
+      rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
 
     &.show {
       display: flex;
@@ -274,31 +257,31 @@ const NotesStyles = styled.div`
   .edit-link,
   .edit-button,
   .delete-button {
-    padding: 0.75rem 2rem 0.75rem 0.25rem;
+    padding: 0.75rem 2rem 0.75rem 0;
     width: 100%;
     display: flex;
     align-items: center;
-    gap: 0.375rem;
+    gap: 0.5rem;
     background-color: transparent;
     border: none;
     font-size: 0.875rem;
-    font-weight: 500;
-    color: #6b7280;
+    font-weight: 400;
+    color: #111827;
     text-align: left;
     cursor: pointer;
 
     &:hover {
-      color: #111827;
+      color: #4338ca;
 
       svg {
-        color: #9ca3af;
+        color: #4338ca;
       }
     }
 
     svg {
-      height: 0.9375rem;
-      width: 0.9375rem;
-      color: #d1d5db;
+      height: 1rem;
+      width: 1rem;
+      color: #9ca3af;
     }
   }
 
@@ -311,29 +294,35 @@ const NotesStyles = styled.div`
     color: #b91c1c;
 
     svg {
-      color: #e3bebe;
+      color: #b91c1c;
     }
-  }
-
-  .row {
-    margin: 0 0 1.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
   }
 
   .add-note-section {
-    padding: 0 0 1rem;
+    padding: 1rem 0;
     width: 100%;
-    border-bottom: 1px solid #e5e7eb;
+
+    &.new-add {
+      margin: 1.5rem 0 0;
+    }
 
     textarea {
+      padding: 0.75rem 1.125rem;
       width: 100%;
+      min-height: 7rem;
+      border-radius: 0.25rem;
     }
   }
 
+  .notes {
+    margin: 1.5rem 0 0;
+    background-color: #fff;
+    border-radius: 0.25rem;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  }
+
   .note {
-    padding: 1rem 0;
+    padding: 1rem 1.5rem;
     position: relative;
     display: flex;
     border-bottom: 1px solid #e5e7eb;
@@ -343,24 +332,33 @@ const NotesStyles = styled.div`
     }
 
     .text {
-      margin: 0 0 0.25rem;
+      margin: 0 0 0.1875rem;
       font-size: 0.9375rem;
       font-weight: 500;
       color: #374151;
     }
 
     .date {
-      font-size: 0.875rem;
-      color: #89909d;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #9ca3af;
     }
 
     .icon {
-      margin: 0 1.125rem 0 0;
+      margin: 0 1rem 0 0;
+      padding: 0.3125rem;
+      height: 1.5rem;
+      width: 1.5rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #e2e8f0;
+      border: 1px solid #cbd5e1;
+      border-radius: 9999px;
+      box-shadow: inset 0 1px 1px #fff;
 
       svg {
-        height: 1.125rem;
-        width: 1.125rem;
-        color: #9ca3af;
+        color: #6b7280;
       }
     }
 
@@ -375,10 +373,10 @@ const NotesStyles = styled.div`
   }
 
   .actions {
-    margin: 0.375rem 0 0;
+    margin: 0.625rem 0 0;
     display: flex;
     justify-content: flex-end;
-    gap: 0.625rem;
+    gap: 0.875rem;
   }
 
   .cancel-button,
@@ -404,26 +402,29 @@ const NotesStyles = styled.div`
   }
 
   .save-button {
-    background-color: #4f46e5;
+    background-color: #2c33bb;
     color: #fff;
     border: 1px solid transparent;
 
     &:hover {
-      background-color: #4338ca;
+      background-color: #3037cb;
     }
 
     &:focus {
       outline: 2px solid transparent;
       outline-offset: 2px;
+    }
+
+    &:focus-visible {
       box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
         rgb(99, 102, 241) 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
   }
 
-  .empty {
-    margin: 1.5rem 0 0;
+  .empty-notes {
+    padding: 2rem 0 0;
     font-size: 1rem;
     font-weight: 500;
-    color: #89909d;
+    color: #6b7280;
   }
 `;

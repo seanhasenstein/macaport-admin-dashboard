@@ -48,7 +48,7 @@ export default function StoreProductMenu({
       ref={menuRef}
       className={`menu ${showMenu === productId ? 'show' : ''}`}
     >
-      <Link href={`/stores/${storeId}/product?prodId=${productId}`}>
+      <Link href={`/stores/${storeId}/product?pid=${productId}`}>
         <a className="menu-link">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -72,7 +72,7 @@ export default function StoreProductMenu({
           View Product
         </a>
       </Link>
-      <Link href={`/stores/${storeId}/product/update?prodId=${productId}`}>
+      <Link href={`/stores/${storeId}/product/update?pid=${productId}`}>
         <a className="menu-link">
           <svg
             xmlns="http://www.w3.org/2000/svg"

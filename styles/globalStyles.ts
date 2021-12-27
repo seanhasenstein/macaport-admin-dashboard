@@ -37,14 +37,24 @@ export const GlobalStyles = createGlobalStyle`
        url("/fonts/Inter-Bold.woff?v=3.18") format("woff");
 }
 
+@font-face {
+  font-family: 'Inter';
+  font-style:  normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("/fonts/Inter-ExtraBold.woff2?v=3.18") format("woff2"),
+       url("/fonts/Inter-ExtraBold.woff?v=3.18") format("woff");
+}
+
   html,
   body {
   padding: 0;
   margin: 0;
   position: relative;
+  height: 100%;
   font-size: 16px;
   letter-spacing: -0.011em;
-  background-color: #fff;
+  background-color: #f9fafb;
   -webkit-font-smoothing: antialiased;
   font-feature-settings: "cv02","cv03","cv04","cv09", "cv11";
 }
@@ -52,6 +62,10 @@ export const GlobalStyles = createGlobalStyle`
 html, body, button, input, select, textarea {
   font-family: 'Inter',-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
     Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+}
+
+#__next {
+  height: 100%;
 }
 
 a {
@@ -109,7 +123,7 @@ input[type="checkbox"]:checked, input[type='radio']:checked {
   background-repeat: no-repeat;
 }
 
-input[type='checkbox']:focus, input[type='radio']:focus {
+input[type='checkbox']:focus-visible, input[type='radio']:focus-visible {
   outline: 2px solid transparent;
   outline-offset: 2px;
   box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, rgb(99, 102, 241) 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;

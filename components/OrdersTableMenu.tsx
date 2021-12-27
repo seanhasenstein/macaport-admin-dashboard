@@ -2,31 +2,30 @@ import React from 'react';
 import Link from 'next/link';
 import { useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
-import { OrderStatus } from '../interfaces';
+import { Order, OrderStatus, Store } from '../interfaces';
 
 type Props = {
-  storeId: string;
-  orderId: string;
+  store: Store;
+  order: Order;
   currentActiveId: string | undefined;
   setCurrentActiveId: React.Dispatch<React.SetStateAction<string | undefined>>;
   orderStatus: OrderStatus;
 };
 
 export default function OrdersTableMenu({
-  storeId,
-  orderId,
+  store,
+  order,
   currentActiveId,
   setCurrentActiveId,
   orderStatus,
 }: Props) {
   const menuRef = React.useRef<HTMLDivElement>(null);
-  const [status, setStatus] = React.useState<OrderStatus>(orderStatus);
   const queryClient = useQueryClient();
 
   const updateOrderStatusMutation = useMutation(
     async (newStatus: OrderStatus) => {
       const response = await fetch(
-        `/api/orders/update/status?storeId=${storeId}&orderId=${orderId}`,
+        `/api/orders/update/status?sid=${store._id}&oid=${order.orderId}`,
         {
           method: 'post',
           body: JSON.stringify({ status: newStatus }),
@@ -44,11 +43,36 @@ export default function OrdersTableMenu({
       return data.store;
     },
     {
-      onSuccess: (data, variables) => {
-        setStatus(variables);
-        queryClient.invalidateQueries('stores', { exact: true });
-        queryClient.invalidateQueries(['store', storeId]);
-        queryClient.invalidateQueries(['order', orderId]);
+      onMutate: async newStatus => {
+        await queryClient.cancelQueries([
+          'stores',
+          'store',
+          'order',
+          order.orderId,
+        ]);
+        const updatedOrder = { ...order, orderStatus: newStatus };
+        const updatedOrders = store.orders.map(o => {
+          if (o.orderId === order.orderId) {
+            return updatedOrder;
+          }
+          return o;
+        });
+        const updatedStore = { ...store, orders: updatedOrders };
+        queryClient.setQueryData(['stores', 'store', store._id], updatedStore);
+        return { previousStatus: order.orderStatus, updatedStatus: newStatus };
+      },
+      onError: () => {
+        // TODO: trigger a notification
+        queryClient.setQueryData(['stores', 'store', store._id], store);
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries(['stores', 'store', store._id]);
+        queryClient.invalidateQueries([
+          'stores',
+          'store',
+          'order',
+          order.orderId,
+        ]);
       },
     }
   );
@@ -60,7 +84,7 @@ export default function OrdersTableMenu({
 
     const handleOutsideClick = (e: MouseEvent) => {
       if (
-        currentActiveId === orderId &&
+        currentActiveId === order.orderId &&
         menuRef.current &&
         !menuRef.current.contains(e.target as Node)
       ) {
@@ -77,7 +101,7 @@ export default function OrdersTableMenu({
       document.removeEventListener('keyup', handleEscapeKeyup);
       document.removeEventListener('click', handleOutsideClick);
     };
-  }, [currentActiveId, orderId, setCurrentActiveId]);
+  }, [currentActiveId, order.orderId, setCurrentActiveId]);
 
   const handleMenuButtonClick = (id: string) => {
     if (currentActiveId === id) {
@@ -96,8 +120,8 @@ export default function OrdersTableMenu({
     <OrdersTableMenuStyles>
       <button
         type="button"
-        className="menu-button"
-        onClick={() => handleMenuButtonClick(orderId)}
+        className="order-menu-button"
+        onClick={() => handleMenuButtonClick(order.orderId)}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -109,9 +133,9 @@ export default function OrdersTableMenu({
       </button>
       <div
         ref={menuRef}
-        className={`menu ${currentActiveId === orderId ? 'show' : ''}`}
+        className={`menu ${currentActiveId === order.orderId ? 'show' : ''}`}
       >
-        <Link href={`/orders/${orderId}?storeId=${storeId}`}>
+        <Link href={`/orders/${order.orderId}?sid=${store._id}`}>
           <a className="view-link">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -135,7 +159,7 @@ export default function OrdersTableMenu({
             View Order
           </a>
         </Link>
-        <Link href={`/orders/update?id=${orderId}&storeId=${storeId}`}>
+        <Link href={`/orders/update?id=${order.orderId}&sid=${store._id}`}>
           <a className="edit-link">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -155,43 +179,43 @@ export default function OrdersTableMenu({
         </Link>
         <div className="order-status-buttons">
           <label
-            htmlFor={`unfulfilled-${orderId}`}
+            htmlFor={`unfulfilled-${order.orderId}`}
             className={status === 'Unfulfilled' ? 'unfulfilled' : ''}
           >
             <input
               type="radio"
-              name={`${orderId}`}
-              id={`unfulfilled-${orderId}`}
+              name={`${order.orderId}`}
+              id={`unfulfilled-${order.orderId}`}
               value="Unfulfilled"
-              checked={status === 'Unfulfilled'}
+              checked={orderStatus === 'Unfulfilled'}
               onChange={() => handleStatusChange('Unfulfilled')}
             />
             Unfulfilled
           </label>
           <label
-            htmlFor={`fulfilled-${orderId}`}
+            htmlFor={`fulfilled-${order.orderId}`}
             className={status === 'Fulfilled' ? 'fulfilled' : ''}
           >
             <input
               type="radio"
-              name={`${orderId}`}
-              id={`fulfilled-${orderId}`}
+              name={`${order.orderId}`}
+              id={`fulfilled-${order.orderId}`}
               value="Fulfilled"
-              checked={status === 'Fulfilled'}
+              checked={orderStatus === 'Fulfilled'}
               onChange={() => handleStatusChange('Fulfilled')}
             />
             Fulfilled
           </label>
           <label
-            htmlFor={`completed-${orderId}`}
+            htmlFor={`completed-${order.orderId}`}
             className={status === 'Completed' ? 'completed' : ''}
           >
             <input
               type="radio"
-              name={`${orderId}`}
-              id={`completed-${orderId}`}
+              name={`${order.orderId}`}
+              id={`completed-${order.orderId}`}
               value="Completed"
-              checked={status === 'Completed'}
+              checked={orderStatus === 'Completed'}
               onChange={() => handleStatusChange('Completed')}
             />
             Completed
@@ -203,7 +227,9 @@ export default function OrdersTableMenu({
 }
 
 const OrdersTableMenuStyles = styled.div`
-  .menu-button {
+  position: relative;
+
+  .order-menu-button {
     margin-left: auto;
     padding: 0.125rem;
     display: flex;
@@ -225,20 +251,19 @@ const OrdersTableMenuStyles = styled.div`
   }
 
   .menu {
-    padding: 0 0.875rem;
+    padding: 0 1rem;
     position: absolute;
-    right: 1rem;
-    top: 2.75rem;
+    right: -0.5rem;
+    top: 1.625rem;
     width: 11rem;
     display: none;
     flex-direction: column;
     align-items: flex-start;
     background-color: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.25rem;
-    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-      rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 10px 15px -3px,
-      rgba(0, 0, 0, 0.02) 0px 4px 6px -2px;
+    border-radius: 0.5rem;
+    box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
+      rgba(17, 24, 39, 0.05) 0px 0px 0px 1px,
+      rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
 
     &.show {
       display: flex;
@@ -248,32 +273,32 @@ const OrdersTableMenuStyles = styled.div`
 
   .view-link,
   .edit-link {
-    padding: 0.625rem 0 0.625rem 0.375rem;
+    padding: 0.75rem 2rem 0.75rem 0;
     width: 100%;
     display: flex;
     align-items: center;
-    gap: 0.375rem;
+    gap: 0.5rem;
     background-color: transparent;
     border: none;
     font-size: 0.875rem;
-    font-weight: 500;
-    color: #6b7280;
+    font-weight: 400;
+    color: #111827;
     text-align: left;
     cursor: pointer;
     border-bottom: 1px solid #e5e7eb;
 
     &:hover {
-      color: #111827;
+      color: #4338ca;
 
       svg {
-        color: #9ca3af;
+        color: #4338ca;
       }
     }
 
     svg {
       height: 1rem;
       width: 1rem;
-      color: #d1d5db;
+      color: #9ca3af;
     }
   }
 
@@ -284,55 +309,61 @@ const OrdersTableMenuStyles = styled.div`
 
     label {
       margin: 0;
-      padding: 0.75rem 0.375rem;
+      padding: 0.75rem 2rem 0.75rem 0;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.5625rem;
       font-size: 0.875rem;
+      font-weight: 400;
+      color: #111827;
+      line-height: 1;
       border-bottom: 1px solid #e5e7eb;
       cursor: pointer;
 
       &.unfulfilled,
       &:hover.unfulfilled {
-        color: #b91c1c;
+        color: #7f1d1d;
+        font-weight: 500;
         z-index: 100;
 
         input {
-          color: #b91c1c;
+          color: #dc2626;
 
           &:focus {
             box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
-              #ef4444 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+              #dc2626 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
           }
         }
       }
 
       &.fulfilled,
       &:hover.fulfilled {
-        color: #b45309;
+        color: #713f12;
+        font-weight: 500;
         z-index: 100;
 
         input {
-          color: #b45309;
+          color: #eab308;
 
           &:focus {
             box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
-              #f59e0b 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+              #eab308 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
           }
         }
       }
 
       &.completed,
       &:hover.completed {
-        color: #0e7490;
+        color: #064e3b;
+        font-weight: 500;
         z-index: 100;
 
         input {
-          color: #0e7490;
+          color: #10b981;
 
           &:focus {
             box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
-              #06b6d4 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+              #10b981 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
           }
         }
       }
@@ -342,7 +373,7 @@ const OrdersTableMenuStyles = styled.div`
       }
 
       &:hover {
-        color: #111827;
+        color: #4338ca;
       }
     }
 

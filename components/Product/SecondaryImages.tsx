@@ -14,7 +14,7 @@ export default function SecondaryImages({ color, product, storeId }: Props) {
   const secondaryImagesMutation = useMutation(
     async (secondaryImages: string[]) => {
       const response = await fetch(
-        `/api/stores/update-color?storeId=${storeId}&prodId=${product.id}&colorId=${color.id}`,
+        `/api/stores/update-color?sid=${storeId}&pid=${product.id}&colorId=${color.id}`,
         {
           method: 'post',
           body: JSON.stringify({ ...color, secondaryImages }),
@@ -33,9 +33,7 @@ export default function SecondaryImages({ color, product, storeId }: Props) {
     },
     {
       onSuccess: () => {
-        queryClient.invalidateQueries(['product', product.id]);
-        queryClient.invalidateQueries('stores', { exact: true });
-        queryClient.invalidateQueries(['store', storeId]);
+        queryClient.invalidateQueries('stores');
       },
     }
   );
@@ -88,7 +86,7 @@ const SecondaryImagesStyles = styled.div`
 
   .secondary-img {
     padding: 0.25rem 0.5rem;
-    width: 3.25rem;
+    width: 2.75rem;
     background-color: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 0.25rem;
@@ -103,6 +101,7 @@ const SecondaryImagesStyles = styled.div`
   button {
     margin: 0;
     padding: 0;
+    display: flex;
     background-color: transparent;
     border: none;
     box-shadow: none;

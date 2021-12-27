@@ -1,12 +1,21 @@
+import React from 'react';
 import { useRouter } from 'next/router';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
-import { Formik, Form, Field, ErrorMessage } from 'formik';
+import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { useSession } from '../../hooks/useSession';
 import { Store, StoreForm } from '../../interfaces';
-import { unitedStates, months, removeNonDigits } from '../../utils';
+import {
+  unitedStates,
+  months,
+  removeNonDigits,
+  formatPhoneNumber,
+  formatGroupTerm,
+  formatGroups,
+} from '../../utils';
 import BasicLayout from '../../components/BasicLayout';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const updateStoreSchema = Yup.object().shape({
   name: Yup.string().required('A store name is required.'),
@@ -40,9 +49,6 @@ function formatInitialValues(store: Store): StoreForm {
       : store.hasPrimaryShippingLocation
       ? 'ship'
       : 'noship';
-  const { name, street, street2, city, state, zipcode } =
-    store.primaryShippingLocation;
-  const { firstName, lastName, email, phone } = store.contact;
 
   return {
     name: store.name,
@@ -55,21 +61,15 @@ function formatInitialValues(store: Store): StoreForm {
     hasCloseDate: store.hasCloseDate ? 'true' : 'false',
     closeDate,
     shippingMethod,
-    primaryShippingLocation: {
-      name,
-      street,
-      street2,
-      city,
-      state,
-      zipcode,
-    },
+    primaryShippingLocation: store.primaryShippingLocation,
     allowDirectShipping: store.allowDirectShipping ? 'true' : 'false',
     contact: {
-      firstName,
-      lastName,
-      email,
-      phone,
+      ...store.contact,
+      phone: formatPhoneNumber(store.contact.phone),
     },
+    requireGroupSelection: store.requireGroupSelection,
+    groupTerm: store.groupTerm,
+    groups: store.groups,
   };
 }
 
@@ -112,6 +112,9 @@ function formatDataForDb(data: StoreForm) {
     primaryShippingLocation: data.primaryShippingLocation,
     allowDirectShipping,
     contact: data.contact,
+    requireGroupSelection: data.requireGroupSelection,
+    groupTerm: formatGroupTerm(data.requireGroupSelection, data.groupTerm),
+    groups: formatGroups(data.requireGroupSelection, data.groups),
     updatedAt: new Date(),
   };
 }
@@ -127,7 +130,7 @@ export default function UpdateStore() {
     data: store,
     error,
   } = useQuery<Store>(
-    ['store', router.query.id],
+    ['stores', 'store', router.query.id],
     async () => {
       if (!router.query.id) return;
       const response = await fetch(`/api/stores/${router.query.id}`);
@@ -169,136 +172,86 @@ export default function UpdateStore() {
       return data.store;
     },
     {
+      onMutate: async updatedStore => {
+        await queryClient.cancelQueries(['stores', 'store', router.query.id]);
+        queryClient.setQueryData(['stores', 'store', router.query.id], {
+          ...formatDataForDb(updatedStore),
+          _id: store?._id,
+        });
+        return { previousStore: store, updatedStore };
+      },
+      onError: () => {
+        // TODO: trigger a notification
+        queryClient.setQueryData(['stores', 'store', router.query.id], store);
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries(['stores', 'store', router.query.id]);
+      },
       onSuccess: data => {
-        queryClient.invalidateQueries('stores', { exact: true });
-        queryClient.invalidateQueries(['store', data._id]);
         router.push(`/stores/${data._id}`);
       },
     }
   );
+
+  const handleAddGroupClick = async (callback: () => void, query: string) => {
+    await callback();
+    document.querySelector<HTMLInputElement>(query)?.focus();
+  };
 
   if (loading || !session) return <div />;
 
   return (
     <BasicLayout title="Update Store | Macaport Dashboard">
       <UpdateStoreStyles>
-        {isLoading && (
-          <>
-            <div className="title">
-              <div>
-                <button
-                  type="button"
-                  className="cancel-link"
-                  onClick={() => router.back()}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-                <h2>Update Store</h2>
-              </div>
-            </div>
-            <div className="main-content">
-              <div className="wrapper">
-                <div className="form-container">
-                  <div>Loading Store...</div>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-        {isError && error instanceof Error && (
-          <>
-            <div className="title">
-              <div>
-                <button
-                  type="button"
-                  className="cancel-link"
-                  onClick={() => router.back()}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-                <h2>Error!</h2>
-              </div>
-            </div>
-            <div className="main-content">
-              <div className="wrapper">
-                <div className="form-container">
-                  <div>Error: {error.message}</div>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-        {store && (
-          <Formik
-            initialValues={formatInitialValues(store)}
-            validationSchema={updateStoreSchema}
-            onSubmit={async values => {
-              await updateStoreMutation.mutate(values);
-            }}
-          >
-            {({ values }) => (
-              <>
-                <div className="title">
-                  <div>
-                    <button
-                      type="button"
-                      className="cancel-link"
-                      onClick={() => router.back()}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
-                    </button>
-                    <h2>Update Store</h2>
-                  </div>
-                  <div className="save-buttons">
-                    <button
-                      type="button"
-                      className="primary-button"
-                      onClick={() => updateStoreMutation.mutate(values)}
-                    >
-                      Save store
-                    </button>
-                  </div>
-                </div>
-                <div className="main-content">
-                  <div className="form-container">
+        <div className="main-content">
+          <div className="form-container">
+            {isLoading && <LoadingSpinner isLoading={isLoading} />}
+            {isError && error instanceof Error && <div>Error: {error}</div>}
+            {store && (
+              <Formik
+                initialValues={formatInitialValues(store)}
+                enableReinitialize={true}
+                validationSchema={updateStoreSchema}
+                onSubmit={async values => {
+                  await updateStoreMutation.mutate(values);
+                }}
+              >
+                {({ values }) => (
+                  <>
+                    <div className="title">
+                      <div>
+                        <button
+                          type="button"
+                          className="cancel-link"
+                          onClick={() => router.back()}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                        <h2>Update Store</h2>
+                      </div>
+                      <div className="save-buttons">
+                        <button
+                          type="button"
+                          className="primary-button"
+                          onClick={() => updateStoreMutation.mutate(values)}
+                        >
+                          Save store
+                        </button>
+                      </div>
+                    </div>
                     <Form>
-                      <h3>Store Information</h3>
                       <div className="section">
                         <div className="grid-col-1">
                           <div className="item">
@@ -608,22 +561,137 @@ export default function UpdateStore() {
                           </div>
                         </>
                       )}
+                      <div className="section">
+                        <div className="item">
+                          <h3>Group selection at checkout</h3>
+                          <div className="checkbox-item">
+                            <Field
+                              type="checkbox"
+                              name="requireGroupSelection"
+                              id="requireGroupSelection"
+                            />
+                            <label htmlFor="requireGroupSelection">
+                              Require customers to select a group at checkout
+                            </label>
+                          </div>
+                        </div>
+                        {values.requireGroupSelection && (
+                          <>
+                            <div className="item">
+                              <label htmlFor="groupTerm">
+                                Group term (team, organization, category, etc.)
+                              </label>
+                              <Field name="groupTerm" id="groupTerm" />
+                            </div>
+                            <div className="item">
+                              <label htmlFor="groups">Groups</label>
+                              <FieldArray
+                                name="groups"
+                                render={arrayHelpers => (
+                                  <>
+                                    <div className="group-items">
+                                      {values.groups.length > 0 &&
+                                        values.groups.map((g, i) => (
+                                          <div key={i} className="group-item">
+                                            <Field
+                                              name={`groups.${i}`}
+                                              id={`groups.${i}`}
+                                            />
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                arrayHelpers.remove(i)
+                                              }
+                                              className="remove-group-button"
+                                            >
+                                              <span className="sr-only">
+                                                Remove
+                                              </span>
+                                              <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 20 20"
+                                                fill="currentColor"
+                                              >
+                                                <path
+                                                  fillRule="evenodd"
+                                                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                                  clipRule="evenodd"
+                                                />
+                                              </svg>
+                                            </button>
+                                          </div>
+                                        ))}
+                                    </div>
+                                    {values.groups.length > 0 ? (
+                                      <div className="add-row">
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            handleAddGroupClick(
+                                              () => arrayHelpers.push(''),
+                                              `#groups\\.${values.groups.length}`
+                                            )
+                                          }
+                                          className="add-group-button"
+                                        >
+                                          Add another group
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleAddGroupClick(
+                                            () => arrayHelpers.push(''),
+                                            `#groups\\.${values.groups.length}`
+                                          )
+                                        }
+                                        className="add-group-button"
+                                      >
+                                        Add a group
+                                      </button>
+                                    )}
+                                  </>
+                                )}
+                              />
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </Form>
-                  </div>
-                </div>
-              </>
+                  </>
+                )}
+              </Formik>
             )}
-          </Formik>
-        )}
+          </div>
+        </div>
       </UpdateStoreStyles>
     </BasicLayout>
   );
 }
 
 const UpdateStoreStyles = styled.div`
+  h2 {
+    margin: 0 0 0 0.75rem;
+    padding: 0 0 0 1.125rem;
+    font-size: 1.0625rem;
+    font-weight: 500;
+    line-height: 1;
+    color: #111827;
+    border-left: 1px solid #d1d5db;
+  }
+
+  h3 {
+    margin: 0 0 1.5rem;
+    font-weight: 600;
+    color: #1f2937;
+  }
+
   .title {
     padding: 1.5rem 2.5rem;
     position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
     display: flex;
     justify-content: space-between;
@@ -636,70 +704,60 @@ const UpdateStoreStyles = styled.div`
       display: flex;
       align-items: center;
     }
+  }
 
-    .cancel-link {
-      padding: 0.375rem;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: #fff;
-      border: none;
-      color: #6b7280;
-      cursor: pointer;
+  .cancel-link {
+    padding: 0.375rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #fff;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
 
-      &:hover {
-        color: #111827;
-      }
-
-      svg {
-        height: 1.125rem;
-        width: 1.125rem;
-      }
+    &:hover {
+      color: #111827;
     }
 
-    h2 {
-      margin: 0 0 0 0.75rem;
-      padding: 0 0 0 1.125rem;
-      border-left: 1px solid #d1d5db;
-    }
-
-    .save-buttons {
-      margin: 0;
-      display: flex;
-      gap: 0.875rem;
-    }
-
-    .primary-button {
-      padding: 0.5rem 1.125rem;
-      font-weight: 500;
-      border-radius: 0.3125rem;
-      background-color: #4f46e5;
-      color: #fff;
-      border: 1px solid transparent;
-      cursor: pointer;
-
-      &:hover {
-        background-color: #4338ca;
-      }
+    svg {
+      height: 1.125rem;
+      width: 1.125rem;
     }
   }
 
-  h2 {
+  .save-buttons {
     margin: 0;
-    font-size: 1.0625rem;
-    font-weight: 500;
-    color: #111827;
-    line-height: 1;
+    display: flex;
+    gap: 0.875rem;
+    z-index: 9999;
   }
 
-  h3 {
-    margin: 0 0 1.5rem;
-    font-weight: 600;
-    color: #1f2937;
+  .primary-button {
+    padding: 0.5rem 1.125rem;
+    font-weight: 500;
+    border-radius: 0.3125rem;
+    background-color: #4f46e5;
+    color: #fff;
+    border: 1px solid transparent;
+    cursor: pointer;
+
+    &:hover {
+      background-color: #4338ca;
+    }
+
+    &:focus {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+
+    &:focus-visible {
+      text-decoration: underline;
+    }
   }
 
   .main-content {
-    padding: 10rem 3rem 3rem;
+    padding: 7rem 3rem 3rem;
     position: relative;
   }
 
@@ -752,6 +810,103 @@ const UpdateStoreStyles = styled.div`
 
     label {
       margin: 0;
+    }
+  }
+
+  .group-items {
+    background-color: #fff;
+    border-radius: 0.375rem;
+    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
+      rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+  }
+
+  .group-item {
+    margin: -1px 0 0;
+    position: relative;
+
+    &:first-of-type input {
+      border-top-left-radius: 0.375rem;
+      border-top-right-radius: 0.375rem;
+    }
+
+    &:last-of-type input {
+      border-bottom-left-radius: 0.375rem;
+      border-bottom-right-radius: 0.375rem;
+    }
+
+    input {
+      position: relative;
+      width: 100%;
+      background-color: transparent;
+      border: 1px solid #d1d5db;
+      box-shadow: none;
+      border-radius: 0;
+
+      &:focus {
+        z-index: 100;
+      }
+    }
+  }
+
+  .remove-group-button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 0.875rem 1rem;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    color: #6b7280;
+    z-index: 200;
+
+    svg {
+      height: 0.8125rem;
+      width: 0.8125rem;
+    }
+
+    &:hover {
+      color: #111827;
+    }
+  }
+
+  .add-row {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .add-group-button {
+    margin: 1rem 0 0;
+    padding: 0.5rem 0.75rem;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    color: #475569;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: center;
+    line-height: 1;
+    background-color: #e2e8f0;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.3125rem;
+    box-shadow: inset 0 1px 1px #fff, 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    cursor: pointer;
+
+    &:hover {
+      border-color: #bfcbda;
+      box-shadow: inset 0 1px 1px #fff, 0 1px 2px 0 rgb(0 0 0 / 0.1);
+    }
+
+    &:focus {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+
+    &:focus-visible {
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
+        rgb(99, 102, 241) 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
   }
 

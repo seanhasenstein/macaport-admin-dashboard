@@ -45,19 +45,14 @@ export async function updateOrderNotes(
   orderId: string,
   notes: Note[]
 ) {
-  try {
-    const result = await db.collection('stores').findOneAndUpdate(
-      { _id: new ObjectID(storeId) },
-      { $set: { 'orders.$[order].notes': notes } },
-      {
-        arrayFilters: [{ 'order.orderId': orderId }],
-        upsert: true,
-        returnDocument: 'after',
-      }
-    );
-    return result.value;
-  } catch (error) {
-    console.error(error);
-    throw new Error('An error occurred updating the order notes.');
-  }
+  const result = await db.collection('stores').findOneAndUpdate(
+    { _id: new ObjectID(storeId) },
+    { $set: { 'orders.$[order].notes': notes } },
+    {
+      arrayFilters: [{ 'order.orderId': orderId }],
+      upsert: true,
+      returnDocument: 'after',
+    }
+  );
+  return result.value;
 }

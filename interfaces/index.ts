@@ -43,6 +43,8 @@ export interface Product {
   sizes: Size[];
   colors: Color[];
   skus: Sku[];
+  includeCustomName: boolean;
+  includeCustomNumber: boolean;
 }
 
 export interface StoreForm {
@@ -75,6 +77,9 @@ export interface StoreForm {
     email: string;
     phone: string;
   };
+  requireGroupSelection: boolean;
+  groupTerm: string;
+  groups: string[];
   redirectTo?: 'store' | 'add_product';
 }
 
@@ -102,6 +107,9 @@ export interface Store {
     email: string;
     phone: string;
   };
+  requireGroupSelection: boolean;
+  groupTerm: string;
+  groups: string[];
   products: Product[];
   orders: Order[];
   notes: Note[];
@@ -109,13 +117,15 @@ export interface Store {
   updatedAt: string;
 }
 
-interface OrderItem {
+export interface OrderItem {
   sku: Sku;
   name: string;
   image: string;
   price: number;
   quantity: number;
   itemTotal: number;
+  customName: string;
+  customNumber: string;
 }
 
 export type OrderStatus = 'Unfulfilled' | 'Fulfilled' | 'Completed';
@@ -134,6 +144,7 @@ export interface Order {
     email: string;
     phone: string;
   };
+  group: string;
   orderStatus: OrderStatus;
   shippingMethod: 'Primary' | 'Direct' | 'None';
   shippingAddress: {
@@ -163,9 +174,9 @@ export interface Request extends NextApiRequest {
   dbClient: MongoClient;
   query: {
     id: string;
-    storeId: string;
-    orderId: string;
-    prodId: string;
-    colorId: string;
+    sid: string;
+    oid: string;
+    pid: string;
+    cid: string;
   };
 }

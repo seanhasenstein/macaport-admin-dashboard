@@ -1,12 +1,17 @@
 import React from 'react';
 import { useRouter } from 'next/router';
-import Link from 'next/link';
 import styled from 'styled-components';
-import { useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { useSession } from '../../../../hooks/useSession';
-import { Size, Product, Color, CloudinaryStatus } from '../../../../interfaces';
+import {
+  CloudinaryStatus,
+  Color,
+  Product,
+  Size,
+  Store,
+} from '../../../../interfaces';
 import {
   createId,
   getCloudinarySignature,
@@ -24,8 +29,6 @@ type InitialValues = {
   sizes: Size[];
   colors: Color[];
 };
-
-type AddMutationInput = Omit<Product, 'skus'>;
 
 const validationSchema = Yup.object().shape({
   name: Yup.string().required('Product name is required'),
@@ -57,29 +60,44 @@ const validationSchema = Yup.object().shape({
 export default function AddProduct() {
   const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [primaryImageStatus, setPrimaryImageStatus] =
     React.useState<CloudinaryStatus>('idle');
   const [secondaryImageStatus, setSecondaryImageStatus] =
     React.useState<CloudinaryStatus>('idle');
   const [primaryImages, setPrimaryImages] = React.useState<string[]>([]);
   const [secondaryImages, setSecondaryImages] = React.useState<string[][]>([]);
-  const queryClient = useQueryClient();
+  const [includeCustomName, setIncludeCustomName] = React.useState(false);
+  const [includeCustomNumber, setIncludeCustomNumber] = React.useState(false);
+
+  const storeQuery = useQuery<Store>(
+    ['stores', 'store', router.query.id],
+    async () => {
+      if (!router.query.id) return;
+      const response = await fetch(`/api/stores/${router.query.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch the store.');
+      }
+      const data = await response.json();
+      return data.store;
+    },
+    {
+      initialData: () => {
+        return queryClient.getQueryData<Store>([
+          'stores',
+          'store',
+          router.query.id,
+        ]);
+      },
+      initialDataUpdatedAt: () =>
+        queryClient.getQueryState(['stores', 'store', router.query.id])
+          ?.dataUpdatedAt,
+      staleTime: 1000 * 60 * 10,
+    }
+  );
 
   const addProductMutation = useMutation(
-    async (values: AddMutationInput) => {
-      const sizes = values.sizes.map(size => {
-        const price = Number(size.price) * 100;
-
-        return { ...size, price };
-      });
-      const colors = values.colors.map(color => {
-        const hex = `#${color.hex.replace(/[^0-9A-Fa-f]/g, '').toLowerCase()}`;
-        return { ...color, hex };
-      });
-      const skus = createSkusFromSizesAndColors(sizes, colors, values.id);
-
-      const product = { ...values, colors, sizes, skus };
-
+    async (product: Product) => {
       const response = await fetch(
         `/api/stores/add-product?id=${router.query.id}`,
         {
@@ -99,10 +117,31 @@ export default function AddProduct() {
       return data.store;
     },
     {
+      onMutate: async newProduct => {
+        await queryClient.cancelQueries(['stores', 'store', router.query.id]);
+        const storeProducts = storeQuery.data?.products || [];
+        const updatedStore = {
+          ...storeQuery.data,
+          products: [...storeProducts, newProduct],
+        };
+        queryClient.setQueryData(
+          ['stores', 'store', router.query.id],
+          updatedStore
+        );
+        return { previousStore: storeQuery.data, newProduct };
+      },
+      onError: () => {
+        // TODO: trigger a notification
+        queryClient.setQueryData(
+          ['stores', 'store', router.query.id],
+          storeQuery.data
+        );
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries(['stores']);
+      },
       onSuccess: () => {
-        queryClient.invalidateQueries('stores', { exact: true });
-        queryClient.invalidateQueries(['store', router.query.id]);
-        router.push(`/stores/${router.query.id}#products`);
+        router.push(`/stores/${router.query.id}?active=products`);
       },
     }
   );
@@ -270,6 +309,11 @@ export default function AddProduct() {
     colors: [],
   };
 
+  const handleAddClick = async (callback: () => void, selector: string) => {
+    await callback();
+    document.querySelector<HTMLInputElement>(selector)?.focus();
+  };
+
   return (
     <BasicLayout title="Add Product | Macaport Dashboard">
       <AddProductStyles>
@@ -277,30 +321,49 @@ export default function AddProduct() {
           initialValues={initialValues}
           validationSchema={validationSchema}
           onSubmit={values => {
-            addProductMutation.mutate(values);
+            const sizes = values.sizes.map(size => {
+              const price = Number(size.price) * 100;
+              return { ...size, price };
+            });
+            const colors = values.colors.map(color => {
+              const hex = `#${color.hex
+                .replace(/[^0-9A-Fa-f]/g, '')
+                .toLowerCase()}`;
+              return { ...color, hex };
+            });
+            const skus = createSkusFromSizesAndColors(sizes, colors, values.id);
+            const product = { ...values, colors, sizes, skus };
+
+            addProductMutation.mutate({
+              ...product,
+              includeCustomName,
+              includeCustomNumber,
+            });
           }}
         >
           {({ values, setFieldValue }) => (
             <Form>
               <div className="title">
                 <div>
-                  <Link href={`/stores/${router.query.id}#products`}>
-                    <a className="cancel-link">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
-                    </a>
-                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => router.back()}
+                    className="cancel-link"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
                   <h2>Add a product</h2>
                 </div>
                 <div className="save-buttons">
@@ -318,7 +381,7 @@ export default function AddProduct() {
               <div className="main-content">
                 <div className="form-container">
                   <div className="section">
-                    <h3>Product information</h3>
+                    <h3>Add a product form</h3>
                     <div className="item">
                       <label htmlFor="name">Product name</label>
                       <Field name="name" id="name" />
@@ -345,6 +408,54 @@ export default function AddProduct() {
                       />
                     </div>
                   </div>
+
+                  <div className="section">
+                    <h3>Custom options</h3>
+                    <div className="option">
+                      <button
+                        type="button"
+                        onClick={() => setIncludeCustomName(!includeCustomName)}
+                        role="switch"
+                        aria-checked={includeCustomName}
+                        className={`toggle-button ${
+                          includeCustomName ? 'on' : 'off'
+                        }`}
+                      >
+                        <span aria-hidden="true" className="switch" />
+                        <span className="sr-only">
+                          Turn {includeCustomName ? 'off' : 'on'} include custom
+                          name
+                        </span>
+                      </button>
+                      <span className="toggle-description">
+                        Allow custom names <span>(+$5.00)</span>
+                      </span>
+                    </div>
+
+                    <div className="option">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setIncludeCustomNumber(!includeCustomNumber)
+                        }
+                        role="switch"
+                        aria-checked={includeCustomNumber}
+                        className={`toggle-button ${
+                          includeCustomNumber ? 'on' : 'off'
+                        }`}
+                      >
+                        <span aria-hidden="true" className="switch" />
+                        <span className="sr-only">
+                          Turn {includeCustomNumber ? 'off' : 'on'} include
+                          custom name
+                        </span>
+                      </button>
+                      <div className="toggle-description">
+                        Allow custom numbers <span>(+$5.00)</span>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="section">
                     <h3>Product details</h3>
                     <FieldArray
@@ -392,7 +503,12 @@ export default function AddProduct() {
                           <button
                             type="button"
                             className="secondary-button"
-                            onClick={() => arrayHelpers.push('')}
+                            onClick={() =>
+                              handleAddClick(
+                                () => arrayHelpers.push(''),
+                                `#details\\.${values.details.length}`
+                              )
+                            }
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -477,11 +593,15 @@ export default function AddProduct() {
                             type="button"
                             className="secondary-button"
                             onClick={() =>
-                              arrayHelpers.push({
-                                id: createId('size'),
-                                label: '',
-                                price: '0.00',
-                              })
+                              handleAddClick(
+                                () =>
+                                  arrayHelpers.push({
+                                    id: createId('size'),
+                                    label: '',
+                                    price: '0.00',
+                                  }),
+                                `#sizes\\.${values.sizes.length}\\.label`
+                              )
                             }
                           >
                             <svg
@@ -746,13 +866,17 @@ export default function AddProduct() {
                             type="button"
                             className="secondary-button"
                             onClick={() =>
-                              arrayHelpers.push({
-                                id: createId('color'),
-                                label: '',
-                                hex: '',
-                                primaryImage: '',
-                                secondaryImages: [],
-                              })
+                              handleAddClick(
+                                () =>
+                                  arrayHelpers.push({
+                                    id: createId('color'),
+                                    label: '',
+                                    hex: '',
+                                    primaryImage: '',
+                                    secondaryImages: [],
+                                  }),
+                                `#colors\\.${values.colors.length}\\.label`
+                              )
                             }
                           >
                             <svg
@@ -889,7 +1013,7 @@ const AddProductStyles = styled.div`
   }
 
   h3 {
-    margin: 0 0 2.5rem;
+    margin: 0 0 1.5rem;
     font-size: 1.25rem;
     font-weight: 600;
     color: #1f2937;
@@ -983,20 +1107,16 @@ const AddProductStyles = styled.div`
     justify-content: center;
     align-items: center;
     background-color: transparent;
-    border: 1px solid transparent;
+    border: none;
     color: #6b7280;
-    border-radius: 0.25rem;
+    border-radius: 9999px;
     cursor: pointer;
     box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
       rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 1px 3px 0px,
       rgba(0, 0, 0, 0) 0px 1px 2px 0px;
 
     &:hover {
-      color: #374151;
-      border-color: #e5e7eb;
-      box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 1px 3px 0px,
-        rgba(0, 0, 0, 0.06) 0px 1px 2px 0px;
+      color: #111827;
     }
   }
 
@@ -1059,7 +1179,11 @@ const AddProductStyles = styled.div`
       align-items: center;
       width: 5rem;
       height: 5rem;
-      border: 1px solid #e5e7eb;
+      background-color: #fff;
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
+        rgba(17, 24, 39, 0.05) 0px 0px 0px 1px,
+        rgba(0, 0, 0, 0.1) 0px 4px 6px -1px,
+        rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
       border-radius: 0.125rem;
 
       .placeholder {
@@ -1091,7 +1215,11 @@ const AddProductStyles = styled.div`
       .thumbnail {
         padding: 0.5rem 0.875rem;
         position: relative;
-        border: 1px solid #e5e7eb;
+        background-color: #fff;
+        box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
+          rgba(17, 24, 39, 0.05) 0px 0px 0px 1px,
+          rgba(0, 0, 0, 0.1) 0px 4px 6px -1px,
+          rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
         border-radius: 0.125rem;
         width: 5rem;
         height: 5rem;
@@ -1107,9 +1235,13 @@ const AddProductStyles = styled.div`
       position: absolute;
       top: -0.875rem;
       right: -0.875rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #1f2937;
       background-color: #fff;
-      color: #6b7280;
       border: none;
+      border-radius: 9999px;
       cursor: pointer;
 
       &:hover {
@@ -1117,8 +1249,8 @@ const AddProductStyles = styled.div`
       }
 
       svg {
-        height: 1.625rem;
-        width: 1.625rem;
+        height: 1.5rem;
+        width: 1.5rem;
       }
     }
   }
@@ -1128,5 +1260,88 @@ const AddProductStyles = styled.div`
     font-size: 0.75rem;
     font-weight: 500;
     color: #b91c1c;
+  }
+
+  .option {
+    padding: 0.75rem 0;
+    max-width: 20rem;
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    border-top: 1px solid #e5e7eb;
+
+    &:last-of-type {
+      margin: 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+  }
+
+  .toggle-button {
+    padding: 0;
+    position: relative;
+    flex-shrink: 0;
+    display: inline-flex;
+    height: 1.5rem;
+    width: 2.75rem;
+    border: 2px solid transparent;
+    border-radius: 9999px;
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-duration: 0.2s;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+
+    &:focus {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+
+    &:focus-visible {
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
+        rgb(99, 102, 241) 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+    }
+
+    &.on {
+      background-color: #4338ca;
+
+      & .switch {
+        transform: translateX(1.25rem);
+      }
+    }
+
+    &.off {
+      background-color: #e5e7eb;
+
+      & .switch {
+        transform: translateX(0rem);
+      }
+    }
+  }
+
+  .switch {
+    display: inline-block;
+    width: 1.25rem;
+    height: 1.25rem;
+    background-color: #fff;
+    border-radius: 9999px;
+    box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
+      rgba(59, 130, 246, 0.5) 0px 0px 0px 0px,
+      rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.06) 0px 1px 2px 0px;
+    pointer-events: none;
+    transition-duration: 0.2s;
+    transition-property: background-color, border-color, color, fill, stroke,
+      opacity, box-shadow, transform, filter, backdrop-filter,
+      -webkit-backdrop-filter;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .toggle-description {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #111827;
+    line-height: 1;
+
+    span {
+      color: #6b7280;
+    }
   }
 `;

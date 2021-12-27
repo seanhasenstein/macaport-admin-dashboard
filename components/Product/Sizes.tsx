@@ -16,7 +16,7 @@ export default function Sizes({ sizes, storeId, product }: Props) {
   const sizesMutation = useMutation(
     async (sizes: Size[]) => {
       const response = await fetch(
-        `/api/stores/update-product?id=${storeId}&prodId=${product.id}`,
+        `/api/stores/update-product?id=${storeId}&pid=${product.id}`,
         {
           method: 'post',
           body: JSON.stringify({ ...product, sizes }),
@@ -34,40 +34,31 @@ export default function Sizes({ sizes, storeId, product }: Props) {
     },
     {
       onSuccess: () => {
-        queryClient.invalidateQueries(['product', product.id]);
-        queryClient.invalidateQueries('stores', { exact: true });
-        queryClient.invalidateQueries(['store', storeId]);
+        queryClient.invalidateQueries('stores');
       },
     }
   );
 
-  const {
-    list,
-    dragging,
-    handleDragStart,
-    handleDragEnter,
-    handleDrop,
-    getStyles,
-    handleMouseDown,
-    handleMouseUp,
-  } = useDragNDrop(sizes, 'prod-size', sizesMutation.mutate);
+  const dnd = useDragNDrop(sizes, 'prod-size', sizesMutation.mutate);
 
   return (
     <SizesStyles>
-      {list.map((s, index) => (
+      {dnd.list.map((s, index) => (
         <div
           key={s.id}
-          draggable={dragging}
-          onDragStart={e => handleDragStart(e, index)}
-          onDragEnter={dragging ? e => handleDragEnter(e, index) : undefined}
+          draggable={dnd.dragging}
+          onDragStart={e => dnd.handleDragStart(e, index)}
+          onDragEnter={
+            dnd.dragging ? e => dnd.handleDragEnter(e, index) : undefined
+          }
           onDragOver={e => e.preventDefault()}
-          onDrop={handleDrop}
-          className={dragging ? getStyles(index) : 'prod-size'}
+          onDrop={dnd.handleDrop}
+          className={dnd.dragging ? dnd.getStyles(index) : 'prod-size'}
         >
           <button
             type="button"
-            onMouseDown={handleMouseDown}
-            onMouseUp={handleMouseUp}
+            onMouseDown={dnd.handleMouseDown}
+            onMouseUp={dnd.handleMouseUp}
             className="drag-button"
           >
             <svg
@@ -108,6 +99,9 @@ export default function Sizes({ sizes, storeId, product }: Props) {
 const SizesStyles = styled.div`
   max-width: 30rem;
   width: 100%;
+  background-color: #fff;
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 
   .prod-sizes {
     max-width: 16rem;
@@ -115,12 +109,14 @@ const SizesStyles = styled.div`
   }
 
   .prod-size {
-    padding: 0.75rem 0;
+    padding: 0.75rem 1.5rem 0.75rem 0.75rem;
     display: grid;
-    grid-template-columns: 2.5rem 1fr 0.5fr;
+    grid-template-columns: 3rem 1fr 0.5fr;
     align-items: center;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1f2937;
     border-bottom: 1px solid #e5e7eb;
-    color: #4b5563;
 
     &:last-of-type {
       border-bottom: none;
@@ -129,6 +125,7 @@ const SizesStyles = styled.div`
 
   .size-price {
     text-align: right;
+    color: #6b7280;
   }
 
   .drag-button {

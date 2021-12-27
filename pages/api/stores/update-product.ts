@@ -8,18 +8,13 @@ import { store } from '../../../db';
 const handler = nc<Request, NextApiResponse>()
   .use(database)
   .post(async (req, res) => {
-    try {
-      const result: Store = await store.updateStoreProduct(
-        req.db,
-        req.query.id,
-        req.query.prodId,
-        req.body
-      );
-      res.json({ store: result });
-    } catch (error) {
-      console.error(error);
-      res.json({ error: error.message });
-    }
+    const result: Store = await store.updateStoreProduct(
+      req.db,
+      req.query.id,
+      req.query.pid,
+      req.body
+    );
+    res.json({ store: result });
   });
 
 export default withAuth(handler);

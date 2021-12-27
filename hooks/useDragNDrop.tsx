@@ -25,9 +25,6 @@ export default function useDragNDrop<ListType>(
     dragItemNode.current = e.target;
     dragItemNode.current.addEventListener('dragend', handleDragEnd);
     dragItem.current = item;
-    // setTimeout(() => {
-    //   setDragging(true);
-    // }, 0);
   };
 
   const handleDragEnter = (
