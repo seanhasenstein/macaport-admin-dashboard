@@ -408,8 +408,10 @@ export default function Store() {
                                     <br />
                                   </>
                                 ) : null}
-                                {storeQuery.data.primaryShippingLocation.city},{' '}
-                                {storeQuery.data.primaryShippingLocation.state}{' '}
+                                {storeQuery.data.primaryShippingLocation.city}
+                                {storeQuery.data.primaryShippingLocation
+                                  .state &&
+                                  `, ${storeQuery.data.primaryShippingLocation.state}`}{' '}
                                 {
                                   storeQuery.data.primaryShippingLocation
                                     .zipcode

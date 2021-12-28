@@ -109,7 +109,12 @@ function formatDataForDb(data: StoreForm) {
     hasPrimaryShippingLocation,
     primaryShippingLocation: data.primaryShippingLocation,
     allowDirectShipping,
-    contact: data.contact,
+    contact: {
+      firstName: data.contact.firstName.trim(),
+      lastName: data.contact.lastName.trim(),
+      email: data.contact.email.trim().toLowerCase(),
+      phone: removeNonDigits(data.contact.phone),
+    },
     requireGroupSelection: data.requireGroupSelection,
     groupTerm: formatGroupTerm(data.requireGroupSelection, data.groupTerm),
     groups: formatGroups(data.requireGroupSelection, data.groups),

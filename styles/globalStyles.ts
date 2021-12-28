@@ -197,17 +197,8 @@ textarea {
     margin-bottom: 0;
   }
 
-  @page {
-    margin-top: 40px;
-    margin-bottom: 0;
-  }
-
   body, html {
     background-color: transparent;
-  }
-
-  body {
-    padding: 48px 32px;
   }
 
   header, footer {

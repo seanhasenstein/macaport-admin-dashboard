@@ -14,6 +14,7 @@ import {
 import Layout from '../../components/Layout';
 import Notes from '../../components/Notes';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PrintableOrder from '../../components/PrintableOrder';
 
 const navValues = ['details', 'items', 'notes'];
 type NavValue = typeof navValues[number];
@@ -294,341 +295,379 @@ export default function Order() {
   if (sessionLoading || !session) return <div />;
 
   return (
-    <Layout title={`Order #${data?.order?.orderId} | Macaport Dashboard`}>
-      <OrderStyles>
-        <div className="container">
-          {isLoading && <LoadingSpinner isLoading={isLoading} />}
-          {isError && error instanceof Error && <div>Error: {error}</div>}
-          {data?.order && (
-            <>
-              <Link href={`/stores/${router.query.sid}?active=orders`}>
-                <a className="back-link">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
+    <>
+      <Layout title={`Order #${data?.order?.orderId} | Macaport Dashboard`}>
+        <OrderStyles>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="print-button"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+              />
+            </svg>
+            Print order
+          </button>
+          <div className="container">
+            {isLoading && <LoadingSpinner isLoading={isLoading} />}
+            {isError && error instanceof Error && <div>Error: {error}</div>}
+            {data?.order && (
+              <>
+                <Link href={`/stores/${router.query.sid}?active=orders`}>
+                  <a className="back-link">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Back to store
+                  </a>
+                </Link>
+                <div className="order-header">
+                  <h2>Order #{data.order.orderId}</h2>
+                  <p>{data.order.store.name}</p>
+                </div>
+
+                <div className="order-nav">
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('details')}
+                    className={activeNav === 'details' ? 'active' : ''}
                   >
-                    <path
-                      fillRule="evenodd"
-                      d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Back to store
-                </a>
-              </Link>
-              <div className="order-header">
-                <h2>Order #{data.order.orderId}</h2>
-                <p>{data.order.store.name}</p>
-              </div>
+                    <span>Details</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('items')}
+                    className={activeNav === 'items' ? 'active' : ''}
+                  >
+                    <span>Order Items</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('notes')}
+                    className={activeNav === 'notes' ? 'active' : ''}
+                  >
+                    <span>Notes</span>
+                  </button>
+                </div>
 
-              <div className="order-nav">
-                <button
-                  type="button"
-                  onClick={() => handleNavClick('details')}
-                  className={activeNav === 'details' ? 'active' : ''}
-                >
-                  <span>Details</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleNavClick('items')}
-                  className={activeNav === 'items' ? 'active' : ''}
-                >
-                  <span>Order Items</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleNavClick('notes')}
-                  className={activeNav === 'notes' ? 'active' : ''}
-                >
-                  <span>Notes</span>
-                </button>
-              </div>
-
-              <div className="body">
-                <FetchingSpinner isLoading={isFetching} />
-                {activeNav === 'details' && (
-                  <>
-                    <div className="customer-info">
-                      <h3>
-                        {data.order.customer.firstName}{' '}
-                        {data.order.customer.lastName}
-                      </h3>
-                      <p>
-                        <a
-                          href={`mailto:${data.order.customer.email}`}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {data.order.customer.email}
-                        </a>
-                      </p>
-                      <p>{formatPhoneNumber(data.order.customer.phone)}</p>
-                    </div>
-                    <div className="order-details-grid">
-                      <div>
-                        <div className="info-item">
-                          <div className="label">Order Status</div>
-                          <div className="value">
-                            <div className="order-status">
-                              <span
-                                className={
-                                  data.order.orderStatus === 'Unfulfilled'
-                                    ? 'unfulfilled'
-                                    : data.order.orderStatus === 'Fulfilled'
-                                    ? 'fulfilled'
-                                    : data.order.orderStatus === 'Completed'
-                                    ? 'completed'
-                                    : ''
-                                }
-                              >
-                                <div className="dot" />
-                                {data.order.orderStatus}
+                <div className="body">
+                  <FetchingSpinner isLoading={isFetching} />
+                  {activeNav === 'details' && (
+                    <>
+                      <div className="customer-info">
+                        <h3>
+                          {data.order.customer.firstName}{' '}
+                          {data.order.customer.lastName}
+                        </h3>
+                        <p>
+                          <a
+                            href={`mailto:${data.order.customer.email}`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {data.order.customer.email}
+                          </a>
+                        </p>
+                        <p>{formatPhoneNumber(data.order.customer.phone)}</p>
+                      </div>
+                      <div className="order-details-grid">
+                        <div>
+                          <div className="info-item">
+                            <div className="label">Order Status</div>
+                            <div className="value">
+                              <div className="order-status">
+                                <span
+                                  className={
+                                    data.order.orderStatus === 'Unfulfilled'
+                                      ? 'unfulfilled'
+                                      : data.order.orderStatus === 'Fulfilled'
+                                      ? 'fulfilled'
+                                      : data.order.orderStatus === 'Completed'
+                                      ? 'completed'
+                                      : ''
+                                  }
+                                >
+                                  <div className="dot" />
+                                  {data.order.orderStatus}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="info-item">
+                            <div className="label">Order Date</div>
+                            <div className="value">
+                              {new Date(data.order.createdAt).toDateString()}
+                            </div>
+                          </div>
+                          <div className="info-item">
+                            <div className="label">Transaction Id</div>
+                            <div className="value">{data.order.stripeId}</div>
+                          </div>
+                        </div>
+                        <div>
+                          {data.store.requireGroupSelection && (
+                            <div className="info-item">
+                              <div className="label">
+                                {data.store.groupTerm}
+                              </div>
+                              <div className="value">{data.order.group}</div>
+                            </div>
+                          )}
+                          <div className="info-item">
+                            <div className="label">Shipping Method</div>
+                            {data.order.shippingMethod}
+                          </div>
+                          {data.order.shippingMethod === 'Direct' ? (
+                            <div className="info-item">
+                              <div className="label">Shipping Address</div>
+                              <span>
+                                {data.order.shippingAddress?.street}{' '}
+                                {data.order.shippingAddress?.street2}
+                                <br />
+                                {data.order.shippingAddress?.city},{' '}
+                                {data.order.shippingAddress?.state}{' '}
+                                {data.order.shippingAddress?.zipcode}
                               </span>
                             </div>
-                          </div>
+                          ) : data.order.shippingMethod === 'Primary' ? (
+                            <div className="info-item">
+                              <div className="label">Primary Address</div>
+                              <span>
+                                {data.order.shippingAddress.name}
+                                <br />
+                                {data.order.shippingAddress?.street}{' '}
+                                {data.order.shippingAddress?.street2}
+                                <br />
+                                {data.order.shippingAddress?.city},{' '}
+                                {data.order.shippingAddress?.state}{' '}
+                                {data.order.shippingAddress?.zipcode}
+                              </span>
+                            </div>
+                          ) : null}
                         </div>
-                        <div className="info-item">
-                          <div className="label">Order Date</div>
-                          <div className="value">
-                            {new Date(data.order.createdAt).toDateString()}
-                          </div>
-                        </div>
-                        <div className="info-item">
-                          <div className="label">Transaction Id</div>
-                          <div className="value">{data.order.stripeId}</div>
-                        </div>
-                      </div>
-                      <div>
-                        {data.store.requireGroupSelection && (
-                          <div className="info-item">
-                            <div className="label">{data.store.groupTerm}</div>
-                            <div className="value">{data.order.group}</div>
-                          </div>
-                        )}
-                        <div className="info-item">
-                          <div className="label">Shipping Method</div>
-                          {data.order.shippingMethod}
-                        </div>
-                        {data.order.shippingMethod === 'Direct' ? (
-                          <div className="info-item">
-                            <div className="label">Shipping Address</div>
-                            <span>
-                              {data.order.shippingAddress?.street}{' '}
-                              {data.order.shippingAddress?.street2}
-                              <br />
-                              {data.order.shippingAddress?.city},{' '}
-                              {data.order.shippingAddress?.state}{' '}
-                              {data.order.shippingAddress?.zipcode}
-                            </span>
-                          </div>
-                        ) : data.order.shippingMethod === 'Primary' ? (
-                          <div className="info-item">
-                            <div className="label">Primary Address</div>
-                            <span>
-                              {data.order.shippingAddress.name}
-                              <br />
-                              {data.order.shippingAddress?.street}{' '}
-                              {data.order.shippingAddress?.street2}
-                              <br />
-                              {data.order.shippingAddress?.city},{' '}
-                              {data.order.shippingAddress?.state}{' '}
-                              {data.order.shippingAddress?.zipcode}
-                            </span>
-                          </div>
-                        ) : null}
-                      </div>
-                      <div>
-                        <div className="order-summary-row">
-                          <div className="order-summary">
-                            <div className="summary-item">
-                              <div className="summary-label">Subtotal</div>
-                              <div className="summary-value">
-                                {formatToMoney(
-                                  data.order.summary.subtotal,
-                                  true
-                                )}
+                        <div>
+                          <div className="order-summary-row">
+                            <div className="order-summary">
+                              <div className="summary-item">
+                                <div className="summary-label">Subtotal</div>
+                                <div className="summary-value">
+                                  {formatToMoney(
+                                    data.order.summary.subtotal,
+                                    true
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                            <div className="summary-item">
-                              <div className="summary-label">Sales Tax</div>
-                              <div className="summary-value">
-                                {formatToMoney(
-                                  data.order.summary.salesTax,
-                                  true
-                                )}
+                              <div className="summary-item">
+                                <div className="summary-label">Sales Tax</div>
+                                <div className="summary-value">
+                                  {formatToMoney(
+                                    data.order.summary.salesTax,
+                                    true
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                            <div className="summary-item">
-                              <div className="summary-label">Shipping</div>
-                              <div className="summary-value">
-                                {formatToMoney(
-                                  data.order.summary.shipping,
-                                  true
-                                )}
+                              <div className="summary-item">
+                                <div className="summary-label">Shipping</div>
+                                <div className="summary-value">
+                                  {formatToMoney(
+                                    data.order.summary.shipping,
+                                    true
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                            <div className="summary-item total">
-                              <div className="summary-label">Total</div>
-                              <div className="summary-value">
-                                {formatToMoney(data.order.summary.total, true)}
+                              <div className="summary-item total">
+                                <div className="summary-label">Total</div>
+                                <div className="summary-value">
+                                  {formatToMoney(
+                                    data.order.summary.total,
+                                    true
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                            <div className="summary-item">
-                              <div className="summary-label">Stripe Fee</div>
-                              <div className="summary-value">
-                                -
-                                {formatToMoney(
-                                  calculateStripeFee(data.order.summary.total),
-                                  true
-                                )}
-                              </div>
-                            </div>
-                            <div className="summary-item">
-                              <div className="summary-label">Net</div>
-                              <div className="summary-value">
-                                {formatToMoney(
-                                  data.order.summary.total -
+                              <div className="summary-item">
+                                <div className="summary-label">Stripe Fee</div>
+                                <div className="summary-value">
+                                  -
+                                  {formatToMoney(
                                     calculateStripeFee(
                                       data.order.summary.total
                                     ),
-                                  true
-                                )}
+                                    true
+                                  )}
+                                </div>
+                              </div>
+                              <div className="summary-item">
+                                <div className="summary-label">Net</div>
+                                <div className="summary-value">
+                                  {formatToMoney(
+                                    data.order.summary.total -
+                                      calculateStripeFee(
+                                        data.order.summary.total
+                                      ),
+                                    true
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </>
-                )}
-                {activeNav === 'items' && (
-                  <>
-                    <h4>Order Items</h4>
-                    <div className="order-items">
-                      <div className="table-container">
-                        <table>
-                          <thead>
-                            <tr>
-                              <th>Name</th>
-                              <th>Color</th>
-                              <th>Size</th>
-                              {options.includesName && <th>Name</th>}
-                              {options.includesNumber && (
-                                <th className="text-center">Number</th>
-                              )}
-                              <th>Price</th>
-                              <th className="text-center">Qty.</th>
-                              <th className="text-right">Item Total</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {data.order.items.map(i => (
-                              <tr
-                                key={`${i.sku.id}-${i.customName}-${i.customNumber}`}
-                                className="order-item"
-                              >
-                                <td>
-                                  <div className="product-name">
-                                    <Link
-                                      href={`/stores/${router.query.sid}/product?pid=${i.sku.productId}`}
-                                    >
-                                      {i.name}
-                                    </Link>
-                                  </div>
-                                  <div className="product-id">{i.sku.id}</div>
-                                </td>
-                                <td>{i.sku.color.label}</td>
-                                <td>{i.sku.size.label}</td>
-                                {options.includesName && (
-                                  <td>{i.customName ? i.customName : '-'}</td>
-                                )}
+                    </>
+                  )}
+                  {activeNav === 'items' && (
+                    <>
+                      <h4>Order Items</h4>
+                      <div className="order-items">
+                        <div className="table-container">
+                          <table>
+                            <thead>
+                              <tr>
+                                <th>Name</th>
+                                <th>Color</th>
+                                <th>Size</th>
+                                {options.includesName && <th>Name</th>}
                                 {options.includesNumber && (
-                                  <td className="text-center">
-                                    {i.customNumber ? i.customNumber : '-'}
-                                  </td>
+                                  <th className="text-center">Number</th>
                                 )}
-                                <td>{formatToMoney(i.price)}</td>
-                                <td className="text-center">{i.quantity}</td>
-                                <td className="text-right">
-                                  {formatToMoney(i.itemTotal, true)}
-                                </td>
+                                <th>Price</th>
+                                <th className="text-center">Qty.</th>
+                                <th className="text-right">Item Total</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                            </thead>
+                            <tbody>
+                              {data.order.items.map(i => (
+                                <tr
+                                  key={`${i.sku.id}-${i.customName}-${i.customNumber}`}
+                                  className="order-item"
+                                >
+                                  <td>
+                                    <div className="product-name">
+                                      <Link
+                                        href={`/stores/${router.query.sid}/product?pid=${i.sku.productId}`}
+                                      >
+                                        {i.name}
+                                      </Link>
+                                    </div>
+                                    <div className="product-id">{i.sku.id}</div>
+                                  </td>
+                                  <td>{i.sku.color.label}</td>
+                                  <td>{i.sku.size.label}</td>
+                                  {options.includesName && (
+                                    <td>{i.customName ? i.customName : '-'}</td>
+                                  )}
+                                  {options.includesNumber && (
+                                    <td className="text-center">
+                                      {i.customNumber ? i.customNumber : '-'}
+                                    </td>
+                                  )}
+                                  <td>{formatToMoney(i.price)}</td>
+                                  <td className="text-center">{i.quantity}</td>
+                                  <td className="text-right">
+                                    {formatToMoney(i.itemTotal, true)}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
-                    </div>
-                    <div className="order-summary-row">
-                      <div className="order-summary">
-                        <div className="summary-item">
-                          <div className="summary-label">Subtotal</div>
-                          <div className="summary-value">
-                            {formatToMoney(data.order.summary.subtotal, true)}
+                      <div className="order-summary-row">
+                        <div className="order-summary">
+                          <div className="summary-item">
+                            <div className="summary-label">Subtotal</div>
+                            <div className="summary-value">
+                              {formatToMoney(data.order.summary.subtotal, true)}
+                            </div>
                           </div>
-                        </div>
-                        <div className="summary-item">
-                          <div className="summary-label">Sales Tax</div>
-                          <div className="summary-value">
-                            {formatToMoney(data.order.summary.salesTax, true)}
+                          <div className="summary-item">
+                            <div className="summary-label">Sales Tax</div>
+                            <div className="summary-value">
+                              {formatToMoney(data.order.summary.salesTax, true)}
+                            </div>
                           </div>
-                        </div>
-                        <div className="summary-item">
-                          <div className="summary-label">Shipping</div>
-                          <div className="summary-value">
-                            {formatToMoney(data.order.summary.shipping, true)}
+                          <div className="summary-item">
+                            <div className="summary-label">Shipping</div>
+                            <div className="summary-value">
+                              {formatToMoney(data.order.summary.shipping, true)}
+                            </div>
                           </div>
-                        </div>
-                        <div className="summary-item total">
-                          <div className="summary-label">Total</div>
-                          <div className="summary-value">
-                            {formatToMoney(data.order.summary.total, true)}
+                          <div className="summary-item total">
+                            <div className="summary-label">Total</div>
+                            <div className="summary-value">
+                              {formatToMoney(data.order.summary.total, true)}
+                            </div>
                           </div>
-                        </div>
-                        <div className="summary-item">
-                          <div className="summary-label">Stripe Fee</div>
-                          <div className="summary-value">
-                            -
-                            {formatToMoney(
-                              calculateStripeFee(data.order.summary.total),
-                              true
-                            )}
-                          </div>
-                        </div>
-                        <div className="summary-item">
-                          <div className="summary-label">Net</div>
-                          <div className="summary-value">
-                            {formatToMoney(
-                              data.order.summary.total -
+                          <div className="summary-item">
+                            <div className="summary-label">Stripe Fee</div>
+                            <div className="summary-value">
+                              -
+                              {formatToMoney(
                                 calculateStripeFee(data.order.summary.total),
-                              true
-                            )}
+                                true
+                              )}
+                            </div>
+                          </div>
+                          <div className="summary-item">
+                            <div className="summary-label">Net</div>
+                            <div className="summary-value">
+                              {formatToMoney(
+                                data.order.summary.total -
+                                  calculateStripeFee(data.order.summary.total),
+                                true
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </>
-                )}
-                {activeNav === 'notes' && (
-                  <Notes
-                    label="Order"
-                    notes={data.order.notes}
-                    addNote={addNoteMutation}
-                    updateNote={updateNoteMutation}
-                    deleteNote={deleteNoteMutation}
-                  />
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      </OrderStyles>
-    </Layout>
+                    </>
+                  )}
+                  {activeNav === 'notes' && (
+                    <Notes
+                      label="Order"
+                      notes={data.order.notes}
+                      addNote={addNoteMutation}
+                      updateNote={updateNoteMutation}
+                      deleteNote={deleteNoteMutation}
+                    />
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </OrderStyles>
+        {data?.order && data.store && (
+          <PrintableOrder
+            order={data.order}
+            store={data.store}
+            options={options}
+          />
+        )}
+      </Layout>
+    </>
   );
 }
 
 const OrderStyles = styled.div`
+  position: relative;
+
   h2 {
     margin: 0;
     font-size: 1.5rem;
@@ -848,7 +887,6 @@ const OrderStyles = styled.div`
     }
   }
 
-  /****  ORDER ITEMS ****/
   .table-container {
     margin: 0 0 2.5rem;
     width: 100%;
@@ -978,6 +1016,52 @@ const OrderStyles = styled.div`
   .summary-value {
     text-align: right;
     color: #111827;
+  }
+
+  .print-button {
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+    padding: 0.5rem 0.75rem;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    color: #475569;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: center;
+    line-height: 1;
+    background-color: #e2e8f0;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.3125rem;
+    box-shadow: inset 0 1px 1px #fff, 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    cursor: pointer;
+
+    svg {
+      margin: 0 0.375rem 0 0;
+      height: 0.875rem;
+      width: 0.875rem;
+      color: #9ca3af;
+    }
+
+    &:hover {
+      border-color: #bfcbda;
+      box-shadow: inset 0 1px 1px #fff, 0 1px 2px 0 rgb(0 0 0 / 0.1);
+    }
+
+    &:focus {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+
+    &:focus-visible {
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
+        rgb(99, 102, 241) 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+    }
+  }
+
+  @media print {
+    display: none;
   }
 `;
 

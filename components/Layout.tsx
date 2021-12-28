@@ -25,10 +25,7 @@ export default function Layout({
           <div className="logo">
             <Link href="/">
               <a>
-                <img
-                  src="/images/logo.png"
-                  alt="Macaport logo in front of mountains"
-                />
+                <img src="/images/logo.png" alt="Macaport" />
               </a>
             </Link>
             <button
