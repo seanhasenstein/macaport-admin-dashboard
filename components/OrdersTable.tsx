@@ -17,9 +17,6 @@ export default function OrdersTable({ store, orders }: Props) {
   const [orderViewOption, setOrderViewOption] =
     React.useState<OrderViewOptions>('All');
   const [filteredOrders, setFilteredOrders] = React.useState(orders);
-  const [currentActiveId, setCurrentActiveId] = React.useState<
-    string | undefined
-  >(undefined);
 
   React.useEffect(() => {
     if (orderViewOption === 'All') {
@@ -137,8 +134,6 @@ export default function OrdersTable({ store, orders }: Props) {
                           <OrdersTableMenu
                             store={store}
                             order={o}
-                            currentActiveId={currentActiveId}
-                            setCurrentActiveId={setCurrentActiveId}
                             orderStatus={o.orderStatus}
                           />
                         </td>
@@ -167,7 +162,7 @@ const OrdersTableStyles = styled.div`
       display: inline-flex;
       background-color: #f3f4f6;
       border: 1px solid #e5e7eb;
-      border-radius: 0.125rem;
+      border-radius: 0.375rem;
     }
 
     button {
@@ -177,7 +172,7 @@ const OrdersTableStyles = styled.div`
       font-size: 0.875rem;
       font-weight: 500;
       color: #6b7280;
-      border-radius: 0.125rem;
+      border-radius: 0.375rem;
       cursor: pointer;
 
       &:hover {

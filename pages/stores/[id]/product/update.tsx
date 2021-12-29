@@ -201,9 +201,8 @@ export default function UpdateProduct() {
         queryClient.invalidateQueries('stores');
       },
       onSuccess: () => {
-        // TODO: trigger a notication
         router.push(
-          `/stores/${router.query.id}/product?pid=${router.query.pid}`
+          `/stores/${router.query.id}/product?pid=${router.query.pid}&updateProduct=true`
         );
       },
     }

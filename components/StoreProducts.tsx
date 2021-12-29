@@ -24,7 +24,6 @@ export default function StoreProducts({
 }: Props) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [showMenu, setShowMenu] = React.useState<string | undefined>(undefined);
 
   const updateProductMutation = useMutation(
     async (updatedProducts: Product[]) => {
@@ -50,16 +49,7 @@ export default function StoreProducts({
 
   const dnd = useDragNDrop(products, 'product', updateProductMutation.mutate);
 
-  const handleProductMenuClick = (id: string) => {
-    if (id === showMenu) {
-      setShowMenu(undefined);
-    } else {
-      setShowMenu(id);
-    }
-  };
-
   const handleDeleteProductMenuClick = (id: string) => {
-    setShowMenu(undefined);
     setProductIdToDelete(id);
     setShowDeleteProductModal(true);
   };
@@ -135,28 +125,12 @@ export default function StoreProducts({
               <Link href={`/stores/${storeId}/product?pid=${product.id}`}>
                 <a className="product-name">{product.name}</a>
               </Link>
-              <div className="product-menu-container">
-                <button
-                  type="button"
-                  className="menu-button"
-                  onClick={() => handleProductMenuClick(product.id)}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
-                  </svg>
-                </button>
-                <StoreProductMenu
-                  storeId={storeId}
-                  productId={product.id}
-                  showMenu={showMenu}
-                  setShowMenu={setShowMenu}
-                  handleDeleteButtonClick={handleDeleteProductMenuClick}
-                />
-              </div>
+
+              <StoreProductMenu
+                storeId={storeId}
+                productId={product.id}
+                deleteButtonClickCallback={handleDeleteProductMenuClick}
+              />
             </div>
           ))}
         </div>

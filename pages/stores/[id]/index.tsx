@@ -5,14 +5,21 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import { format } from 'date-fns';
 import useActiveNavTab from '../../../hooks/useActiveNavTab';
+import useOutsideClick from '../../../hooks/useOutsideClick';
+import useEscapeKeydownClose from '../../../hooks/useEscapeKeydownClose';
 import { useSession } from '../../../hooks/useSession';
 import { Store as StoreInterface, Note } from '../../../interfaces';
-import { formatPhoneNumber, getStoreStatus } from '../../../utils';
+import {
+  formatPhoneNumber,
+  getQueryParameter,
+  getStoreStatus,
+} from '../../../utils';
 import Layout from '../../../components/Layout';
 import Notes from '../../../components/Notes';
 import StoreProducts from '../../../components/StoreProducts';
 import OrdersTable from '../../../components/OrdersTable';
 import LoadingSpinner from '../../../components/LoadingSpinner';
+import Notification from '../../../components/Notification';
 
 const navValues = ['details', 'products', 'orders', 'notes'];
 type NavValue = typeof navValues[number];
@@ -21,16 +28,34 @@ type StoreStatus = 'upcoming' | 'open' | 'closed';
 export default function Store() {
   const [session, loading] = useSession({ required: true });
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const storeMenuRef = React.useRef<HTMLDivElement>(null);
+  const deleteStoreRef = React.useRef<HTMLDivElement>(null);
+  const deleteProductRef = React.useRef<HTMLDivElement>(null);
   const { activeNav, setActiveNav } = useActiveNavTab(
     navValues,
     `/stores/${router.query.id}?`
   );
-  const queryClient = useQueryClient();
-
   const [storeStatus, setStoreStatus] = React.useState<StoreStatus>();
+  const [showStoreMenu, setShowStoreMenu] = React.useState(false);
   const [productIdToDelete, setProductIdToDelete] = React.useState<string>();
   const [showDeleteProductModal, setShowDeleteProductModal] =
     React.useState(false);
+  const [showDeleteStoreModal, setShowDeleteStoreModal] = React.useState(false);
+  useOutsideClick(showStoreMenu, setShowStoreMenu, storeMenuRef);
+  useOutsideClick(
+    showDeleteStoreModal,
+    setShowDeleteStoreModal,
+    deleteStoreRef
+  );
+  useOutsideClick(
+    showDeleteProductModal,
+    setShowDeleteProductModal,
+    deleteProductRef
+  );
+  useEscapeKeydownClose(showStoreMenu, setShowStoreMenu);
+  useEscapeKeydownClose(showDeleteStoreModal, setShowDeleteStoreModal);
+  useEscapeKeydownClose(showDeleteProductModal, setShowDeleteProductModal);
 
   const storeQuery = useQuery<StoreInterface>(
     ['stores', 'store', router.query.id],
@@ -57,6 +82,46 @@ export default function Store() {
         }
       },
       staleTime: 1000 * 60 * 10,
+    }
+  );
+
+  const deleteStoreMutation = useMutation(
+    async (id: string) => {
+      const response = await fetch(`/api/stores/delete?id=${router.query.id}`, {
+        method: 'post',
+        body: JSON.stringify({ id }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete the store.');
+      }
+
+      const data = await response.json();
+      return data;
+    },
+    {
+      onMutate: async id => {
+        await queryClient.cancelQueries(['stores', 'store', router.query.id]);
+        const previousStores = queryClient.getQueryData<StoreInterface[]>([
+          'stores',
+        ]);
+        const updatedStores = previousStores?.filter(s => s._id !== id);
+        queryClient.setQueryData(['stores'], updatedStores);
+        return previousStores;
+      },
+      onError: (_error, _id, context) => {
+        // TODO: trigger a notification
+        queryClient.setQueryData(['stores'], context);
+      },
+      onSettled: async () => {
+        queryClient.invalidateQueries(['stores']);
+      },
+      onSuccess: () => {
+        router.push(`/?deleteStore=true`);
+      },
     }
   );
 
@@ -106,6 +171,13 @@ export default function Store() {
       },
       onSettled: () => {
         queryClient.invalidateQueries('stores');
+        router.push(
+          `/stores/${router.query.id}?active=products&deleteProduct=true`,
+          undefined,
+          {
+            shallow: true,
+          }
+        );
       },
     }
   );
@@ -273,6 +345,17 @@ export default function Store() {
     });
   };
 
+  const handleDeleteStoreMenuClick = () => {
+    setShowStoreMenu(false);
+    setShowDeleteStoreModal(true);
+  };
+
+  const handleDeleteStoreClick = () => {
+    const id = getQueryParameter(router.query.id);
+    if (!id) throw Error('A store ID is required to delete a store.');
+    deleteStoreMutation.mutate(id);
+  };
+
   if (loading || !session) return <div />;
 
   return (
@@ -303,9 +386,77 @@ export default function Store() {
                   Back to stores
                 </a>
               </Link>
-              <Link href={`/stores/update?id=${router.query.id}`}>
-                <a className="edit-store-link">Edit Store</a>
-              </Link>
+              <div className="store-menu-container">
+                <button
+                  type="button"
+                  onClick={() => setShowStoreMenu(!showStoreMenu)}
+                  className="store-menu-button"
+                >
+                  <span className="sr-only">Menu</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                    />
+                  </svg>
+                </button>
+                <div
+                  ref={storeMenuRef}
+                  className={`menu${showStoreMenu ? ' show' : ''}`}
+                >
+                  <Link href={`/stores/update?id=${router.query.id}`}>
+                    <a className="menu-link">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                      </svg>
+                      Edit Store
+                    </a>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleDeleteStoreMenuClick}
+                    className="delete-button"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                    Delete Store
+                  </button>
+                </div>
+              </div>
               <div className="store-header">
                 <h2>{storeQuery.data.name}</h2>
                 <p>{storeQuery.data.storeId}</p>
@@ -525,10 +676,30 @@ export default function Store() {
             </>
           )}
         </div>
+        <Notification
+          query="createStore"
+          heading="Store successfully created"
+          callbackUrl={`/stores/${router.query.id}?active=details`}
+        />
+        <Notification
+          query="updateStore"
+          heading="Store successfully updated"
+          callbackUrl={`/stores/${router.query.id}?active=details`}
+        />
+        <Notification
+          query="addProduct"
+          heading="Product successfully added"
+          callbackUrl={`/stores/${router.query.id}?active=products`}
+        />
+        <Notification
+          query="deleteProduct"
+          heading="Product successfully deleted"
+          callbackUrl={`/stores/${router.query.id}?active=products`}
+        />
       </StoreStyles>
       {showDeleteProductModal && (
-        <DeleteProductModalStyles>
-          <div className="modal">
+        <DeleteModalStyles>
+          <div ref={deleteProductRef} className="modal">
             <div>
               <h3>Delete Product</h3>
               <p>Are you sure you want to delete this product?</p>
@@ -546,11 +717,41 @@ export default function Store() {
                 className="primary-button"
                 onClick={handleDeleteProductClick}
               >
-                Delete the product
+                Delete product
               </button>
             </div>
+            <DeleteMutationSpinner
+              isLoading={deleteProductMutation.isLoading}
+            />
           </div>
-        </DeleteProductModalStyles>
+        </DeleteModalStyles>
+      )}
+      {showDeleteStoreModal && (
+        <DeleteModalStyles>
+          <div ref={deleteStoreRef} className="modal">
+            <div>
+              <h3>Delete store</h3>
+              <p>Are you sure you want to delete {storeQuery.data?.name}?</p>
+            </div>
+            <div className="buttons">
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setShowDeleteStoreModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={handleDeleteStoreClick}
+              >
+                Delete the store
+              </button>
+            </div>
+            <DeleteMutationSpinner isLoading={deleteStoreMutation.isLoading} />
+          </div>
+        </DeleteModalStyles>
       )}
     </Layout>
   );
@@ -620,38 +821,40 @@ const StoreStyles = styled.div`
     }
   }
 
-  .edit-store-link {
+  .store-menu-container {
     position: absolute;
     top: 2rem;
     right: 2rem;
-    padding: 0.5rem 0.75rem;
-    display: inline-flex;
+    display: flex;
+    justify-content: flex-end;
+    width: 25%;
+
+    .menu {
+      top: 2.25rem;
+      right: 0;
+    }
+  }
+
+  .store-menu-button {
+    padding: 0;
+    height: 2rem;
+    width: 2rem;
+    display: flex;
     justify-content: center;
     align-items: center;
-    color: #475569;
-    font-size: 0.875rem;
-    font-weight: 500;
-    text-align: center;
-    line-height: 1;
-    background-color: #e2e8f0;
-    border: 1px solid #cbd5e1;
-    border-radius: 0.3125rem;
-    box-shadow: inset 0 1px 1px #fff, 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    background-color: transparent;
+    border: none;
+    color: #6b7280;
+    border-radius: 9999px;
     cursor: pointer;
 
+    svg {
+      height: 1.25rem;
+      width: 1.25rem;
+    }
+
     &:hover {
-      border-color: #bfcbda;
-      box-shadow: inset 0 1px 1px #fff, 0 1px 2px 0 rgb(0 0 0 / 0.1);
-    }
-
-    &:focus {
-      outline: 2px solid transparent;
-      outline-offset: 2px;
-    }
-
-    &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
-        rgb(99, 102, 241) 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+      color: #111827;
     }
   }
 
@@ -908,7 +1111,7 @@ const StoreStyles = styled.div`
   }
 `;
 
-const DeleteProductModalStyles = styled.div`
+const DeleteModalStyles = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
@@ -919,25 +1122,24 @@ const DeleteProductModalStyles = styled.div`
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6);
   z-index: 9999;
 
   .modal {
     position: relative;
-    padding: 2.5rem 3rem 2rem;
+    margin: -8rem 0 0;
+    padding: 2.25rem 2.5rem 1.75rem;
     max-width: 26rem;
     width: 100%;
     text-align: left;
     background-color: #fff;
-    border-radius: 0.25rem;
-    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-      rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px,
-      rgba(0, 0, 0, 0.04) 0px 10px 10px -5px;
+    border-radius: 0.5rem;
+    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
 
     h3 {
-      margin: 0 0 1.125rem;
+      margin: 0 0 0.75rem;
       font-size: 1.25rem;
-      font-weight: 500;
+      font-weight: 600;
       color: #111827;
     }
 
@@ -1014,4 +1216,10 @@ const FetchingSpinner = styled(LoadingSpinner)`
   position: absolute;
   top: 2rem;
   right: 0;
+`;
+
+const DeleteMutationSpinner = styled(LoadingSpinner)`
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
 `;

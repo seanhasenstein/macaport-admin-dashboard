@@ -45,18 +45,13 @@ export default function Notes({
   updateNote,
   deleteNote,
 }: Props) {
-  const [showMenu, setShowMenu] = React.useState<string | undefined>(undefined);
   const [showNoteTextArea, setShowNoteTextArea] = React.useState<
     string | undefined
   >(undefined);
   const [newNoteText, setNewNoteText] = React.useState('');
   const [updateNoteText, setUpdateNoteText] = React.useState('');
 
-  const handleMenuButtonClick = (id: string) =>
-    id === showMenu ? setShowMenu(undefined) : setShowMenu(id);
-
   const handleEditButtonClick = (note: Note) => {
-    setShowMenu(undefined);
     setShowNoteTextArea(note.id);
     setUpdateNoteText(note.text);
   };
@@ -77,11 +72,6 @@ export default function Notes({
     setUpdateNoteText('');
     setShowNoteTextArea(undefined);
   };
-
-  // const handleAddCancelButtonClick = () => {
-  //   setShowNoteTextArea(undefined);
-  //   setNewNoteText('');
-  // };
 
   const handleUpdateCancelButtonClick = () => {
     setShowNoteTextArea(undefined);
@@ -146,23 +136,8 @@ export default function Notes({
                         {format(new Date(n.createdAt), 'LLL dd, yyyy, h:mm a')}
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      className="note-menu-button"
-                      onClick={() => handleMenuButtonClick(n.id)}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
-                      </svg>
-                    </button>
                     <NoteMenu
                       note={n}
-                      showMenu={showMenu}
-                      setShowMenu={setShowMenu}
                       deleteNote={deleteNote.mutate}
                       handleEditButtonClick={handleEditButtonClick}
                     />

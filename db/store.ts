@@ -88,3 +88,11 @@ export async function updateProductColor(
   );
   return result.value;
 }
+
+export async function deleteStore(db: Db, id: string) {
+  const result = await db
+    .collection('stores')
+    .findOneAndDelete({ _id: new ObjectID(id) });
+  console.log(result);
+  return result;
+}

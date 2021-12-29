@@ -3,24 +3,21 @@ import Link from 'next/link';
 import { useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import { Order, OrderStatus, Store } from '../interfaces';
+import useOutsideClick from '../hooks/useOutsideClick';
+import useEscapeKeydownClose from '../hooks/useEscapeKeydownClose';
 
 type Props = {
   store: Store;
   order: Order;
-  currentActiveId: string | undefined;
-  setCurrentActiveId: React.Dispatch<React.SetStateAction<string | undefined>>;
   orderStatus: OrderStatus;
 };
 
-export default function OrdersTableMenu({
-  store,
-  order,
-  currentActiveId,
-  setCurrentActiveId,
-  orderStatus,
-}: Props) {
+export default function OrdersTableMenu({ store, order, orderStatus }: Props) {
   const menuRef = React.useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const [showMenu, setShowMenu] = React.useState(false);
+  useOutsideClick(showMenu, setShowMenu, menuRef);
+  useEscapeKeydownClose(showMenu, setShowMenu);
 
   const updateOrderStatusMutation = useMutation(
     async (newStatus: OrderStatus) => {
@@ -77,43 +74,9 @@ export default function OrdersTableMenu({
     }
   );
 
-  React.useEffect(() => {
-    const handleEscapeKeyup = (e: KeyboardEvent) => {
-      if (e.code === 'Escape') setCurrentActiveId(undefined);
-    };
-
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (
-        currentActiveId === order.orderId &&
-        menuRef.current &&
-        !menuRef.current.contains(e.target as Node)
-      ) {
-        setCurrentActiveId(undefined);
-      }
-    };
-
-    if (currentActiveId) {
-      document.addEventListener('keyup', handleEscapeKeyup);
-      document.addEventListener('click', handleOutsideClick);
-    }
-
-    return () => {
-      document.removeEventListener('keyup', handleEscapeKeyup);
-      document.removeEventListener('click', handleOutsideClick);
-    };
-  }, [currentActiveId, order.orderId, setCurrentActiveId]);
-
-  const handleMenuButtonClick = (id: string) => {
-    if (currentActiveId === id) {
-      setCurrentActiveId(undefined);
-    } else {
-      setCurrentActiveId(id);
-    }
-  };
-
   const handleStatusChange = (newStatus: OrderStatus) => {
     updateOrderStatusMutation.mutate(newStatus);
-    setCurrentActiveId(undefined);
+    setShowMenu(false);
   };
 
   return (
@@ -121,7 +84,7 @@ export default function OrdersTableMenu({
       <button
         type="button"
         className="order-menu-button"
-        onClick={() => handleMenuButtonClick(order.orderId)}
+        onClick={() => setShowMenu(!showMenu)}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -131,10 +94,7 @@ export default function OrdersTableMenu({
           <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
         </svg>
       </button>
-      <div
-        ref={menuRef}
-        className={`menu ${currentActiveId === order.orderId ? 'show' : ''}`}
-      >
+      <div ref={menuRef} className={`menu ${showMenu ? 'show' : ''}`}>
         <Link href={`/orders/${order.orderId}?sid=${store._id}`}>
           <a className="view-link">
             <svg

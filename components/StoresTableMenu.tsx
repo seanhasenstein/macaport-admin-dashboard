@@ -1,60 +1,25 @@
 import React from 'react';
 import Link from 'next/link';
 import styled from 'styled-components';
+import useOutsideClick from '../hooks/useOutsideClick';
+import useEscapeKeydownClose from '../hooks/useEscapeKeydownClose';
 
 type Props = {
   storeId: string;
-  currentActiveId: string | undefined;
-  setCurrentActiveId: React.Dispatch<React.SetStateAction<string | undefined>>;
 };
 
-export default function StoresTableMenu({
-  storeId,
-  currentActiveId,
-  setCurrentActiveId,
-}: Props) {
+export default function StoresTableMenu({ storeId }: Props) {
   const menuRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    const handleEscapeKeyup = (e: KeyboardEvent) => {
-      if (e.code === 'Escape') setCurrentActiveId(undefined);
-    };
-
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (
-        currentActiveId === storeId &&
-        menuRef.current &&
-        !menuRef.current.contains(e.target as Node)
-      ) {
-        setCurrentActiveId(undefined);
-      }
-    };
-
-    if (currentActiveId) {
-      document.addEventListener('keyup', handleEscapeKeyup);
-      document.addEventListener('click', handleOutsideClick);
-    }
-
-    return () => {
-      document.removeEventListener('keyup', handleEscapeKeyup);
-      document.removeEventListener('click', handleOutsideClick);
-    };
-  }, [currentActiveId, storeId, setCurrentActiveId]);
-
-  const handleMenuButtonClick = (id: string) => {
-    if (currentActiveId === id) {
-      setCurrentActiveId(undefined);
-    } else {
-      setCurrentActiveId(id);
-    }
-  };
+  const [showMenu, setShowMenu] = React.useState(false);
+  useOutsideClick(showMenu, setShowMenu, menuRef);
+  useEscapeKeydownClose(showMenu, setShowMenu);
 
   return (
     <StoresTableMenuStyles>
       <button
         type="button"
         className="menu-button"
-        onClick={() => handleMenuButtonClick(storeId)}
+        onClick={() => setShowMenu(!showMenu)}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -64,10 +29,7 @@ export default function StoresTableMenu({
           <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
         </svg>
       </button>
-      <div
-        ref={menuRef}
-        className={`menu ${currentActiveId === storeId ? 'show' : ''}`}
-      >
+      <div ref={menuRef} className={`menu ${showMenu ? 'show' : ''}`}>
         <Link href={`/stores/${storeId}`}>
           <a className="link">
             <svg
@@ -80,34 +42,10 @@ export default function StoresTableMenu({
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
             View Store
-          </a>
-        </Link>
-        <Link href={`/stores/update?id=${storeId}`}>
-          <a className="link">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-              />
-            </svg>
-            Edit Store
           </a>
         </Link>
         <Link href={`/stores/${storeId}?active=orders`}>
@@ -122,10 +60,34 @@ export default function StoresTableMenu({
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
               />
             </svg>
             Store Orders
+          </a>
+        </Link>
+        <Link href={`/stores/update?id=${storeId}`}>
+          <a className="link">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+            Edit Store
           </a>
         </Link>
       </div>
@@ -181,7 +143,7 @@ const StoresTableMenuStyles = styled.div`
     width: 100%;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.625rem;
     background-color: transparent;
     border: none;
     font-size: 0.875rem;
@@ -192,7 +154,7 @@ const StoresTableMenuStyles = styled.div`
     cursor: pointer;
     border-bottom: 1px solid #e5e7eb;
 
-    &:last-of-type {
+    &:last-child {
       border-bottom: none;
     }
 
@@ -205,8 +167,8 @@ const StoresTableMenuStyles = styled.div`
     }
 
     svg {
-      height: 1rem;
-      width: 1rem;
+      height: 0.9375rem;
+      width: 0.9375rem;
       color: #9ca3af;
     }
   }

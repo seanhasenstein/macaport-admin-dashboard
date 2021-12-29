@@ -190,8 +190,8 @@ export default function CreateStore() {
       onSuccess: (data, variables) => {
         const route =
           variables.redirectTo === 'add_product'
-            ? `/stores/${data._id}/product/add`
-            : `/stores/${data._id}`;
+            ? `/stores/${data._id}/product/add?createStore=true`
+            : `/stores/${data._id}?createStore=true`;
         router.push(route);
       },
     }

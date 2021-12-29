@@ -6,12 +6,9 @@ import { Store } from '../interfaces';
 import { getStoreStatus } from '../utils';
 import StoresTableMenu from './StoresTableMenu';
 import LoadingSpinner from './LoadingSpinner';
+import Notification from './Notification';
 
 export default function StoresTable() {
-  const [currentActiveId, setCurrentActiveId] = React.useState<
-    string | undefined
-  >(undefined);
-
   const {
     isLoading,
     isFetching,
@@ -31,7 +28,7 @@ export default function StoresTable() {
       return data.stores;
     },
     {
-      staleTime: 600000,
+      staleTime: 1000 * 60 * 10,
     }
   );
 
@@ -42,124 +39,126 @@ export default function StoresTable() {
       )}
       {isError && error instanceof Error && <div>Error: {error.message}</div>}
       {stores && (
-        <div className="container">
-          <div className="header-row">
-            <h2>Stores</h2>
-            <Link href="/stores/create">
-              <a className="create-store-link">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Create a store
-              </a>
-            </Link>
-          </div>
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th className="status">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.05 3.636a1 1 0 010 1.414 7 7 0 000 9.9 1 1 0 11-1.414 1.414 9 9 0 010-12.728 1 1 0 011.414 0zm9.9 0a1 1 0 011.414 0 9 9 0 010 12.728 1 1 0 11-1.414-1.414 7 7 0 000-9.9 1 1 0 010-1.414zM7.879 6.464a1 1 0 010 1.414 3 3 0 000 4.243 1 1 0 11-1.415 1.414 5 5 0 010-7.07 1 1 0 011.415 0zm4.242 0a1 1 0 011.415 0 5 5 0 010 7.072 1 1 0 01-1.415-1.415 3 3 0 000-4.242 1 1 0 010-1.415zM10 9a1 1 0 011 1v.01a1 1 0 11-2 0V10a1 1 0 011-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </th>
-                  <th>Store Name</th>
-                  <th>Open Date</th>
-                  <th>Close Date</th>
-                  <th className="text-center">Products</th>
-                  <th className="text-center">Orders</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {stores.length < 1 && (
+        <>
+          <div className="container">
+            <div className="header-row">
+              <h2>Stores</h2>
+              <Link href="/stores/create">
+                <a className="create-store-link">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Create a store
+                </a>
+              </Link>
+            </div>
+            <div className="table-container">
+              <table>
+                <thead>
                   <tr>
-                    <td>
-                      There are currently no stores.{' '}
-                      <Link href="/stores/create">
-                        <a className="no-stores-link">Create a store</a>
-                      </Link>
-                      .
-                    </td>
+                    <th className="status">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M5.05 3.636a1 1 0 010 1.414 7 7 0 000 9.9 1 1 0 11-1.414 1.414 9 9 0 010-12.728 1 1 0 011.414 0zm9.9 0a1 1 0 011.414 0 9 9 0 010 12.728 1 1 0 11-1.414-1.414 7 7 0 000-9.9 1 1 0 010-1.414zM7.879 6.464a1 1 0 010 1.414 3 3 0 000 4.243 1 1 0 11-1.415 1.414 5 5 0 010-7.07 1 1 0 011.415 0zm4.242 0a1 1 0 011.415 0 5 5 0 010 7.072 1 1 0 01-1.415-1.415 3 3 0 000-4.242 1 1 0 010-1.415zM10 9a1 1 0 011 1v.01a1 1 0 11-2 0V10a1 1 0 011-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </th>
+                    <th>Store Name</th>
+                    <th>Open Date</th>
+                    <th>Close Date</th>
+                    <th className="text-center">Products</th>
+                    <th className="text-center">Orders</th>
+                    <th />
                   </tr>
-                )}
-                {stores.map(s => (
-                  <tr key={s._id}>
-                    <td className="store-status">
-                      {getStoreStatus(s.openDate, s.closeDate) ===
-                        'upcoming' && (
-                        <span className="upcoming-store">
-                          <span className="dot" />
-                        </span>
-                      )}
-                      {getStoreStatus(s.openDate, s.closeDate) === 'open' && (
-                        <span className="open-store">
-                          <span className="dot" />
-                        </span>
-                      )}
-                      {getStoreStatus(s.openDate, s.closeDate) === 'closed' && (
-                        <span className="closed-store">
-                          <span className="dot" />
-                        </span>
-                      )}
-                    </td>
-                    <td className="store-name">
-                      <Link href={`/stores/${s._id}`}>
-                        <a>{s.name}</a>
-                      </Link>
-                    </td>
-                    <td className="store-date">
-                      {new Date(s.openDate).toDateString()}
-                    </td>
-                    <td className="store-date">
-                      {' '}
-                      {s.closeDate
-                        ? new Date(s.closeDate).toDateString()
-                        : 'Open Permanently'}
-                    </td>
-                    <td className="text-center store-products">
-                      {s.products ? s.products.length : 0}
-                    </td>
-                    <td className="text-center store-orders">
-                      {s.orders ? s.orders.length : 0}
-                    </td>
-                    <td className="store-actions">
-                      <StoresTableMenu
-                        storeId={s._id}
-                        currentActiveId={currentActiveId}
-                        setCurrentActiveId={setCurrentActiveId}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {stores.length < 1 && (
+                    <tr>
+                      <td>
+                        There are currently no stores.{' '}
+                        <Link href="/stores/create">
+                          <a className="no-stores-link">Create a store</a>
+                        </Link>
+                        .
+                      </td>
+                    </tr>
+                  )}
+                  {stores.map(s => (
+                    <tr key={s._id}>
+                      <td className="store-status">
+                        {getStoreStatus(s.openDate, s.closeDate) ===
+                          'upcoming' && (
+                          <span className="upcoming-store">
+                            <span className="dot" />
+                          </span>
+                        )}
+                        {getStoreStatus(s.openDate, s.closeDate) === 'open' && (
+                          <span className="open-store">
+                            <span className="dot" />
+                          </span>
+                        )}
+                        {getStoreStatus(s.openDate, s.closeDate) ===
+                          'closed' && (
+                          <span className="closed-store">
+                            <span className="dot" />
+                          </span>
+                        )}
+                      </td>
+                      <td className="store-name">
+                        <Link href={`/stores/${s._id}`}>
+                          <a>{s.name}</a>
+                        </Link>
+                      </td>
+                      <td className="store-date">
+                        {new Date(s.openDate).toDateString()}
+                      </td>
+                      <td className="store-date">
+                        {' '}
+                        {s.closeDate
+                          ? new Date(s.closeDate).toDateString()
+                          : 'Open Permanently'}
+                      </td>
+                      <td className="text-center store-products">
+                        {s.products ? s.products.length : 0}
+                      </td>
+                      <td className="text-center store-orders">
+                        {s.orders ? s.orders.length : 0}
+                      </td>
+                      <td className="store-actions">
+                        <StoresTableMenu storeId={s._id} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        </>
       )}
+      <Notification
+        query="deleteStore"
+        heading="Store deleted successfully"
+        callbackUrl="/"
+      />
     </StoresTableStyles>
   );
 }
 
 const StoresTableStyles = styled.div`
-  position: relative;
-
   h2 {
     margin: 0;
     font-size: 1.375rem;

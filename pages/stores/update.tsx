@@ -193,7 +193,7 @@ export default function UpdateStore() {
         queryClient.invalidateQueries(['stores', 'store', router.query.id]);
       },
       onSuccess: data => {
-        router.push(`/stores/${data._id}`);
+        router.push(`/stores/${data._id}?updateStore=true`);
       },
     }
   );

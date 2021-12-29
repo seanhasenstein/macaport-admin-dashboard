@@ -19,6 +19,7 @@ import {
   createSkusFromSizesAndColors,
 } from '../../../../utils';
 import BasicLayout from '../../../../components/BasicLayout';
+import Notification from '../../../../components/Notification';
 
 type InitialValues = {
   id: string;
@@ -141,7 +142,9 @@ export default function AddProduct() {
         queryClient.invalidateQueries(['stores']);
       },
       onSuccess: () => {
-        router.push(`/stores/${router.query.id}?active=products`);
+        router.push(
+          `/stores/${router.query.id}?active=products&addProduct=true`
+        );
       },
     }
   );
@@ -902,6 +905,11 @@ export default function AddProduct() {
             </Form>
           )}
         </Formik>
+        <Notification
+          query="createStore"
+          heading="Store successfully created"
+          callbackUrl={`/stores/${router.query.id}/product/add`}
+        />
       </AddProductStyles>
     </BasicLayout>
   );
