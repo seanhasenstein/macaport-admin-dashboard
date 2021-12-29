@@ -449,17 +449,8 @@ export default function Order() {
                             </div>
                           ) : data.order.shippingMethod === 'Primary' ? (
                             <div className="info-item">
-                              <div className="label">Primary Address</div>
-                              <span>
-                                {data.order.shippingAddress.name}
-                                <br />
-                                {data.order.shippingAddress?.street}{' '}
-                                {data.order.shippingAddress?.street2}
-                                <br />
-                                {data.order.shippingAddress?.city},{' '}
-                                {data.order.shippingAddress?.state}{' '}
-                                {data.order.shippingAddress?.zipcode}
-                              </span>
+                              <div className="label">Primary Location</div>
+                              <span>{data.order.shippingAddress.name}</span>
                             </div>
                           ) : null}
                         </div>

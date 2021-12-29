@@ -123,10 +123,12 @@ export default function PrintableOrder({ order, store, options }: Props) {
                 <tr>
                   <th>Name</th>
                   <th>Color</th>
-                  <th>Size</th>
+                  <th className="text-center">Size</th>
                   {options.includesName && <th>Name</th>}
-                  {options.includesNumber && <th>Number</th>}
-                  <th>Price</th>
+                  {options.includesNumber && (
+                    <th className="text-center">Number</th>
+                  )}
+                  <th className="text-center">Price</th>
                   <th className="text-center">Qty.</th>
                   <th className="text-right">Item Total</th>
                 </tr>
@@ -139,14 +141,16 @@ export default function PrintableOrder({ order, store, options }: Props) {
                       <div className="order-item-id">{item.sku.id}</div>
                     </td>
                     <td>{item.sku.color.label}</td>
-                    <td>{item.sku.size.label}</td>
+                    <td className="text-center">{item.sku.size.label}</td>
                     {options.includesName && (
                       <td>{item.customName ? item.customName : '-'}</td>
                     )}
                     {options.includesNumber && (
-                      <td>{item.customNumber ? item.customNumber : '-'}</td>
+                      <td className="text-center">
+                        {item.customNumber ? item.customNumber : '-'}
+                      </td>
                     )}
-                    <td>{formatToMoney(item.price)}</td>
+                    <td className="text-center">{formatToMoney(item.price)}</td>
                     <td className="text-center">{item.quantity}</td>
                     <td className="text-right">
                       {formatToMoney(item.itemTotal, true)}
@@ -279,7 +283,7 @@ const PrintableOrderStyles = styled.div`
   }
 
   .table-container {
-    padding: 0 8px;
+    padding: 0 10px;
     border: 1px solid #a1a1aa;
     border-radius: 4px;
   }
@@ -289,9 +293,20 @@ const PrintableOrderStyles = styled.div`
     width: 100%;
   }
 
+  td,
+  th {
+    &:first-of-type {
+      padding-left: 0;
+    }
+
+    &:last-of-type {
+      padding-right: 0;
+    }
+  }
+
   th {
     padding: 11px 8px;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -302,18 +317,21 @@ const PrintableOrderStyles = styled.div`
 
   td {
     padding: 8px;
-    font-size: 12px;
+    font-size: 11px;
     color: #18181b;
     border-bottom: 1px solid #a1a1aa;
   }
 
-  tr:last-of-type td {
-    border-bottom: none;
+  tr {
+    &:last-of-type {
+      td {
+        border-bottom: none;
+      }
+    }
   }
 
   .order-item-name {
-    margin: 0 0 3px;
-    font-size: 13px;
+    margin: 0 0 2px;
     font-weight: 500;
   }
 

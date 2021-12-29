@@ -159,6 +159,8 @@ export default function StoresTable() {
 }
 
 const StoresTableStyles = styled.div`
+  position: relative;
+
   h2 {
     margin: 0;
     font-size: 1.375rem;
