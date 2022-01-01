@@ -1,4 +1,5 @@
 import { Db, ObjectID } from 'mongodb';
+import { formatISO } from 'date-fns';
 import { Product, Store, Color } from '../interfaces';
 import { createId } from '../utils';
 
@@ -24,7 +25,10 @@ export async function getStores(db: Db, filter: Record<string, unknown> = {}) {
 
 export async function createStore(db: Db, store: Store) {
   const storeId = createId('str');
-  const result = await db.collection('stores').insertOne({ ...store, storeId });
+  const now = formatISO(new Date());
+  const result = await db
+    .collection('stores')
+    .insertOne({ ...store, storeId, createdAt: now, updatedAt: now });
   return result.ops[0];
 }
 
@@ -33,7 +37,7 @@ export async function updateStore(db: Db, id: string, updates: Store) {
     .collection('stores')
     .findOneAndUpdate(
       { _id: new ObjectID(id) },
-      { $set: { ...updates } },
+      { $set: { ...updates, updatedAt: formatISO(new Date()) } },
       { upsert: true, returnDocument: 'after' }
     );
   return result.value;

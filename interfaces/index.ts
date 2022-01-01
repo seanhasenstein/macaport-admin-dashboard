@@ -49,19 +49,13 @@ export interface Product {
 
 export interface StoreForm {
   name: string;
-  openImmediately: boolean;
-  openDate: {
-    month: string;
-    date: string;
-    year: string;
-  };
-  hasCloseDate: 'true' | 'false';
-  closeDate: {
-    month: string;
-    date: string;
-    year: string;
-  };
-  shippingMethod: 'ship' | 'noship' | 'inhouse';
+  openDate: string;
+  openTime: string;
+  closeDate: string;
+  closeTime: string;
+  permanentlyOpen: boolean;
+  allowDirectShipping: boolean;
+  hasPrimaryShippingLocation: boolean;
   primaryShippingLocation: {
     name: string;
     street: string;
@@ -70,7 +64,6 @@ export interface StoreForm {
     state: string;
     zipcode: string;
   };
-  allowDirectShipping: 'true' | 'false';
   contact: {
     firstName: string;
     lastName: string;
@@ -88,9 +81,9 @@ export interface Store {
   storeId: string;
   name: string;
   openDate: string;
-  hasCloseDate: boolean;
   closeDate: string | null;
-  category: 'macaport' | 'client';
+  permanentlyOpen: boolean;
+  allowDirectShipping: boolean;
   hasPrimaryShippingLocation: boolean;
   primaryShippingLocation: {
     name: string;
@@ -100,7 +93,6 @@ export interface Store {
     state: string;
     zipcode: string;
   };
-  allowDirectShipping: boolean;
   contact: {
     firstName: string;
     lastName: string;

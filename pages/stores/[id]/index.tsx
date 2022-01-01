@@ -20,6 +20,7 @@ import StoreProducts from '../../../components/StoreProducts';
 import OrdersTable from '../../../components/OrdersTable';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 import Notification from '../../../components/Notification';
+import CSVDownloadModal from '../../../components/CSVDownloadModal';
 
 const navValues = ['details', 'products', 'orders', 'notes'];
 type NavValue = typeof navValues[number];
@@ -32,6 +33,7 @@ export default function Store() {
   const storeMenuRef = React.useRef<HTMLDivElement>(null);
   const deleteStoreRef = React.useRef<HTMLDivElement>(null);
   const deleteProductRef = React.useRef<HTMLDivElement>(null);
+  const csvModalRef = React.useRef<HTMLDivElement>(null);
   const { activeNav, setActiveNav } = useActiveNavTab(
     navValues,
     `/stores/${router.query.id}?`
@@ -42,6 +44,7 @@ export default function Store() {
   const [showDeleteProductModal, setShowDeleteProductModal] =
     React.useState(false);
   const [showDeleteStoreModal, setShowDeleteStoreModal] = React.useState(false);
+  const [showCsvModal, setShowCsvModal] = React.useState(false);
   useOutsideClick(showStoreMenu, setShowStoreMenu, storeMenuRef);
   useOutsideClick(
     showDeleteStoreModal,
@@ -411,7 +414,14 @@ export default function Store() {
                   ref={storeMenuRef}
                   className={`menu${showStoreMenu ? ' show' : ''}`}
                 >
-                  <button type="button" className="menu-link">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCsvModal(true);
+                      setShowStoreMenu(false);
+                    }}
+                    className="menu-link"
+                  >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
@@ -422,7 +432,7 @@ export default function Store() {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
+                        d="M17 16v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a2 2 0 012-2h2m3-4H9a2 2 0 00-2 2v7a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-1m-1 4l-3 3m0 0l-3-3m3 3V3"
                       />
                     </svg>
                     Download orders to csv
@@ -605,40 +615,27 @@ export default function Store() {
                         </div>
                       </div>
                       <div className="section">
-                        {storeQuery.data.category === 'client' ? (
-                          <>
-                            <div className="info-item">
-                              <div className="label">Name</div>
-                              <div className="value">
-                                {storeQuery.data.contact.firstName}{' '}
-                                {storeQuery.data.contact.lastName}
-                              </div>
-                            </div>
-                            <div className="info-item">
-                              <div className="label">Email</div>
-                              <div className="value">
-                                <a
-                                  href={`mailto:${storeQuery.data.contact.email}`}
-                                >
-                                  {storeQuery.data.contact.email}
-                                </a>
-                              </div>
-                            </div>
-                            <div className="info-item">
-                              <div className="label">Phone</div>
-                              <div className="value">
-                                {formatPhoneNumber(
-                                  storeQuery.data.contact.phone
-                                )}
-                              </div>
-                            </div>
-                          </>
-                        ) : storeQuery.data.category === 'macaport' ? (
-                          <div className="info-item">
-                            <div className="label">Category</div>
-                            <div className="value">Macaport Store</div>
+                        <div className="info-item">
+                          <div className="label">Name</div>
+                          <div className="value">
+                            {storeQuery.data.contact.firstName}{' '}
+                            {storeQuery.data.contact.lastName}
                           </div>
-                        ) : null}
+                        </div>
+                        <div className="info-item">
+                          <div className="label">Email</div>
+                          <div className="value">
+                            <a href={`mailto:${storeQuery.data.contact.email}`}>
+                              {storeQuery.data.contact.email}
+                            </a>
+                          </div>
+                        </div>
+                        <div className="info-item">
+                          <div className="label">Phone</div>
+                          <div className="value">
+                            {formatPhoneNumber(storeQuery.data.contact.phone)}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </>
@@ -768,6 +765,14 @@ export default function Store() {
             <DeleteMutationSpinner isLoading={deleteStoreMutation.isLoading} />
           </div>
         </DeleteModalStyles>
+      )}
+      {showCsvModal && (
+        <CSVDownloadModal
+          containerRef={csvModalRef}
+          store={storeQuery.data}
+          showModal={showCsvModal}
+          setShowModal={setShowCsvModal}
+        />
       )}
     </Layout>
   );

@@ -158,6 +158,12 @@ input[type="radio"]:checked {
   background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='8' cy='8' r='3'/%3e%3c/svg%3e");
 }
 
+input[type='date']::-webkit-calendar-picker-indicator,
+  input[type='time']::-webkit-calendar-picker-indicator {
+    display: none;
+    background: none;
+  }
+
 select {
   padding: 0.6875rem 2.5rem 0.75rem 0.75rem;
   background-color: #fff;
@@ -174,9 +180,10 @@ select {
 }
 
 select:focus {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(65, 141, 203, 0.2);
-  border-color: #8faef4;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  border-color: #4F46E5;
+  box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px, #4F46E5 0px 0px 0px 1px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
 }
 
 textarea {

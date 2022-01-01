@@ -1,4 +1,6 @@
 import * as crypto from 'crypto';
+import { formatISO } from 'date-fns';
+import { utcToZonedTime } from 'date-fns-tz';
 import { Size, Color, Sku, Product, OrderItem } from '../interfaces';
 
 export function calculateStripeFee(value: number) {
@@ -7,6 +9,15 @@ export function calculateStripeFee(value: number) {
 
 export function calculateTotalItems(items: OrderItem[]) {
   return items.reduce((sum, item) => sum + item.quantity, 0);
+}
+
+export function formatStoreTimestamp(date: string, time: string) {
+  const hour = Number(time.slice(0, 2));
+  const minute = Number(time.slice(3));
+  const timezone = 'America/Chicago';
+  const zonedTime = utcToZonedTime(date, timezone);
+  zonedTime.setHours(hour, minute);
+  return formatISO(zonedTime);
 }
 
 export function formatGroupTerm(requirement: boolean, groupTerm: string) {
@@ -231,21 +242,6 @@ export function handleProductSkusUpdate(queryData: Product, formData: Product) {
 
   return filteredSkus;
 }
-
-export const months = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
 
 export const unitedStates = [
   'Alaska',
