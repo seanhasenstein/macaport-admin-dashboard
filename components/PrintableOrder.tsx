@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import styled from 'styled-components';
+import { format } from 'date-fns';
 import { Order, Store } from '../interfaces';
 import { formatPhoneNumber, formatToMoney } from '../utils';
 
@@ -48,7 +49,7 @@ export default function PrintableOrder({ order, store, options }: Props) {
             </div>
             <div className="item normal-item stripe-id">{order.stripeId}</div>
             <div className="item normal-item">
-              {new Date(`${order.createdAt}`).toDateString()}
+              {format(new Date(order.createdAt), "MMM dd, yyyy 'at' h:mmaa")}
             </div>
           </div>
         </div>

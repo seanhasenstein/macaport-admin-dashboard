@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useQueryClient, useQuery, useMutation } from 'react-query';
 import styled from 'styled-components';
+import { format } from 'date-fns';
 import useActiveNavTab from '../../hooks/useActiveNavTab';
 import { useSession } from '../../hooks/useSession';
 import { Note, Order as OrderInterface, Store } from '../../interfaces';
@@ -414,7 +415,10 @@ export default function Order() {
                           <div className="info-item">
                             <div className="label">Order Date</div>
                             <div className="value">
-                              {new Date(data.order.createdAt).toDateString()}
+                              {format(
+                                new Date(data.order.createdAt),
+                                "MMM dd, yyyy 'at' h:mmaa"
+                              )}
                             </div>
                           </div>
                           <div className="info-item">

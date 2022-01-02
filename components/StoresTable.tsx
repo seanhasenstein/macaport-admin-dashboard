@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useQuery } from 'react-query';
 import styled from 'styled-components';
+import { format } from 'date-fns';
 import { Store } from '../interfaces';
 import { getStoreStatus } from '../utils';
 import StoresTableMenu from './StoresTableMenu';
@@ -124,13 +125,19 @@ export default function StoresTable() {
                         </Link>
                       </td>
                       <td className="store-date">
-                        {new Date(s.openDate).toDateString()}
+                        {format(
+                          new Date(s.openDate),
+                          "MMM dd, yyyy 'at' h:mmaa"
+                        )}
                       </td>
                       <td className="store-date">
                         {' '}
                         {s.closeDate
-                          ? new Date(s.closeDate).toDateString()
-                          : 'Open Permanently'}
+                          ? format(
+                              new Date(s.openDate),
+                              "MMM dd, yyyy 'at' h:mmaa"
+                            )
+                          : 'Permanently Open'}
                       </td>
                       <td className="text-center store-products">
                         {s.products ? s.products.length : 0}
