@@ -127,7 +127,7 @@ export default function StoresTable() {
                       <td className="store-date">
                         {format(
                           new Date(s.openDate),
-                          "MMM dd, yyyy 'at' h:mmaa"
+                          "MMM. dd, yyyy 'at' h:mmaa"
                         )}
                       </td>
                       <td className="store-date">
@@ -135,7 +135,7 @@ export default function StoresTable() {
                         {s.closeDate
                           ? format(
                               new Date(s.closeDate),
-                              "MMM dd, yyyy 'at' h:mmaa"
+                              "MMM. dd, yyyy 'at' h:mmaa"
                             )
                           : 'Permanently Open'}
                       </td>

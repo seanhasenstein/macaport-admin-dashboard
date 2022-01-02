@@ -418,7 +418,7 @@ export default function Order() {
                             <div className="value">
                               {format(
                                 new Date(data.order.createdAt),
-                                "MMM dd, yyyy 'at' h:mmaa"
+                                "MMM. dd, yyyy 'at' h:mmaa"
                               )}
                             </div>
                           </div>

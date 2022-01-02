@@ -49,7 +49,7 @@ export default function PrintableOrder({ order, store, options }: Props) {
             </div>
             <div className="item normal-item stripe-id">{order.stripeId}</div>
             <div className="item normal-item">
-              {format(new Date(order.createdAt), "MMM dd, yyyy 'at' h:mmaa")}
+              {format(new Date(order.createdAt), "MMM. dd, yyyy 'at' h:mmaa")}
             </div>
           </div>
         </div>

@@ -546,7 +546,7 @@ export default function Store() {
                           <div className="value">
                             {format(
                               new Date(storeQuery.data.openDate),
-                              "MMM dd, yyyy 'at' h:mmaa"
+                              "MMM. dd, yyyy 'at' h:mmaa"
                             )}
                           </div>
                         </div>
@@ -556,7 +556,7 @@ export default function Store() {
                             {storeQuery.data.closeDate
                               ? format(
                                   new Date(storeQuery.data.closeDate),
-                                  "MMM dd, yyyy 'at' h:mmaa"
+                                  "MMM. dd, yyyy 'at' h:mmaa"
                                 )
                               : 'Permanently Open'}
                           </div>
