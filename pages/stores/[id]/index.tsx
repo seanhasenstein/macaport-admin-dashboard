@@ -805,7 +805,7 @@ const StoreStyles = styled.div`
   .container {
     margin: 0 auto;
     padding: 3rem 0 0;
-    max-width: 70rem;
+    max-width: 75rem;
     width: 100%;
   }
 

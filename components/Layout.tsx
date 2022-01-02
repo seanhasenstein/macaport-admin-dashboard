@@ -113,7 +113,7 @@ const LayoutStyles = styled.div`
   footer {
     margin: 0 auto;
     padding: 1.75rem 0;
-    max-width: 70rem;
+    max-width: 75rem;
     width: 100%;
     font-size: 0.9375rem;
     color: #6b7280;

@@ -81,8 +81,9 @@ export default function Order() {
   const addNoteMutation = useMutation(
     async (note: Note) => {
       if (!data?.order) return;
-      const prevNotes = data?.order.notes || [];
-
+      const prevNotes = data.order.notes || [];
+      console.log('prevNotes: ', prevNotes);
+      console.log('note: ', note);
       const response = await fetch(
         `/api/orders/update/notes?id=${router.query.sid}&oid=${router.query.id}`,
         {
@@ -112,7 +113,7 @@ export default function Order() {
         const previousNotes = data?.order?.notes || [];
         const updatedOrders = data?.store.orders.map(o => {
           if (o.orderId === router.query.id) {
-            return { ...o, notes: [...o.notes, newNote] };
+            return { ...o, notes: [...previousNotes, newNote] };
           }
           return o;
         });
@@ -688,7 +689,7 @@ const OrderStyles = styled.div`
   .order-summary-row {
     position: relative;
     margin: 0 auto;
-    max-width: 70rem;
+    max-width: 75rem;
     width: 100%;
   }
 

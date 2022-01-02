@@ -134,7 +134,7 @@ export default function StoresTable() {
                         {' '}
                         {s.closeDate
                           ? format(
-                              new Date(s.openDate),
+                              new Date(s.closeDate),
                               "MMM dd, yyyy 'at' h:mmaa"
                             )
                           : 'Permanently Open'}
@@ -178,7 +178,7 @@ const StoresTableStyles = styled.div`
   .container {
     margin: 0 auto;
     padding: 5rem 2rem;
-    max-width: 70rem;
+    max-width: 75rem;
     width: 100%;
   }
 
