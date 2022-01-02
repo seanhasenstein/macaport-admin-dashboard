@@ -45,13 +45,13 @@ export function formatUpdateInitialValues(store: Store): StoreForm {
       phone: formatPhoneNumber(store.contact.phone),
     },
     openDate: format(new Date(store.openDate), 'yyyy-MM-dd'),
-    openTime: format(new Date(store.openDate), 'HH:00'),
+    openTime: format(new Date(store.openDate), 'HH:mm'),
     permanentlyOpen: store.permanentlyOpen,
     closeDate: store.closeDate
       ? format(new Date(store.closeDate), 'yyyy-MM-dd')
       : format(new Date(), 'yyyy-MM-dd'),
     closeTime: store.closeDate
-      ? format(new Date(store.closeDate), 'HH:00')
+      ? format(new Date(store.closeDate), 'HH:mm')
       : format(new Date(), 'HH:00'),
     allowDirectShipping: store.allowDirectShipping,
     hasPrimaryShippingLocation: store.hasPrimaryShippingLocation,
