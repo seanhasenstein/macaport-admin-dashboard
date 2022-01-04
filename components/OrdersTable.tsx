@@ -92,7 +92,10 @@ export default function OrdersTable({ store, orders }: Props) {
                     {filteredOrders.map(o => (
                       <tr key={o.orderId}>
                         <td>
-                          {format(new Date(o.createdAt), 'MMM dd, yyyy h:mmaa')}
+                          {format(
+                            new Date(o.createdAt),
+                            'MMM. dd, yyyy h:mmaa'
+                          )}
                         </td>
                         <td>
                           <div className="customer-name">
