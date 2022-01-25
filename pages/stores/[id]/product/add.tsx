@@ -8,20 +8,22 @@ import { useSession } from '../../../../hooks/useSession';
 import {
   CloudinaryStatus,
   Color,
-  Product,
+  InventoryProduct,
   Size,
   Store,
+  StoreProduct,
 } from '../../../../interfaces';
 import {
   createId,
   getCloudinarySignature,
   removeNonAlphanumeric,
-  createSkusFromSizesAndColors,
+  createStoreProductSkus,
 } from '../../../../utils';
 import BasicLayout from '../../../../components/BasicLayout';
 import Notification from '../../../../components/Notification';
 
 type InitialValues = {
+  inventoryProductId: string;
   id: string;
   name: string;
   description: string;
@@ -70,6 +72,31 @@ export default function AddProduct() {
   const [secondaryImages, setSecondaryImages] = React.useState<string[][]>([]);
   const [includeCustomName, setIncludeCustomName] = React.useState(false);
   const [includeCustomNumber, setIncludeCustomNumber] = React.useState(false);
+  const [inventoryProduct, setInventoryProduct] =
+    React.useState<InventoryProduct>();
+
+  const inventoryProductsQuery = useQuery<InventoryProduct[]>(
+    ['inventory-products'],
+    async () => {
+      const response = await fetch('/api/inventory-products');
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch the inventory products.');
+      }
+
+      const data = await response.json();
+      return data.inventoryProducts;
+    },
+    {
+      initialData: () => {
+        return queryClient.getQueryData(['inventory-products']);
+      },
+      initialDataUpdatedAt: () => {
+        return queryClient.getQueryState(['inventory-products'])?.dataUpdatedAt;
+      },
+      staleTime: 1000 * 60 * 10,
+    }
+  );
 
   const storeQuery = useQuery<Store>(
     ['stores', 'store', router.query.id],
@@ -98,7 +125,7 @@ export default function AddProduct() {
   );
 
   const addProductMutation = useMutation(
-    async (product: Product) => {
+    async (product: StoreProduct) => {
       const response = await fetch(
         `/api/stores/add-product?id=${router.query.id}`,
         {
@@ -149,7 +176,17 @@ export default function AddProduct() {
     }
   );
 
-  const url = `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_NAME}/image/upload`;
+  const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_NAME}/image/upload`;
+
+  const handleInventoryProductChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const updatedInventoryProduct = inventoryProductsQuery?.data?.find(
+      ip => ip._id === e.target.value
+    );
+
+    setInventoryProduct(updatedInventoryProduct);
+  };
 
   const handlePrimaryImageChange = async (
     index: number,
@@ -158,7 +195,7 @@ export default function AddProduct() {
     colors: Color[],
     setFieldValue: (
       field: string,
-      value: any,
+      value: Color[],
       shouldValidate?: boolean | undefined
     ) => void,
     e: React.ChangeEvent<HTMLInputElement>
@@ -180,10 +217,14 @@ export default function AddProduct() {
     formData.append('timestamp', `${timestamp}`);
     formData.append('signature', signature);
 
-    const response = await fetch(url, {
+    const response = await fetch(cloudinaryUrl, {
       method: 'post',
       body: formData,
     });
+
+    if (!response.ok) {
+      throw new Error('Failed to send primary image to cloudinary.');
+    }
 
     const data = await response.json();
 
@@ -195,7 +236,6 @@ export default function AddProduct() {
       if (c.id == color.id) {
         return { ...color, primaryImage: data.secure_url };
       }
-
       return c;
     });
 
@@ -210,7 +250,7 @@ export default function AddProduct() {
     colors: Color[],
     setFieldValue: (
       field: string,
-      value: any,
+      value: Color[],
       shouldValidate?: boolean | undefined
     ) => void,
     e: React.ChangeEvent<HTMLInputElement>
@@ -236,7 +276,7 @@ export default function AddProduct() {
       formData.append('timestamp', `${timestamp}`);
       formData.append('signature', signature);
 
-      const response = await fetch(url, {
+      const response = await fetch(cloudinaryUrl, {
         method: 'post',
         body: formData,
       });
@@ -265,7 +305,7 @@ export default function AddProduct() {
     colors: Color[],
     setFieldValue: (
       field: string,
-      value: any,
+      value: Color[],
       shouldValidate?: boolean | undefined
     ) => void
   ) => {
@@ -285,43 +325,37 @@ export default function AddProduct() {
     setFieldValue('colors', updatedColors);
   };
 
-  const handleRemoveColorClick = (
-    colorIndex: number,
-    remove: (index: number) => void
-  ) => {
-    const primaryImgsCopy = [...primaryImages];
-    primaryImgsCopy.splice(colorIndex, 1);
-    setPrimaryImages(primaryImgsCopy);
-
-    const secondaryImgsCopy = [...secondaryImages];
-    secondaryImgsCopy.splice(colorIndex, 1);
-    setSecondaryImages(secondaryImgsCopy);
-
-    remove(colorIndex);
-  };
-
-  if (sessionLoading || !session) return <div />;
-
-  const initialValues: InitialValues = {
-    id: createId('prod'),
-    name: '',
-    description: '',
-    tag: '',
-    details: [],
-    sizes: [],
-    colors: [],
-  };
+  const initialValues: InitialValues = React.useMemo(() => {
+    return {
+      inventoryProductId: inventoryProduct?.inventoryProductId || '',
+      id: createId('str_prod'),
+      name: inventoryProduct?.name || '',
+      description: inventoryProduct?.description || '',
+      tag: inventoryProduct?.tag || '',
+      details: inventoryProduct?.details || [],
+      sizes: inventoryProduct?.sizes.map(s => ({ ...s, price: 0 })) || [],
+      colors:
+        inventoryProduct?.colors.map(c => ({
+          ...c,
+          primaryImage: '',
+          secondaryImages: [],
+        })) || [],
+    };
+  }, [inventoryProduct]);
 
   const handleAddClick = async (callback: () => void, selector: string) => {
     await callback();
     document.querySelector<HTMLInputElement>(selector)?.focus();
   };
 
+  if (sessionLoading || !session) return <div />;
+
   return (
-    <BasicLayout title="Add Product | Macaport Dashboard">
+    <BasicLayout title="Add a store product | Macaport Dashboard">
       <AddProductStyles>
         <Formik
           initialValues={initialValues}
+          enableReinitialize={true}
           validationSchema={validationSchema}
           onSubmit={values => {
             const sizes = values.sizes.map(size => {
@@ -334,8 +368,18 @@ export default function AddProduct() {
                 .toLowerCase()}`;
               return { ...color, hex };
             });
-            const skus = createSkusFromSizesAndColors(sizes, colors, values.id);
-            const product = { ...values, colors, sizes, skus };
+
+            if (!inventoryProduct) {
+              throw new Error('Failed to find the requested inventoryProduct.');
+            }
+
+            const skus = createStoreProductSkus(
+              sizes,
+              colors,
+              values.id,
+              inventoryProduct.skus
+            );
+            const product = { ...values, colors, sizes, productSkus: skus };
 
             addProductMutation.mutate({
               ...product,
@@ -367,7 +411,7 @@ export default function AddProduct() {
                       />
                     </svg>
                   </button>
-                  <h2>Add a product</h2>
+                  <h2>Add a store product</h2>
                 </div>
                 <div className="save-buttons">
                   {/* <button
@@ -381,441 +425,322 @@ export default function AddProduct() {
                   </button>
                 </div>
               </div>
+
               <div className="main-content">
                 <div className="form-container">
                   <div className="section">
-                    <h3>Add a product form</h3>
                     <div className="item">
-                      <label htmlFor="name">Product name</label>
-                      <Field name="name" id="name" />
-                      <ErrorMessage
-                        name="name"
-                        component="div"
-                        className="validation-error"
-                      />
-                    </div>
-                    <div className="item">
-                      <label htmlFor="description">Product description</label>
-                      <Field
-                        as="textarea"
-                        name="description"
-                        id="description"
-                      />
-                    </div>
-                    <div className="item">
-                      <label htmlFor="tag">Product tag</label>
-                      <Field
-                        name="tag"
-                        id="tag"
-                        placeholder="i.e. Adult Sizes"
-                      />
+                      <label htmlFor="inventoryProduct">
+                        Inventory product
+                      </label>
+                      <select
+                        name="inventoryProduct"
+                        id="inventoryProduct"
+                        value={inventoryProduct?._id}
+                        onBlur={handleInventoryProductChange}
+                      >
+                        <option value="">Select inventory product</option>
+                        {inventoryProductsQuery?.data?.map(ip => (
+                          <option key={ip._id} value={ip._id}>
+                            {ip.name} ({ip.inventoryProductId})
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
-
-                  <div className="section">
-                    <h3>Custom options</h3>
-                    <div className="option">
-                      <button
-                        type="button"
-                        onClick={() => setIncludeCustomName(!includeCustomName)}
-                        role="switch"
-                        aria-checked={includeCustomName}
-                        className={`toggle-button ${
-                          includeCustomName ? 'on' : 'off'
-                        }`}
-                      >
-                        <span aria-hidden="true" className="switch" />
-                        <span className="sr-only">
-                          Turn {includeCustomName ? 'off' : 'on'} include custom
-                          name
-                        </span>
-                      </button>
-                      <span className="toggle-description">
-                        Allow custom names <span>(+$5.00)</span>
-                      </span>
-                    </div>
-
-                    <div className="option">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setIncludeCustomNumber(!includeCustomNumber)
-                        }
-                        role="switch"
-                        aria-checked={includeCustomNumber}
-                        className={`toggle-button ${
-                          includeCustomNumber ? 'on' : 'off'
-                        }`}
-                      >
-                        <span aria-hidden="true" className="switch" />
-                        <span className="sr-only">
-                          Turn {includeCustomNumber ? 'off' : 'on'} include
-                          custom name
-                        </span>
-                      </button>
-                      <div className="toggle-description">
-                        Allow custom numbers <span>(+$5.00)</span>
+                  {values.inventoryProductId && (
+                    <>
+                      <div className="section">
+                        <div className="item">
+                          <label htmlFor="name">Product name</label>
+                          <Field name="name" id="name" />
+                          <ErrorMessage
+                            name="name"
+                            component="div"
+                            className="validation-error"
+                          />
+                        </div>
+                        <div className="item">
+                          <label htmlFor="description">
+                            Product description
+                          </label>
+                          <Field
+                            as="textarea"
+                            name="description"
+                            id="description"
+                          />
+                        </div>
+                        <div className="item">
+                          <label htmlFor="tag">Product tag</label>
+                          <Field
+                            name="tag"
+                            id="tag"
+                            placeholder="i.e. Adult Sizes"
+                          />
+                        </div>
                       </div>
-                    </div>
-                  </div>
 
-                  <div className="section">
-                    <h3>Product details</h3>
-                    <FieldArray
-                      name="details"
-                      render={arrayHelpers => (
-                        <>
-                          {values.details.length > 0 &&
-                            values.details.map(
-                              (_detail: string, detailIndex) => (
-                                <div key={detailIndex} className="details-item">
-                                  <div className="item">
-                                    <label htmlFor={`details.${detailIndex}`}>
-                                      Detail {detailIndex + 1}
-                                    </label>
-                                    <Field
-                                      name={`details.${detailIndex}`}
-                                      id={`details.${detailIndex}`}
-                                    />
-                                  </div>
-                                  <button
-                                    type="button"
-                                    className="remove-button"
-                                    onClick={() =>
-                                      arrayHelpers.remove(detailIndex)
-                                    }
-                                  >
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      viewBox="0 0 20 20"
-                                      fill="currentColor"
+                      <div className="section">
+                        <h3>Product details</h3>
+                        <FieldArray
+                          name="details"
+                          render={arrayHelpers => (
+                            <>
+                              {values.details.length > 0 &&
+                                values.details.map(
+                                  (_detail: string, detailIndex) => (
+                                    <div
+                                      key={detailIndex}
+                                      className="details-item"
                                     >
-                                      <path
-                                        fillRule="evenodd"
-                                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                        clipRule="evenodd"
-                                      />
-                                    </svg>
-                                    <span className="sr-only">
-                                      Remove detail
-                                    </span>
-                                  </button>
-                                </div>
-                              )
-                            )}
-                          <button
-                            type="button"
-                            className="secondary-button"
-                            onClick={() =>
-                              handleAddClick(
-                                () => arrayHelpers.push(''),
-                                `#details\\.${values.details.length}`
-                              )
-                            }
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            Add a{values.details.length > 0 ? 'nother' : ''}{' '}
-                            detail
-                          </button>
-                        </>
-                      )}
-                    />
-                  </div>
-                  <div className="section">
-                    <h3>Product sizes</h3>
-                    <FieldArray
-                      name="sizes"
-                      render={arrayHelpers => (
-                        <>
-                          {values.sizes.length > 0 &&
-                            values.sizes.map((_size: Size, sizeIndex) => (
-                              <div key={sizeIndex} className="size-item">
-                                <div>
-                                  <div className="item">
-                                    <label htmlFor={`sizes.${sizeIndex}.label`}>
-                                      Size label
-                                    </label>
-                                    <Field
-                                      name={`sizes.${sizeIndex}.label`}
-                                      id={`sizes.${sizeIndex}.label`}
-                                      placeholder="S, M, L, XL, XXL, etc."
-                                    />
-                                    <ErrorMessage
-                                      name={`sizes.${sizeIndex}.label`}
-                                      component="div"
-                                      className="validation-error"
-                                    />
-                                  </div>
-                                  <div className="item">
-                                    <label htmlFor={`sizes.${sizeIndex}.price`}>
-                                      Size price
-                                    </label>
-                                    <Field
-                                      name={`sizes.${sizeIndex}.price`}
-                                      id={`sizes.${sizeIndex}.price`}
-                                      placeholder="0.00"
-                                    />
-                                    <ErrorMessage
-                                      name={`sizes.${sizeIndex}.price`}
-                                      component="div"
-                                      className="validation-error"
-                                    />
-                                  </div>
-                                </div>
-                                <button
-                                  type="button"
-                                  className="remove-button"
-                                  onClick={() => arrayHelpers.remove(sizeIndex)}
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                  >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                      clipRule="evenodd"
-                                    />
-                                  </svg>
-                                  <span className="sr-only">Remove size</span>
-                                </button>
-                              </div>
-                            ))}
-                          <button
-                            type="button"
-                            className="secondary-button"
-                            onClick={() =>
-                              handleAddClick(
-                                () =>
-                                  arrayHelpers.push({
-                                    id: createId('size'),
-                                    label: '',
-                                    price: '0.00',
-                                  }),
-                                `#sizes\\.${values.sizes.length}\\.label`
-                              )
-                            }
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            Add a{values.sizes.length > 0 ? 'nother' : ''} size
-                          </button>
-                        </>
-                      )}
-                    />
-                  </div>
-                  <div className="section">
-                    <h3>Product colors</h3>
-                    <FieldArray
-                      name="colors"
-                      render={arrayHelpers => (
-                        <>
-                          {values.colors.length > 0 &&
-                            values.colors.map((color, colorIndex) => (
-                              <div key={colorIndex} className="color-item">
-                                <div>
-                                  <div className="item">
-                                    <label
-                                      htmlFor={`colors.${colorIndex}.label`}
-                                    >
-                                      Color label
-                                    </label>
-                                    <Field
-                                      name={`colors.${colorIndex}.label`}
-                                      id={`colors.${colorIndex}.label`}
-                                    />
-                                    <ErrorMessage
-                                      name={`colors.${colorIndex}.label`}
-                                      component="div"
-                                      className="validation-error"
-                                    />
-                                  </div>
-                                  <div className="item">
-                                    <label htmlFor={`colors.${colorIndex}.hex`}>
-                                      Hex color value
-                                    </label>
-                                    <Field
-                                      name={`colors.${colorIndex}.hex`}
-                                      id={`colors.${colorIndex}.hex`}
-                                      placeholder="i.e. #ffffff"
-                                    />
-                                    <ErrorMessage
-                                      name={`colors.${colorIndex}.hex`}
-                                      component="div"
-                                      className="validation-error"
-                                    />
-                                  </div>
-                                  <div className="item primary-image-item">
-                                    <h5>Primary image</h5>
-                                    <div className="row">
-                                      <div className="primary-thumbnail">
-                                        {primaryImages &&
-                                        primaryImages[colorIndex] ? (
-                                          <img
-                                            src={primaryImages[colorIndex]}
-                                            alt={`${values.name} - ${values.colors[colorIndex].label}`}
+                                      <div className="item">
+                                        <label
+                                          htmlFor={`details.${detailIndex}`}
+                                        >
+                                          Detail {detailIndex + 1}
+                                        </label>
+                                        <Field
+                                          name={`details.${detailIndex}`}
+                                          id={`details.${detailIndex}`}
+                                        />
+                                      </div>
+                                      <button
+                                        type="button"
+                                        className="remove-button"
+                                        onClick={() =>
+                                          arrayHelpers.remove(detailIndex)
+                                        }
+                                      >
+                                        <svg
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          viewBox="0 0 20 20"
+                                          fill="currentColor"
+                                        >
+                                          <path
+                                            fillRule="evenodd"
+                                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                            clipRule="evenodd"
                                           />
-                                        ) : (
-                                          <div className="placeholder">
-                                            <svg
-                                              xmlns="http://www.w3.org/2000/svg"
-                                              className="placeholder-icon"
-                                              fill="none"
-                                              viewBox="0 0 24 24"
-                                              stroke="currentColor"
-                                            >
-                                              <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                              />
-                                            </svg>
-                                          </div>
-                                        )}
-                                      </div>
-                                      <div>
+                                        </svg>
+                                        <span className="sr-only">
+                                          Remove detail
+                                        </span>
+                                      </button>
+                                    </div>
+                                  )
+                                )}
+                              <button
+                                type="button"
+                                className="secondary-button"
+                                onClick={() =>
+                                  handleAddClick(
+                                    () => arrayHelpers.push(''),
+                                    `#details\\.${values.details.length}`
+                                  )
+                                }
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 20 20"
+                                  fill="currentColor"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                Add a{values.details.length > 0 ? 'nother' : ''}{' '}
+                                detail
+                              </button>
+                            </>
+                          )}
+                        />
+                      </div>
+
+                      <div className="section">
+                        <h3>Customize options</h3>
+                        <div className="option">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setIncludeCustomName(!includeCustomName)
+                            }
+                            role="switch"
+                            aria-checked={includeCustomName}
+                            className={`toggle-button ${
+                              includeCustomName ? 'on' : 'off'
+                            }`}
+                          >
+                            <span aria-hidden="true" className="switch" />
+                            <span className="sr-only">
+                              Turn {includeCustomName ? 'off' : 'on'} include
+                              custom name
+                            </span>
+                          </button>
+                          <span className="toggle-description">
+                            Allow custom names <span>(+$5.00)</span>
+                          </span>
+                        </div>
+
+                        <div className="option">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setIncludeCustomNumber(!includeCustomNumber)
+                            }
+                            role="switch"
+                            aria-checked={includeCustomNumber}
+                            className={`toggle-button ${
+                              includeCustomNumber ? 'on' : 'off'
+                            }`}
+                          >
+                            <span aria-hidden="true" className="switch" />
+                            <span className="sr-only">
+                              Turn {includeCustomNumber ? 'off' : 'on'} include
+                              custom name
+                            </span>
+                          </button>
+                          <div className="toggle-description">
+                            Allow custom numbers <span>(+$5.00)</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="section">
+                        <h3>Product sizes</h3>
+                        <FieldArray
+                          name="sizes"
+                          render={() => (
+                            <>
+                              {values.sizes.length > 0 &&
+                                values.sizes.map((_size: Size, sizeIndex) => (
+                                  <div key={sizeIndex} className="size-item">
+                                    <div className="grid-col-2">
+                                      <div className="item">
                                         <label
-                                          htmlFor={`primaryImage${colorIndex}`}
+                                          htmlFor={`sizes.${sizeIndex}.label`}
                                         >
-                                          {primaryImageStatus === 'loading' ? (
-                                            'Loading...'
-                                          ) : (
-                                            <>
-                                              <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                              >
-                                                <path
-                                                  strokeLinecap="round"
-                                                  strokeLinejoin="round"
-                                                  strokeWidth={2}
-                                                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                                                />
-                                              </svg>
-                                              {primaryImages[colorIndex]
-                                                ? 'Upload a different image'
-                                                : 'Upload an image'}
-                                            </>
-                                          )}
+                                          Size label
                                         </label>
-                                        <input
-                                          type="file"
-                                          accept="image/png, image/jpeg"
-                                          name={`primaryImage${colorIndex}`}
-                                          id={`primaryImage${colorIndex}`}
-                                          className="sr-only"
-                                          onChange={e =>
-                                            handlePrimaryImageChange(
-                                              colorIndex,
-                                              values.id,
-                                              color,
-                                              values.colors,
-                                              setFieldValue,
-                                              e
-                                            )
-                                          }
+                                        <Field
+                                          name={`sizes.${sizeIndex}.label`}
+                                          id={`sizes.${sizeIndex}.label`}
+                                          placeholder="S, M, L, XL, XXL, etc."
+                                        />
+                                        <ErrorMessage
+                                          name={`sizes.${sizeIndex}.label`}
+                                          component="div"
+                                          className="validation-error"
+                                        />
+                                      </div>
+                                      <div className="item">
+                                        <label
+                                          htmlFor={`sizes.${sizeIndex}.price`}
+                                        >
+                                          Size price
+                                        </label>
+                                        <Field
+                                          name={`sizes.${sizeIndex}.price`}
+                                          id={`sizes.${sizeIndex}.price`}
+                                          placeholder="0.00"
+                                        />
+                                        <ErrorMessage
+                                          name={`sizes.${sizeIndex}.price`}
+                                          component="div"
+                                          className="validation-error"
                                         />
                                       </div>
                                     </div>
                                   </div>
-                                  <div className="item secondary-images-item">
-                                    <h5>Secondary image</h5>
-                                    <div className="row">
-                                      <div>
-                                        <label
-                                          htmlFor={`secondaryImages${colorIndex}`}
-                                        >
-                                          {secondaryImageStatus ===
-                                          'loading' ? (
-                                            'Loading...'
-                                          ) : (
-                                            <>
-                                              <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                              >
-                                                <path
-                                                  strokeLinecap="round"
-                                                  strokeLinejoin="round"
-                                                  strokeWidth={2}
-                                                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                                                />
-                                              </svg>
-                                              Upload images
-                                            </>
-                                          )}
-                                        </label>
-                                        <input
-                                          type="file"
-                                          multiple
-                                          accept="image/png, image/jpeg"
-                                          name={`secondaryImages${colorIndex}`}
-                                          id={`secondaryImages${colorIndex}`}
-                                          className="sr-only"
-                                          onChange={e =>
-                                            handleSecondaryImagesChange(
-                                              colorIndex,
-                                              values.id,
-                                              color,
-                                              values.colors,
-                                              setFieldValue,
-                                              e
-                                            )
-                                          }
-                                        />
+                                ))}
+                            </>
+                          )}
+                        />
+                      </div>
+                      <div className="section">
+                        <h3>Product colors</h3>
+                        <FieldArray
+                          name="colors"
+                          render={() => (
+                            <>
+                              {values.colors.length > 0 &&
+                                values.colors.map((color, colorIndex) => (
+                                  <div key={colorIndex} className="color-item">
+                                    <div>
+                                      <div className="grid-col-2">
+                                        <div className="item">
+                                          <label
+                                            htmlFor={`colors.${colorIndex}.label`}
+                                          >
+                                            Color label
+                                          </label>
+                                          <Field
+                                            name={`colors.${colorIndex}.label`}
+                                            id={`colors.${colorIndex}.label`}
+                                          />
+                                          <ErrorMessage
+                                            name={`colors.${colorIndex}.label`}
+                                            component="div"
+                                            className="validation-error"
+                                          />
+                                        </div>
+                                        <div className="item">
+                                          <label
+                                            htmlFor={`colors.${colorIndex}.hex`}
+                                          >
+                                            Hex color value
+                                          </label>
+                                          <Field
+                                            name={`colors.${colorIndex}.hex`}
+                                            id={`colors.${colorIndex}.hex`}
+                                            placeholder="i.e. #ffffff"
+                                          />
+                                          <ErrorMessage
+                                            name={`colors.${colorIndex}.hex`}
+                                            component="div"
+                                            className="validation-error"
+                                          />
+                                        </div>
                                       </div>
-                                    </div>
-                                    <div className="secondary-thumbnails">
-                                      {secondaryImages[colorIndex] &&
-                                        secondaryImages[colorIndex].map(
-                                          (secImg, secImgIndex) => {
-                                            return (
-                                              <div
-                                                key={secImgIndex}
-                                                className="thumbnail"
-                                              >
-                                                <img
-                                                  src={secImg}
-                                                  alt={`Secondary number ${secImgIndex} for color number ${colorIndex}`}
-                                                />
-                                                <button
-                                                  type="button"
-                                                  className="remove-img-button"
-                                                  onClick={() =>
-                                                    handleRemoveSecondaryImage(
-                                                      colorIndex,
-                                                      secImgIndex,
-                                                      color,
-                                                      values.colors,
-                                                      setFieldValue
-                                                    )
-                                                  }
+                                      <div className="item primary-image-item">
+                                        <h5>Primary image</h5>
+                                        <div className="row">
+                                          <div className="primary-thumbnail">
+                                            {primaryImages &&
+                                            primaryImages[colorIndex] ? (
+                                              <img
+                                                src={primaryImages[colorIndex]}
+                                                alt={`${values.name} - ${values.colors[colorIndex].label}`}
+                                              />
+                                            ) : (
+                                              <div className="placeholder">
+                                                <svg
+                                                  xmlns="http://www.w3.org/2000/svg"
+                                                  className="placeholder-icon"
+                                                  fill="none"
+                                                  viewBox="0 0 24 24"
+                                                  stroke="currentColor"
                                                 >
+                                                  <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                                  />
+                                                </svg>
+                                              </div>
+                                            )}
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor={`primaryImage${colorIndex}`}
+                                            >
+                                              {primaryImageStatus ===
+                                              'loading' ? (
+                                                'Loading...'
+                                              ) : (
+                                                <>
                                                   <svg
                                                     xmlns="http://www.w3.org/2000/svg"
                                                     fill="none"
@@ -826,80 +751,142 @@ export default function AddProduct() {
                                                       strokeLinecap="round"
                                                       strokeLinejoin="round"
                                                       strokeWidth={2}
-                                                      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
                                                     />
                                                   </svg>
-                                                  <span className="sr-only">
-                                                    Remove Image
-                                                  </span>
-                                                </button>
-                                              </div>
-                                            );
-                                          }
-                                        )}
+                                                  {primaryImages[colorIndex]
+                                                    ? 'Upload a different image'
+                                                    : 'Upload an image'}
+                                                </>
+                                              )}
+                                            </label>
+                                            <input
+                                              type="file"
+                                              accept="image/png, image/jpeg"
+                                              name={`primaryImage${colorIndex}`}
+                                              id={`primaryImage${colorIndex}`}
+                                              className="sr-only"
+                                              onChange={e =>
+                                                handlePrimaryImageChange(
+                                                  colorIndex,
+                                                  values.id,
+                                                  color,
+                                                  values.colors,
+                                                  setFieldValue,
+                                                  e
+                                                )
+                                              }
+                                            />
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="item secondary-images-item">
+                                        <h5>Secondary image</h5>
+                                        <div className="row">
+                                          <div>
+                                            <label
+                                              htmlFor={`secondaryImages${colorIndex}`}
+                                            >
+                                              {secondaryImageStatus ===
+                                              'loading' ? (
+                                                'Loading...'
+                                              ) : (
+                                                <>
+                                                  <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                  >
+                                                    <path
+                                                      strokeLinecap="round"
+                                                      strokeLinejoin="round"
+                                                      strokeWidth={2}
+                                                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                                                    />
+                                                  </svg>
+                                                  Upload images
+                                                </>
+                                              )}
+                                            </label>
+                                            <input
+                                              type="file"
+                                              multiple
+                                              accept="image/png, image/jpeg"
+                                              name={`secondaryImages${colorIndex}`}
+                                              id={`secondaryImages${colorIndex}`}
+                                              className="sr-only"
+                                              onChange={e =>
+                                                handleSecondaryImagesChange(
+                                                  colorIndex,
+                                                  values.id,
+                                                  color,
+                                                  values.colors,
+                                                  setFieldValue,
+                                                  e
+                                                )
+                                              }
+                                            />
+                                          </div>
+                                        </div>
+                                        <div className="secondary-thumbnails">
+                                          {secondaryImages[colorIndex] &&
+                                            secondaryImages[colorIndex].map(
+                                              (secImg, secImgIndex) => {
+                                                return (
+                                                  <div
+                                                    key={secImgIndex}
+                                                    className="thumbnail"
+                                                  >
+                                                    <img
+                                                      src={secImg}
+                                                      alt={`Secondary number ${secImgIndex} for color number ${colorIndex}`}
+                                                    />
+                                                    <button
+                                                      type="button"
+                                                      className="remove-img-button"
+                                                      onClick={() =>
+                                                        handleRemoveSecondaryImage(
+                                                          colorIndex,
+                                                          secImgIndex,
+                                                          color,
+                                                          values.colors,
+                                                          setFieldValue
+                                                        )
+                                                      }
+                                                    >
+                                                      <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        stroke="currentColor"
+                                                      >
+                                                        <path
+                                                          strokeLinecap="round"
+                                                          strokeLinejoin="round"
+                                                          strokeWidth={2}
+                                                          d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                        />
+                                                      </svg>
+                                                      <span className="sr-only">
+                                                        Remove Image
+                                                      </span>
+                                                    </button>
+                                                  </div>
+                                                );
+                                              }
+                                            )}
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                                <button
-                                  type="button"
-                                  className="remove-button"
-                                  onClick={() =>
-                                    handleRemoveColorClick(
-                                      colorIndex,
-                                      arrayHelpers.remove
-                                    )
-                                  }
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                  >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                      clipRule="evenodd"
-                                    />
-                                  </svg>
-                                  <span className="sr-only">Remove color</span>
-                                </button>
-                              </div>
-                            ))}
-                          <button
-                            type="button"
-                            className="secondary-button"
-                            onClick={() =>
-                              handleAddClick(
-                                () =>
-                                  arrayHelpers.push({
-                                    id: createId('color'),
-                                    label: '',
-                                    hex: '',
-                                    primaryImage: '',
-                                    secondaryImages: [],
-                                  }),
-                                `#colors\\.${values.colors.length}\\.label`
-                              )
-                            }
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            Add a{values.colors.length > 0 ? 'nother' : ''}{' '}
-                            color
-                          </button>
-                        </>
-                      )}
-                    />
-                  </div>
+                                ))}
+                            </>
+                          )}
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </Form>
@@ -1003,12 +990,12 @@ const AddProductStyles = styled.div`
   }
 
   .primary-button {
-    background-color: #4f46e5;
+    background-color: #1c5eb9;
     color: #fff;
     border: 1px solid transparent;
 
     &:hover {
-      background-color: #4338ca;
+      background-color: #1955a8;
     }
   }
 
@@ -1195,7 +1182,6 @@ const AddProductStyles = styled.div`
       border-radius: 0.125rem;
 
       .placeholder {
-        background-color: #f3f4f7;
         width: 100%;
         height: 100%;
         display: flex;
@@ -1304,12 +1290,12 @@ const AddProductStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
-        rgb(99, 102, 241) 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+        rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
 
     &.on {
-      background-color: #4338ca;
+      background-color: #1955a8;
 
       & .switch {
         transform: translateX(1.25rem);

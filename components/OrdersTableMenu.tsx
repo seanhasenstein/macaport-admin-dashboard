@@ -140,7 +140,7 @@ export default function OrdersTableMenu({ store, order, orderStatus }: Props) {
         <div className="order-status-buttons">
           <label
             htmlFor={`unfulfilled-${order.orderId}`}
-            className={status === 'Unfulfilled' ? 'unfulfilled' : ''}
+            className={orderStatus === 'Unfulfilled' ? 'unfulfilled' : ''}
           >
             <input
               type="radio"
@@ -154,7 +154,7 @@ export default function OrdersTableMenu({ store, order, orderStatus }: Props) {
           </label>
           <label
             htmlFor={`fulfilled-${order.orderId}`}
-            className={status === 'Fulfilled' ? 'fulfilled' : ''}
+            className={orderStatus === 'Fulfilled' ? 'fulfilled' : ''}
           >
             <input
               type="radio"
@@ -168,7 +168,7 @@ export default function OrdersTableMenu({ store, order, orderStatus }: Props) {
           </label>
           <label
             htmlFor={`completed-${order.orderId}`}
-            className={status === 'Completed' ? 'completed' : ''}
+            className={orderStatus === 'Completed' ? 'completed' : ''}
           >
             <input
               type="radio"
@@ -191,7 +191,9 @@ const OrdersTableMenuStyles = styled.div`
 
   .order-menu-button {
     margin-left: auto;
-    padding: 0.125rem;
+    padding: 0;
+    height: 1.5rem;
+    width: 2rem;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -205,6 +207,7 @@ const OrdersTableMenuStyles = styled.div`
     }
 
     svg {
+      flex-shrink: 0;
       height: 1rem;
       width: 1rem;
     }
@@ -242,16 +245,16 @@ const OrdersTableMenuStyles = styled.div`
     border: none;
     font-size: 0.875rem;
     font-weight: 400;
-    color: #111827;
+    color: #1f2937;
     text-align: left;
     cursor: pointer;
     border-bottom: 1px solid #e5e7eb;
 
     &:hover {
-      color: #4338ca;
+      color: #000;
 
       svg {
-        color: #4338ca;
+        color: #6b7280;
       }
     }
 
@@ -275,7 +278,7 @@ const OrdersTableMenuStyles = styled.div`
       gap: 0.5625rem;
       font-size: 0.875rem;
       font-weight: 400;
-      color: #111827;
+      color: #1f2937;
       line-height: 1;
       border-bottom: 1px solid #e5e7eb;
       cursor: pointer;
@@ -289,7 +292,7 @@ const OrdersTableMenuStyles = styled.div`
         input {
           color: #dc2626;
 
-          &:focus {
+          &:focus-visible {
             box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
               #dc2626 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
           }
@@ -305,7 +308,7 @@ const OrdersTableMenuStyles = styled.div`
         input {
           color: #eab308;
 
-          &:focus {
+          &:focus-visible {
             box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
               #eab308 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
           }
@@ -321,7 +324,7 @@ const OrdersTableMenuStyles = styled.div`
         input {
           color: #10b981;
 
-          &:focus {
+          &:focus-visible {
             box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
               #10b981 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
           }
@@ -330,10 +333,6 @@ const OrdersTableMenuStyles = styled.div`
 
       &:last-of-type {
         border-bottom: none;
-      }
-
-      &:hover {
-        color: #4338ca;
       }
     }
 

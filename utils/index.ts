@@ -1,7 +1,16 @@
 import * as crypto from 'crypto';
 import { formatISO } from 'date-fns';
 import { utcToZonedTime } from 'date-fns-tz';
-import { Size, Color, Sku, Product, OrderItem } from '../interfaces';
+import {
+  Size,
+  InventorySize,
+  Color,
+  InventoryColor,
+  InventorySku,
+  OrderItem,
+  ProductSku,
+  StoreProduct,
+} from '../interfaces';
 
 export function calculateStripeFee(value: number) {
   return value * 0.029 + 30;
@@ -137,17 +146,59 @@ export async function getCloudinarySignature(publicId: string) {
   return { signature, timestamp };
 }
 
-export function createSkusFromSizesAndColors(
+export function createInventoryProductSkus(
+  sizes: InventorySize[],
+  colors: InventoryColor[],
+  inventoryProductId: string
+) {
+  let skus: InventorySku[] = [];
+
+  colors.forEach(c => {
+    const skuResult = sizes.map(s => {
+      const id = createId('inv_sku');
+      return {
+        id,
+        inventoryProductId,
+        size: s,
+        color: c,
+        inventory: 0,
+        active: true,
+      };
+    });
+
+    skus = [...skus, ...skuResult];
+  });
+
+  return skus;
+}
+
+export function createStoreProductSkus(
   sizes: Size[],
   colors: Color[],
-  productId: string
+  storeProductId: string,
+  inventoryProductSkus: InventorySku[]
 ) {
-  let skus: Sku[] = [];
+  let skus: ProductSku[] = [];
 
-  sizes.forEach(s => {
-    const skusResult = colors.map(c => {
-      const id = createId('sku');
-      return { id, productId, size: s, color: c };
+  colors.forEach(c => {
+    const skusResult = sizes.map(s => {
+      const id = createId('prod_sku');
+      const inventoryProductSku = inventoryProductSkus.find(
+        ips => ips.color.id === c.id && ips.size.id === s.id
+      );
+
+      if (!inventoryProductSku) {
+        throw new Error('Unable to find valie inventoryProductSku');
+      }
+
+      return {
+        id,
+        storeProductId,
+        inventorySkuId: inventoryProductSku?.id,
+        size: s,
+        color: c,
+        active: true,
+      };
     });
 
     skus = [...skus, ...skusResult];
@@ -156,91 +207,26 @@ export function createSkusFromSizesAndColors(
   return skus;
 }
 
-export function handleProductSkusUpdate(queryData: Product, formData: Product) {
-  // update all current skus
-  let skus = formData.skus.map(sku => {
+export function updateProductSkus(
+  previousProductSkus: ProductSku[],
+  formData: StoreProduct
+) {
+  return previousProductSkus.map(sku => {
     const size = formData.sizes.find(s => s.id === sku.size.id);
     const color = formData.colors.find(c => c.id === sku.color.id);
-    const result = { ...sku };
-    if (size) result.size = size;
-    if (color) result.color = color;
-    return result;
-  });
 
-  // check for new sizes and creates new skus
-  formData.sizes.forEach(size => {
-    const sizeAlreadyExists = queryData.skus.some(s => s.size.id === size.id);
-    if (!sizeAlreadyExists) {
-      const newSizeSkus = createSkusFromSizesAndColors(
-        [size],
-        // check the prev colors and the new size
-        queryData.colors,
-        formData.id
-      );
-      skus = [...skus, ...newSizeSkus];
-    }
-  });
+    let updatedSku = { ...sku };
 
-  // check for new colors and create new skus
-  formData.colors.forEach(color => {
-    const colorAlreadyExists = queryData.skus.some(
-      s => s.color.id === color.id
-    );
-    if (!colorAlreadyExists) {
-      const newColorSkus = createSkusFromSizesAndColors(
-        // check new sizes and new the new colors
-        formData.sizes,
-        [color],
-        formData.id
-      );
-      skus = [...skus, ...newColorSkus];
-    }
-  });
-
-  const sizesToRemove = queryData.sizes.reduce(
-    (acc: Size[], currSize: Size) => {
-      const stillExists = formData.sizes.some(s => s.id === currSize.id);
-      if (!stillExists) {
-        return [...acc, currSize];
-      }
-      return acc;
-    },
-    []
-  );
-
-  const colorsToRemove = queryData.colors.reduce(
-    (acc: Color[], currColor: Color) => {
-      const stillExists = formData.colors.some(s => s.id === currColor.id);
-      if (!stillExists) {
-        return [...acc, currColor];
-      }
-      return acc;
-    },
-    []
-  );
-
-  // loop over the skus and remove if it includes a size or color from remove array
-  const filteredSkus = skus.reduce((acc: Sku[], currSku: Sku) => {
-    let keepSku = true;
-    sizesToRemove.forEach(size => {
-      if (size.id === currSku.size.id) {
-        keepSku = false;
-      }
-    });
-    colorsToRemove.forEach(color => {
-      if (color.id === currSku.color.id) {
-        keepSku = false;
-      }
-    });
-
-    if (keepSku) {
-      return [...acc, currSku];
+    if (size) {
+      updatedSku = { ...updatedSku, size };
     }
 
-    return acc;
-  }, []);
+    if (color) {
+      updatedSku = { ...updatedSku, color };
+    }
 
-  return filteredSkus;
+    return updatedSku;
+  });
 }
 
 export const unitedStates = [

@@ -269,6 +269,8 @@ const OrdersTableStyles = styled.div`
 
     &.empty {
       padding: 1.25rem 2rem;
+      color: #6b7280;
+      font-size: 0.9375rem;
     }
   }
 
@@ -289,7 +291,7 @@ const OrdersTableStyles = styled.div`
       }
 
       &:focus-visible {
-        color: #2c33bb;
+        color: #1c5eb9;
         text-decoration: underline;
       }
     }
@@ -308,27 +310,21 @@ const OrdersTableStyles = styled.div`
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: #374151;
-      border-radius: 9999px;
+      border-radius: 0.3125rem;
       background: #e5e7eb;
 
       &.unfulfilled {
         background-color: #fee2e2;
-        border: 1px solid #fecaca;
-        box-shadow: inset 0 1px 1px #fff;
         color: #991b1b;
       }
 
       &.fulfilled {
         background-color: #fef3c7;
-        border: 1px solid #fde68a;
-        box-shadow: inset 0 1px 1px #fff;
         color: #92400e;
       }
 
       &.completed {
         background-color: #d1fae5;
-        border: 1px solid #a7f3d0;
-        box-shadow: inset 0 1px 1px #fff;
         color: #065f46;
       }
     }

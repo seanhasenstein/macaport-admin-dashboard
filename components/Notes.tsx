@@ -176,7 +176,7 @@ export default function Notes({
 }
 
 const NotesStyles = styled.div`
-  max-width: 40rem;
+  max-width: 36rem;
 
   .notes-header {
     display: flex;
@@ -188,9 +188,17 @@ const NotesStyles = styled.div`
     }
   }
 
-  .note-menu-button {
+  .menu-button-container {
     margin-left: auto;
-    padding: 0.125rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .note-menu-button {
+    padding: 0;
+    height: 1.5rem;
+    width: 2rem;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -241,15 +249,15 @@ const NotesStyles = styled.div`
     border: none;
     font-size: 0.875rem;
     font-weight: 400;
-    color: #111827;
+    color: #1f2937;
     text-align: left;
     cursor: pointer;
 
     &:hover {
-      color: #4338ca;
+      color: #111827;
 
       svg {
-        color: #4338ca;
+        color: #6b7280;
       }
     }
 
@@ -266,10 +274,10 @@ const NotesStyles = styled.div`
   }
 
   .delete-button:hover {
-    color: #b91c1c;
+    color: #991b1b;
 
     svg {
-      color: #b91c1c;
+      color: #991b1b;
     }
   }
 
@@ -377,12 +385,12 @@ const NotesStyles = styled.div`
   }
 
   .save-button {
-    background-color: #2c33bb;
+    background-color: #1c5eb9;
     color: #fff;
     border: 1px solid transparent;
 
     &:hover {
-      background-color: #3037cb;
+      background-color: #1955a8;
     }
 
     &:focus {
@@ -391,8 +399,8 @@ const NotesStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
-        rgb(99, 102, 241) 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+        rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
   }
 

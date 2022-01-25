@@ -10,15 +10,14 @@ import {
   Size,
   FormSize,
   Color,
-  Sku,
-  Product,
+  ProductSku,
+  StoreProduct,
   CloudinaryStatus,
 } from '../../../../interfaces';
 import {
   createId,
   removeNonAlphanumeric,
-  handleProductSkusUpdate,
-  formatHexColor,
+  updateProductSkus,
   getCloudinarySignature,
   formatFromStripeToPrice,
 } from '../../../../utils';
@@ -27,13 +26,14 @@ import LoadingSpinner from '../../../../components/LoadingSpinner';
 
 type InitialValues = {
   id: string;
+  inventoryProductId: string;
   name: string;
   description: string;
   tag: string;
   details: string[];
   sizes: FormSize[];
   colors: Color[];
-  skus: Sku[];
+  productSkus: ProductSku[];
 };
 
 const validationSchema = Yup.object().shape({
@@ -69,13 +69,14 @@ export default function UpdateProduct() {
   const queryClient = useQueryClient();
   const [initialValues, setInitialValues] = React.useState<InitialValues>({
     id: '',
+    inventoryProductId: '',
     name: '',
     description: '',
     tag: '',
     details: [],
     sizes: [],
     colors: [],
-    skus: [],
+    productSkus: [],
   });
   const [primaryImageStatus, setPrimaryImageStatus] =
     React.useState<CloudinaryStatus>('idle');
@@ -127,6 +128,7 @@ export default function UpdateProduct() {
     if (storeQuery?.data?.product) {
       setInitialValues({
         id: storeQuery?.data?.product?.id || '',
+        inventoryProductId: storeQuery.data.product.inventoryProductId,
         name: storeQuery?.data?.product?.name || '',
         description: storeQuery?.data?.product?.description || '',
         tag: storeQuery?.data?.product?.tag || '',
@@ -137,15 +139,26 @@ export default function UpdateProduct() {
             price: formatFromStripeToPrice(s.price),
           })) || [],
         colors: storeQuery?.data?.product?.colors || [],
-        skus: storeQuery?.data?.product?.skus || [],
+        productSkus: storeQuery?.data?.product?.productSkus || [],
       });
+
+      const primaryImages = storeQuery.data.product.colors.map(
+        (c: Color) => c.primaryImage
+      );
+
+      const secondaryImages = storeQuery.data.product.colors.map(
+        (c: Color) => c.secondaryImages
+      );
+
+      setPrimaryImages(primaryImages);
+      setSecondaryImages(secondaryImages);
       setIncludeCustomName(storeQuery.data.product.includeCustomName);
       setIncludeCustomNumber(storeQuery.data.product.includeCustomNumber);
     }
   }, [storeQuery?.data?.product]);
 
   const updateProductMutation = useMutation(
-    async (product: Product) => {
+    async (product: StoreProduct) => {
       const response = await fetch(
         `/api/stores/update-product?id=${router.query.id}&pid=${router.query.pid}`,
         {
@@ -208,19 +221,6 @@ export default function UpdateProduct() {
     }
   );
 
-  React.useEffect(() => {
-    if (storeQuery?.data?.product) {
-      const primaryImages = storeQuery.data.product.colors.map(
-        (c: Color) => c.primaryImage
-      );
-      const secondaryImages = storeQuery.data.product.colors.map(
-        (c: Color) => c.secondaryImages
-      );
-      setPrimaryImages(primaryImages);
-      setSecondaryImages(secondaryImages);
-    }
-  }, [storeQuery?.data?.product]);
-
   const url = `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_NAME}/image/upload`;
 
   const handlePrimaryImageChange = async (
@@ -261,6 +261,7 @@ export default function UpdateProduct() {
 
     const primeImgCopy = [...primaryImages];
     primeImgCopy[index] = data.secure_url;
+    // TODO: do we need primaryImage state? Can we just use formik state?
     setPrimaryImages(primeImgCopy);
 
     const updatedColors = colors.map(c => {
@@ -318,6 +319,7 @@ export default function UpdateProduct() {
       secImgsCopy[index] = [...(secImgsCopy[index] || []), data.secure_url];
     }
 
+    // TODO: do we need secondaryImages state? Can we just use formik state?
     setSecondaryImages(secImgsCopy);
 
     const updatedColors = colors.map(c => {
@@ -357,21 +359,6 @@ export default function UpdateProduct() {
     setFieldValue('colors', updatedColors);
   };
 
-  const handleRemoveColorClick = (
-    colorIndex: number,
-    remove: (index: number) => void
-  ) => {
-    const primaryImgsCopy = [...primaryImages];
-    primaryImgsCopy.splice(colorIndex, 1);
-    setPrimaryImages(primaryImgsCopy);
-
-    const secondaryImgsCopy = [...secondaryImages];
-    secondaryImgsCopy.splice(colorIndex, 1);
-    setSecondaryImages(secondaryImgsCopy);
-
-    remove(colorIndex);
-  };
-
   const handleAddClick = async (callback: () => void, selector: string) => {
     await callback();
     document.querySelector<HTMLInputElement>(selector)?.focus();
@@ -406,31 +393,22 @@ export default function UpdateProduct() {
                   };
                 });
 
-                const updatedColors: Color[] = values.colors.map(color => {
-                  return {
-                    ...color,
-                    hex: formatHexColor(color.hex),
-                  };
-                });
-
                 const updatedFormValues = {
                   ...values,
                   sizes: updatedSizes,
-                  colors: updatedColors,
                   includeCustomName,
                   includeCustomNumber,
                 };
 
-                const updatedSkus = handleProductSkusUpdate(
-                  storeQuery.data.product,
+                const updatedSkus = updateProductSkus(
+                  storeQuery.data.product.productSkus,
                   updatedFormValues
                 );
 
                 const updatedProduct = {
                   ...values,
                   sizes: updatedSizes,
-                  colors: updatedColors,
-                  skus: updatedSkus,
+                  productSkus: updatedSkus,
                   includeCustomName,
                   includeCustomNumber,
                 };
@@ -620,25 +598,22 @@ export default function UpdateProduct() {
                     <h3>Product sizes</h3>
                     <FieldArray
                       name="sizes"
-                      render={arrayHelpers => (
+                      render={() => (
                         <>
                           {values.sizes.length > 0 &&
-                            values.sizes.map((_size: FormSize, sizeIndex) => (
+                            values.sizes.map((size: FormSize, sizeIndex) => (
                               <div key={sizeIndex} className="size-item">
-                                <div>
+                                <div className="grid-col-2">
                                   <div className="item">
                                     <label htmlFor={`sizes.${sizeIndex}.label`}>
                                       Size label
                                     </label>
-                                    <Field
+                                    <input
+                                      type="text"
                                       name={`sizes.${sizeIndex}.label`}
                                       id={`sizes.${sizeIndex}.label`}
-                                      placeholder="S, M, L, XL, XXL, etc."
-                                    />
-                                    <ErrorMessage
-                                      name={`sizes.${sizeIndex}.label`}
-                                      component="div"
-                                      className="validation-error"
+                                      value={size.label}
+                                      readOnly
                                     />
                                   </div>
                                   <div className="item">
@@ -657,54 +632,8 @@ export default function UpdateProduct() {
                                     />
                                   </div>
                                 </div>
-                                <button
-                                  type="button"
-                                  className="remove-button"
-                                  onClick={() => arrayHelpers.remove(sizeIndex)}
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                  >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                      clipRule="evenodd"
-                                    />
-                                  </svg>
-                                  <span className="sr-only">Remove size</span>
-                                </button>
                               </div>
                             ))}
-                          <button
-                            type="button"
-                            className="secondary-button"
-                            onClick={() =>
-                              handleAddClick(
-                                () =>
-                                  arrayHelpers.push({
-                                    id: createId('size'),
-                                    label: '',
-                                    price: '0.00',
-                                  }),
-                                `#sizes\\.${values.sizes.length}\\.label`
-                              )
-                            }
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            Add a{values.sizes.length > 0 ? 'nother' : ''} size
-                          </button>
                         </>
                       )}
                     />
@@ -713,42 +642,41 @@ export default function UpdateProduct() {
                     <h3>Product colors</h3>
                     <FieldArray
                       name="colors"
-                      render={arrayHelpers => (
+                      render={() => (
                         <>
                           {values.colors.length > 0 &&
                             values.colors.map((color, colorIndex) => (
                               <div key={colorIndex} className="color-item">
                                 <div>
-                                  <div className="item">
-                                    <label
-                                      htmlFor={`colors.${colorIndex}.label`}
-                                    >
-                                      Color label
-                                    </label>
-                                    <Field
-                                      name={`colors.${colorIndex}.label`}
-                                      id={`colors.${colorIndex}.label`}
-                                    />
-                                    <ErrorMessage
-                                      name={`colors.${colorIndex}.label`}
-                                      component="div"
-                                      className="validation-error"
-                                    />
-                                  </div>
-                                  <div className="item">
-                                    <label htmlFor={`colors.${colorIndex}.hex`}>
-                                      Hex color value
-                                    </label>
-                                    <Field
-                                      name={`colors.${colorIndex}.hex`}
-                                      id={`colors.${colorIndex}.hex`}
-                                      placeholder="i.e. #ffffff"
-                                    />
-                                    <ErrorMessage
-                                      name={`colors.${colorIndex}.hex`}
-                                      component="div"
-                                      className="validation-error"
-                                    />
+                                  <div className="grid-col-2">
+                                    <div className="item">
+                                      <label
+                                        htmlFor={`colors.${colorIndex}.label`}
+                                      >
+                                        Color label
+                                      </label>
+                                      <input
+                                        type="text"
+                                        name={`colors.${colorIndex}.label`}
+                                        id={`colors.${colorIndex}.label`}
+                                        value={color.label}
+                                        readOnly
+                                      />
+                                    </div>
+                                    <div className="item">
+                                      <label
+                                        htmlFor={`colors.${colorIndex}.hex`}
+                                      >
+                                        Hex color value
+                                      </label>
+                                      <input
+                                        type="text"
+                                        name={`colors.${colorIndex}.hex`}
+                                        id={`colors.${colorIndex}.hex`}
+                                        value={color.hex}
+                                        readOnly
+                                      />
+                                    </div>
                                   </div>
                                   <div className="item primary-image-item">
                                     <h5>Primary image</h5>
@@ -925,62 +853,8 @@ export default function UpdateProduct() {
                                     </div>
                                   </div>
                                 </div>
-                                <button
-                                  type="button"
-                                  className="remove-button"
-                                  onClick={() =>
-                                    handleRemoveColorClick(
-                                      colorIndex,
-                                      arrayHelpers.remove
-                                    )
-                                  }
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                  >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                      clipRule="evenodd"
-                                    />
-                                  </svg>
-                                  <span className="sr-only">Remove color</span>
-                                </button>
                               </div>
                             ))}
-                          <button
-                            type="button"
-                            className="secondary-button"
-                            onClick={() =>
-                              handleAddClick(
-                                () =>
-                                  arrayHelpers.push({
-                                    id: createId('color'),
-                                    label: '',
-                                    hex: '',
-                                    primaryImage: '',
-                                    secondaryImages: [],
-                                  }),
-                                `#colors\\.${values.colors.length}\\.label`
-                              )
-                            }
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            Add a{values.colors.length > 0 ? 'nother' : ''}{' '}
-                            color
-                          </button>
                         </>
                       )}
                     />
@@ -1085,12 +959,12 @@ const UpdateProductStyles = styled.div`
   }
 
   .primary-button {
-    background-color: #4f46e5;
+    background-color: #1c5eb9;
     color: #fff;
     border: 1px solid transparent;
 
     &:hover {
-      background-color: #4338ca;
+      background-color: #1955a8;
     }
   }
 
@@ -1386,12 +1260,12 @@ const UpdateProductStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
-        rgb(99, 102, 241) 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+        rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
 
     &.on {
-      background-color: #4338ca;
+      background-color: #1955a8;
 
       & .switch {
         transform: translateX(1.25rem);

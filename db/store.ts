@@ -1,6 +1,6 @@
 import { Db, ObjectID } from 'mongodb';
 import { formatISO } from 'date-fns';
-import { Product, Store, Color } from '../interfaces';
+import { Store, StoreProduct, Color, ProductSku } from '../interfaces';
 import { createId } from '../utils';
 
 export async function getStoreById(db: Db, id: string) {
@@ -32,7 +32,11 @@ export async function createStore(db: Db, store: Store) {
   return result.ops[0];
 }
 
-export async function updateStore(db: Db, id: string, updates: Store) {
+export async function updateStore(
+  db: Db,
+  id: string,
+  updates: Record<string, unknown>
+) {
   const result = await db
     .collection('stores')
     .findOneAndUpdate(
@@ -46,7 +50,7 @@ export async function updateStore(db: Db, id: string, updates: Store) {
 export async function addProductToStore(
   db: Db,
   storeId: string,
-  product: Product
+  product: StoreProduct
 ) {
   const result = await db
     .collection('stores')
@@ -62,7 +66,7 @@ export async function updateStoreProduct(
   db: Db,
   storeId: string,
   productId: string,
-  updatedProduct: Product
+  updatedProduct: StoreProduct
 ) {
   const result = await db.collection('stores').findOneAndUpdate(
     { _id: new ObjectID(storeId) },
@@ -91,6 +95,42 @@ export async function updateProductColor(
     }
   );
   return result.value;
+}
+
+export async function updateStoreProductSkuStatus(
+  db: Db,
+  {
+    storeId,
+    storeProductId,
+    productSkuId,
+    updatedProductSku,
+  }: {
+    storeId: string;
+    storeProductId: string;
+    productSkuId: string;
+    updatedProductSku: ProductSku;
+  }
+) {
+  const result = await db.collection('stores').findOneAndUpdate(
+    { _id: new ObjectID(storeId) },
+    {
+      $set: {
+        'products.$[product].productSkus.$[productSku]': updatedProductSku,
+      },
+    },
+    {
+      arrayFilters: [
+        { 'product.id': storeProductId },
+        { 'productSku.id': productSkuId },
+      ],
+    }
+  );
+
+  const updatedStoreProduct: StoreProduct = result.value.products.find(
+    (p: StoreProduct) => p.id === storeProductId
+  );
+
+  return updatedStoreProduct;
 }
 
 export async function deleteStore(db: Db, id: string) {

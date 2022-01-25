@@ -82,8 +82,6 @@ export default function Order() {
     async (note: Note) => {
       if (!data?.order) return;
       const prevNotes = data.order.notes || [];
-      console.log('prevNotes: ', prevNotes);
-      console.log('note: ', note);
       const response = await fetch(
         `/api/orders/update/notes?id=${router.query.sid}&oid=${router.query.id}`,
         {
@@ -300,47 +298,49 @@ export default function Order() {
     <>
       <Layout title={`Order #${data?.order?.orderId} | Macaport Dashboard`}>
         <OrderStyles>
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="print-button"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-              />
-            </svg>
-            Print order
-          </button>
           <div className="container">
             {isLoading && <LoadingSpinner isLoading={isLoading} />}
             {isError && error instanceof Error && <div>Error: {error}</div>}
             {data?.order && (
               <>
-                <Link href={`/stores/${router.query.sid}?active=orders`}>
-                  <a className="back-link">
+                <div className="actions-row">
+                  <Link href={`/stores/${router.query.sid}?active=orders`}>
+                    <a className="back-link">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      Back to store
+                    </a>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="print-button"
+                  >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
                     >
                       <path
-                        fillRule="evenodd"
-                        d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z"
-                        clipRule="evenodd"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
                       />
                     </svg>
-                    Back to store
-                  </a>
-                </Link>
+                    Print order
+                  </button>
+                </div>
                 <div className="order-header">
                   <h2>Order #{data.order.orderId}</h2>
                   <p>{data.order.store.name}</p>
@@ -407,7 +407,6 @@ export default function Order() {
                                       : ''
                                   }
                                 >
-                                  <div className="dot" />
                                   {data.order.orderStatus}
                                 </span>
                               </div>
@@ -557,7 +556,7 @@ export default function Order() {
                                   <td>
                                     <div className="product-name">
                                       <Link
-                                        href={`/stores/${router.query.sid}/product?pid=${i.sku.productId}`}
+                                        href={`/stores/${router.query.sid}/product?pid=${i.sku.storeProductId}`}
                                       >
                                         {i.name}
                                       </Link>
@@ -697,6 +696,11 @@ const OrderStyles = styled.div`
     padding: 3rem 0 0;
   }
 
+  .actions-row {
+    display: flex;
+    justify-content: space-between;
+  }
+
   .back-link {
     display: inline-flex;
     align-items: center;
@@ -722,11 +726,50 @@ const OrderStyles = styled.div`
 
     &:focus-visible {
       text-decoration: underline;
-      color: #2c33bb;
+      color: #1c5eb9;
 
       svg {
-        color: #2c33bb;
+        color: #1c5eb9;
       }
+    }
+  }
+
+  .print-button {
+    padding: 0.5rem 0.75rem;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    color: #475569;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: center;
+    line-height: 1;
+    background-color: #e2e8f0;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.3125rem;
+    box-shadow: inset 0 1px 1px #fff, 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    cursor: pointer;
+
+    svg {
+      margin: 0 0.375rem 0 0;
+      height: 0.875rem;
+      width: 0.875rem;
+      color: #9ca3af;
+    }
+
+    &:hover {
+      border-color: #bfcbda;
+      box-shadow: inset 0 1px 1px #fff, 0 1px 2px 0 rgb(0 0 0 / 0.1);
+    }
+
+    &:focus {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+
+    &:focus-visible {
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+        rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
   }
 
@@ -735,6 +778,8 @@ const OrderStyles = styled.div`
 
     p {
       margin: 0.25rem 0 0;
+      font-size: 1rem;
+      font-weight: 500;
       color: #6b7280;
     }
   }
@@ -762,8 +807,18 @@ const OrderStyles = styled.div`
       }
 
       &.active {
-        background-color: #2c33bb;
+        background-color: #1c5eb9;
         color: #fff;
+
+        &:focus {
+          outline: 2px solid transparent;
+          outline-offset: 2px;
+        }
+
+        &:focus-visible {
+          box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
+            #1c5eb9 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+        }
       }
     }
   }
@@ -788,7 +843,7 @@ const OrderStyles = styled.div`
 
     a:hover {
       text-decoration: underline;
-      color: #2c33bb;
+      color: #1c5eb9;
     }
   }
 
@@ -825,60 +880,31 @@ const OrderStyles = styled.div`
 
   .order-status {
     span {
-      padding: 0.375rem 0.8125rem 0.375rem 0.75rem;
+      padding: 0.375rem 0.5rem 0.375rem;
       display: inline-flex;
       align-items: center;
       font-size: 0.75rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.1em;
       color: #374151;
-      border-radius: 9999px;
+      border-radius: 0.25rem;
       background: #fff;
       line-height: 1;
 
-      .dot {
-        margin: 0 0.5rem 0 0;
-        height: 0.625rem;
-        width: 0.625rem;
-        border-radius: 9999px;
-        background-color: #374151;
-      }
-
       &.unfulfilled {
         background-color: #fee2e2;
-        border: 1px solid #fecaca;
-        box-shadow: inset 0 1px 1px #fff;
         color: #991b1b;
-
-        .dot {
-          background-color: #ef4444;
-          border: 2px solid #fca5a5;
-        }
       }
 
       &.fulfilled {
-        background-color: #fef3c7;
-        border: 1px solid #fef08a;
-        box-shadow: inset 0 1px 1px #fff;
+        background-color: #feefb4;
         color: #92400e;
-
-        .dot {
-          background-color: #f59e0b;
-          border: 2px solid #fcd34d;
-        }
       }
 
       &.completed {
-        background-color: #d1fae5;
-        border: 1px solid #a7f3d0;
-        box-shadow: inset 0 1px 1px #fff;
-        color: #065f46;
-
-        .dot {
-          background-color: #10b981;
-          border: 2px solid #6ee7b7;
-        }
+        color: #14864d;
+        background-color: #c9f7e0;
       }
     }
   }
@@ -965,7 +991,7 @@ const OrderStyles = styled.div`
 
       &:focus-visible {
         text-decoration: underline;
-        color: #2c33bb;
+        color: #1c5eb9;
       }
     }
   }
@@ -1012,48 +1038,6 @@ const OrderStyles = styled.div`
   .summary-value {
     text-align: right;
     color: #111827;
-  }
-
-  .print-button {
-    position: absolute;
-    top: 2rem;
-    right: 2rem;
-    padding: 0.5rem 0.75rem;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    color: #475569;
-    font-size: 0.875rem;
-    font-weight: 500;
-    text-align: center;
-    line-height: 1;
-    background-color: #e2e8f0;
-    border: 1px solid #cbd5e1;
-    border-radius: 0.3125rem;
-    box-shadow: inset 0 1px 1px #fff, 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    cursor: pointer;
-
-    svg {
-      margin: 0 0.375rem 0 0;
-      height: 0.875rem;
-      width: 0.875rem;
-      color: #9ca3af;
-    }
-
-    &:hover {
-      border-color: #bfcbda;
-      box-shadow: inset 0 1px 1px #fff, 0 1px 2px 0 rgb(0 0 0 / 0.1);
-    }
-
-    &:focus {
-      outline: 2px solid transparent;
-      outline-offset: 2px;
-    }
-
-    &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
-        rgb(99, 102, 241) 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
-    }
   }
 
   @media print {

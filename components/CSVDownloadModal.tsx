@@ -80,6 +80,16 @@ export default function CSVDownloadModal({
     }
   );
 
+  React.useEffect(() => {
+    if (showModal) {
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.body.style.overflow = 'inherit';
+    };
+  }, [showModal]);
+
   const handleCheckboxChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     fieldId: number
@@ -283,7 +293,7 @@ const CSVDownloadModalStyles = styled.div`
 
   .fields {
     margin: 1rem 0 0;
-    max-height: 200px;
+    max-height: 300px;
     overflow-y: scroll;
     border: 1px solid #e5e7eb;
     border-radius: 0.125rem;
@@ -292,7 +302,7 @@ const CSVDownloadModalStyles = styled.div`
   .field {
     display: grid;
     grid-template-columns: 2rem 2rem auto;
-    font-family: 'Menlo';
+    font-family: 'Menlo', monospace;
     font-size: 0.8125rem;
     border-bottom: 1px solid #e5e7eb;
 
@@ -361,8 +371,8 @@ const CSVDownloadModalStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
-        rgb(99, 102, 241) 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+        rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
   }
 

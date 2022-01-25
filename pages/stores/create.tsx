@@ -19,7 +19,7 @@ export default function CreateStore() {
   const queryClient = useQueryClient();
 
   const storesQuery = useQuery<Store[]>(
-    'stores',
+    ['stores'],
     async () => {
       const response = await fetch('/api/stores');
 
@@ -64,7 +64,7 @@ export default function CreateStore() {
         const formattedNewStore = formatDataForDb(newStore);
         const previousStores = storesQuery.data || [];
         const stores = [
-          previousStores,
+          ...previousStores,
           { ...formattedNewStore, _id: createId() },
         ];
         queryClient.setQueryData(['stores'], stores);
@@ -75,7 +75,7 @@ export default function CreateStore() {
         queryClient.setQueryData(['stores'], storesQuery.data);
       },
       onSettled: () => {
-        queryClient.invalidateQueries('stores');
+        queryClient.invalidateQueries(['stores']);
       },
       onSuccess: (data, variables) => {
         const route =
@@ -183,6 +183,7 @@ const CreateStoreStyles = styled.div`
       align-items: center;
       background-color: #fff;
       border: none;
+      border-radius: 0.3125rem;
       color: #6b7280;
       cursor: pointer;
 
@@ -214,6 +215,16 @@ const CreateStoreStyles = styled.div`
       font-weight: 500;
       border-radius: 0.3125rem;
       cursor: pointer;
+
+      &:focus {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+      }
+
+      &:focus-visible {
+        box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+          rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+      }
     }
 
     .secondary-button {
@@ -231,12 +242,12 @@ const CreateStoreStyles = styled.div`
     }
 
     .primary-button {
-      background-color: #4f46e5;
+      background-color: #1c5eb9;
       color: #fff;
       border: 1px solid transparent;
 
       &:hover {
-        background-color: #4338ca;
+        background-color: #1955a8;
       }
     }
   }

@@ -3,12 +3,12 @@ import { useRouter } from 'next/router';
 import { useMutation, useQueryClient } from 'react-query';
 import Link from 'next/link';
 import styled from 'styled-components';
-import { Product } from '../interfaces';
+import { StoreProduct } from '../interfaces';
 import useDragNDrop from '../hooks/useDragNDrop';
 import StoreProductMenu from './StoreProductMenu';
 
 type Props = {
-  products: Product[];
+  products: StoreProduct[];
   storeId: string;
   setProductIdToDelete: React.Dispatch<
     React.SetStateAction<string | undefined>
@@ -26,7 +26,7 @@ export default function StoreProducts({
   const queryClient = useQueryClient();
 
   const updateProductMutation = useMutation(
-    async (updatedProducts: Product[]) => {
+    async (updatedProducts: StoreProduct[]) => {
       const response = await fetch(`/api/stores/update?id=${storeId}`, {
         method: 'post',
         body: JSON.stringify({ products: updatedProducts }),
@@ -159,7 +159,7 @@ const StoreProductsStyles = styled.div`
     align-items: center;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #4338ca;
+    color: #1955a8;
     line-height: 1;
     cursor: pointer;
 
@@ -170,7 +170,7 @@ const StoreProductsStyles = styled.div`
     }
 
     &:hover {
-      color: #3730a3;
+      color: #174d97;
       text-decoration: underline;
     }
 
@@ -205,8 +205,12 @@ const StoreProductsStyles = styled.div`
     }
 
     .drag-button {
+      height: 1.5rem;
+      width: 2rem;
       display: flex;
       flex-direction: column;
+      justify-content: center;
+      align-items: center;
       background-color: transparent;
       border: none;
       cursor: grab;
@@ -240,13 +244,25 @@ const StoreProductsStyles = styled.div`
     &:hover {
       text-decoration: underline;
     }
+
+    &:focus {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+
+    &:focus-visible {
+      text-decoration: underline;
+      color: #1955a8;
+    }
   }
 
   .menu-button {
-    padding: 1rem 0.5rem;
+    padding: 0 0.5rem;
     margin-left: auto;
-    padding: 0.125rem;
+    height: 1.5rem;
+    width: 2rem;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     background-color: transparent;
@@ -259,6 +275,7 @@ const StoreProductsStyles = styled.div`
     }
 
     svg {
+      flex-shrink: 0;
       height: 1rem;
       width: 1rem;
     }

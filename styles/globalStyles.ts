@@ -1,7 +1,7 @@
 import { createGlobalStyle } from 'styled-components';
 
 export const GlobalStyles = createGlobalStyle`
-  @font-face {
+@font-face {
   font-family: 'Inter';
   font-style:  normal;
   font-weight: 400;
@@ -46,6 +46,22 @@ export const GlobalStyles = createGlobalStyle`
        url("/fonts/Inter-ExtraBold.woff?v=3.18") format("woff");
 }
 
+@font-face {
+  font-family: 'Dank Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/DankMono-Regular.woff2") format("woff2")
+}
+
+@font-face {
+  font-family: 'Dank Mono';
+  font-style: bold;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/DankMono-Bold.woff2") format("woff2")
+}
+
   html,
   body {
   padding: 0;
@@ -75,7 +91,7 @@ a {
 
 * {
   box-sizing: border-box;
-  outline-color: #4F46E5;
+  outline-color: #1c5eb9;
 }
 
 .sr-only {
@@ -110,8 +126,8 @@ input:not([type="checkbox"], [type="radio"]), textarea {
   &:focus {
     outline: 2px solid transparent;
     outline-offset: 2px;
-    border-color: #4F46E5;
-    box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px, #4F46E5 0px 0px 0px 1px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+    border-color: #1c5eb9;
+    box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px, #1c5eb9 0px 0px 0px 1px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
   }
 }
 
@@ -126,7 +142,7 @@ input[type="checkbox"]:checked, input[type='radio']:checked {
 input[type='checkbox']:focus-visible, input[type='radio']:focus-visible {
   outline: 2px solid transparent;
   outline-offset: 2px;
-  box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, rgb(99, 102, 241) 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+  box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
 }
 
 input[type='checkbox'] {
@@ -138,7 +154,7 @@ input[type='checkbox'] {
   user-select: none;
   flex-shrink: 0;
   border-radius: 0.25rem;
-  color: rgb(79, 70, 229);
+  color: #1c5eb9;
 }
 
 input[type="checkbox"]:checked {
@@ -151,7 +167,7 @@ input[type="radio"] {
   width: 1rem;
   border-radius: 100%;
   flex-shrink: 0;
-  color: rgb(79,70,229);
+  color: #1c5eb9;
 }
 
 input[type="radio"]:checked {
@@ -182,8 +198,8 @@ select {
 select:focus {
   outline: 2px solid transparent;
   outline-offset: 2px;
-  border-color: #4F46E5;
-  box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px, #4F46E5 0px 0px 0px 1px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+  border-color: #1c5eb9;
+  box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px, #1c5eb9 0px 0px 0px 1px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
 }
 
 textarea {

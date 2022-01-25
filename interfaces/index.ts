@@ -7,10 +7,38 @@ export interface Note {
   createdAt: string;
 }
 
-export interface Size {
+export interface InventoryColor {
   id: string;
   label: string;
-  price: number;
+  hex: string;
+}
+
+export interface InventorySize {
+  id: string;
+  label: string;
+}
+
+export interface InventorySku {
+  id: string;
+  inventoryProductId: string;
+  color: InventoryColor;
+  size: InventorySize;
+  inventory: number;
+  active: boolean;
+}
+
+export interface InventoryProduct {
+  _id: string;
+  inventoryProductId: string;
+  name: string;
+  description: string;
+  tag: string;
+  details: string[];
+  sizes: InventorySize[];
+  colors: InventoryColor[];
+  skus: InventorySku[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface FormSize {
@@ -27,22 +55,33 @@ export interface Color {
   secondaryImages: string[];
 }
 
-export interface Sku {
+export interface Size {
   id: string;
-  productId: string;
-  color: Color;
-  size: Size;
+  label: string;
+  price: number;
 }
 
-export interface Product {
+export interface ProductSku {
   id: string;
+  storeProductId: string;
+  inventorySkuId: string;
+  size: Size;
+  color: Color;
+  active: boolean;
+  inventory?: number; // added dynamically in serverless fn
+  inventorySkuActive?: boolean; // added dynamically in serverless fn
+}
+
+export interface StoreProduct {
+  id: string;
+  inventoryProductId: string;
   name: string;
   description: string;
-  details: string[];
   tag: string;
+  details: string[];
+  productSkus: ProductSku[];
   sizes: Size[];
   colors: Color[];
-  skus: Sku[];
   includeCustomName: boolean;
   includeCustomNumber: boolean;
 }
@@ -102,7 +141,7 @@ export interface Store {
   requireGroupSelection: boolean;
   groupTerm: string;
   groups: string[];
-  products: Product[];
+  products: StoreProduct[];
   orders: Order[];
   notes: Note[];
   createdAt: string;
@@ -110,7 +149,7 @@ export interface Store {
 }
 
 export interface OrderItem {
-  sku: Sku;
+  sku: ProductSku;
   name: string;
   image: string;
   price: number;
@@ -170,5 +209,7 @@ export interface Request extends NextApiRequest {
     oid: string;
     pid: string;
     cid: string;
+    spid: string;
+    ipid: string;
   };
 }

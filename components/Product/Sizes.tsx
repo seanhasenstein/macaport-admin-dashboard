@@ -2,12 +2,12 @@ import { useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import useDragNDrop from '../../hooks/useDragNDrop';
 import { formatToMoney } from '../../utils';
-import { Store, Product, Size } from '../../interfaces';
+import { Store, StoreProduct, Size } from '../../interfaces';
 
 type Props = {
   sizes: Size[];
   storeId: string;
-  product: Product;
+  product: StoreProduct;
 };
 
 export default function Sizes({ sizes, storeId, product }: Props) {
@@ -130,7 +130,10 @@ const SizesStyles = styled.div`
 
   .drag-button {
     display: flex;
+    width: 2rem;
     flex-direction: column;
+    justify-content: center;
+    align-items: center;
     background-color: transparent;
     border: none;
     color: #9ca3af;

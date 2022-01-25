@@ -43,7 +43,7 @@ export default function StoresTable() {
         <>
           <div className="container">
             <div className="header-row">
-              <h2>Stores</h2>
+              <h2>Online Stores</h2>
               <Link href="/stores/create">
                 <a className="create-store-link">
                   <svg
@@ -83,6 +83,7 @@ export default function StoresTable() {
                     <th>Close Date</th>
                     <th className="text-center">Products</th>
                     <th className="text-center">Orders</th>
+                    <th className="text-center">Unfulfilled</th>
                     <th />
                   </tr>
                 </thead>
@@ -119,9 +120,12 @@ export default function StoresTable() {
                           </span>
                         )}
                       </td>
-                      <td className="store-name">
+                      <td>
                         <Link href={`/stores/${s._id}`}>
-                          <a>{s.name}</a>
+                          <a>
+                            <div className="store-name">{s.name}</div>
+                            <div className="store-id">{s.storeId}</div>
+                          </a>
                         </Link>
                       </td>
                       <td className="store-date">
@@ -144,6 +148,12 @@ export default function StoresTable() {
                       </td>
                       <td className="text-center store-orders">
                         {s.orders ? s.orders.length : 0}
+                      </td>
+                      <td className="text-center store-orders">
+                        {
+                          s.orders.filter(o => o.orderStatus === 'Unfulfilled')
+                            .length
+                        }
                       </td>
                       <td className="store-actions">
                         <StoresTableMenu storeId={s._id} />
@@ -177,7 +187,7 @@ const StoresTableStyles = styled.div`
 
   .container {
     margin: 0 auto;
-    padding: 5rem 2rem;
+    padding: 5rem 2rem 1rem;
     max-width: 75rem;
     width: 100%;
   }
@@ -194,7 +204,7 @@ const StoresTableStyles = styled.div`
     align-items: center;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #4338ca;
+    color: #1955a8;
     line-height: 1;
     cursor: pointer;
 
@@ -205,7 +215,7 @@ const StoresTableStyles = styled.div`
     }
 
     &:hover {
-      color: #3730a3;
+      color: #174d97;
       text-decoration: underline;
     }
 
@@ -220,7 +230,7 @@ const StoresTableStyles = styled.div`
   }
 
   .table-container {
-    margin: 1.25rem 0 0;
+    margin: 2rem 0 0;
     width: 100%;
     background-color: #fff;
     border-width: 1px 1px 0 1px;
@@ -288,34 +298,35 @@ const StoresTableStyles = styled.div`
     padding: 1rem 1rem;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #1f2937;
+    color: #374151;
 
-    &.store-name {
-      padding-left: 0.5rem;
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: #111827;
+    a {
+      &:hover .store-name {
+        text-decoration: underline;
+      }
 
-      a {
-        &:hover {
-          text-decoration: underline;
-        }
+      &:focus {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+      }
 
-        &:focus {
-          outline: 2px solid transparent;
-          outline-offset: 2px;
-        }
-
-        &:focus-visible {
-          text-decoration: underline;
-          color: #2c33bb;
-        }
+      &:focus-visible .store-name {
+        text-decoration: underline;
+        color: #1c5eb9;
       }
     }
 
-    &.store-date,
-    &.store-products,
-    &.store-orders {
+    .store-name {
+      margin: 0 0 0.1875rem;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: #000;
+    }
+
+    .store-id {
+      font-family: 'Dank Mono', 'Menlo', monospace;
+      font-size: 0.875rem;
+      font-weight: 700;
       color: #6b7280;
     }
 

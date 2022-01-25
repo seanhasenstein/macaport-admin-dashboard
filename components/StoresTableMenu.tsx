@@ -99,11 +99,14 @@ const StoresTableMenuStyles = styled.div`
   .menu-button {
     margin-left: auto;
     padding: 0.125rem;
+    height: 1.5rem;
+    width: 1.5rem;
     display: flex;
     justify-content: center;
     align-items: center;
     background-color: transparent;
     border: none;
+    border-radius: 0.3125rem;
     color: #6b7280;
     cursor: pointer;
 
@@ -112,6 +115,7 @@ const StoresTableMenuStyles = styled.div`
     }
 
     svg {
+      flex-shrink: 0;
       height: 1rem;
       width: 1rem;
     }
@@ -121,8 +125,8 @@ const StoresTableMenuStyles = styled.div`
     padding: 0 1rem;
     position: absolute;
     right: 1.5rem;
-    top: 2.25rem;
-    width: 10.75rem;
+    top: 3rem;
+    width: 10rem;
     display: none;
     flex-direction: column;
     align-items: flex-start;
@@ -139,7 +143,7 @@ const StoresTableMenuStyles = styled.div`
   }
 
   .link {
-    padding: 0.75rem 2rem 0.75rem 0;
+    padding: 0.75rem 0 0.75rem 0;
     width: 100%;
     display: flex;
     align-items: center;
@@ -148,7 +152,7 @@ const StoresTableMenuStyles = styled.div`
     border: none;
     font-size: 0.875rem;
     font-weight: 400;
-    color: #111827;
+    color: #1f2937;
     line-height: 1;
     text-align: left;
     cursor: pointer;
@@ -159,10 +163,10 @@ const StoresTableMenuStyles = styled.div`
     }
 
     &:hover {
-      color: #4338ca;
+      color: #000;
 
       svg {
-        color: #4338ca;
+        color: #6b7280;
       }
     }
 

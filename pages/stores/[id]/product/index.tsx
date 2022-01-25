@@ -7,18 +7,20 @@ import useActiveNavTab from '../../../../hooks/useActiveNavTab';
 import useOutsideClick from '../../../../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../../../../hooks/useEscapeKeydownClose';
 import { useSession } from '../../../../hooks/useSession';
-import { Store } from '../../../../interfaces';
+import { StoreProduct } from '../../../../interfaces';
+import { getQueryParameter } from '../../../../utils';
 import Layout from '../../../../components/Layout';
 import Sizes from '../../../../components/Product/Sizes';
 import Colors from '../../../../components/Product/Colors';
+import StoreProductSkusTable from '../../../../components/StoreProductSkusTable';
 import LoadingSpinner from '../../../../components/LoadingSpinner';
 import Notification from '../../../../components/Notification';
-import { getQueryParameter } from '../../../../utils';
 
-const navValues = ['details', 'sizes', 'colors'];
+const navValues = ['details', 'skus', 'sizes', 'colors'];
 type NavValue = typeof navValues[number];
 
 export default function Product() {
+  const [enableProductQuery, setEnableProductQuery] = React.useState(true);
   const [session, loading] = useSession({ required: true });
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -40,34 +42,45 @@ export default function Product() {
   useEscapeKeydownClose(showProductMenu, setShowProductMenu);
   useEscapeKeydownClose(showDeleteProductModal, setShowDeleteProductModal);
 
-  const { isLoading, isFetching, isError, error, data } = useQuery(
+  const {
+    isLoading,
+    isFetching,
+    isError,
+    error,
+    data: storeProduct,
+  } = useQuery(
     ['stores', 'store', 'product', router.query.pid],
     async () => {
       if (!router.query.id || !router.query.pid) return;
-      const response = await fetch(`/api/stores/${router.query.id}`);
+      // const response = await fetch(`/api/stores/${router.query.id}`);
+      const response = await fetch(
+        `/api/store-products/${router.query.id}?pid=${router.query.pid}`
+      );
 
-      if (!response.ok) throw new Error('Failed to fetch the store.');
+      if (!response.ok) throw new Error('Failed to fetch the store product.');
 
-      const { store }: { store: Store } = await response.json();
-      const product = store.products.find(p => p.id === router.query.pid);
+      const data: { storeProduct: StoreProduct } = await response.json();
+      // const product = store.products.find(p => p.id === router.query.pid);
 
-      if (!product) throw new Error('No product found.');
+      // if (!product) throw new Error('No product found.');
 
-      return { product, products: store.products, store };
+      return data.storeProduct;
     },
     {
-      initialData: () => {
-        if (!router.query.id) return;
-        const stores = queryClient.getQueryData<Store[]>(['stores']);
-        const store = stores?.find((s: Store) => s._id === router.query.id);
-        const product = store?.products.find(p => p.id === router.query.pid);
-        if (store && product) {
-          return { product, products: store.products, store };
-        }
-      },
-      initialDataUpdatedAt: () =>
-        queryClient.getQueryState('stores')?.dataUpdatedAt,
+      // initialData: () => {
+      //   // TODO: update store query to hydrate storeProducts with inventory etc.
+      //   if (!router.query.id) return;
+      //   const stores = queryClient.getQueryData<Store[]>(['stores']);
+      //   const store = stores?.find((s: Store) => s._id === router.query.id);
+      //   const product = store?.products.find(p => p.id === router.query.pid);
+      //   if (store && product) {
+      //     return { product, products: store.products, store };
+      //   }
+      // },
+      // initialDataUpdatedAt: () =>
+      //   queryClient.getQueryState('stores')?.dataUpdatedAt,
       staleTime: 1000 * 60 * 10,
+      enabled: enableProductQuery,
     }
   );
 
@@ -75,42 +88,42 @@ export default function Product() {
     async (id: string | undefined) => {
       if (!id) {
         setShowDeleteProductModal(false);
-        throw new Error('No product id was provided.');
+        throw new Error('No store product id provided.');
       }
-      const filteredProducts = data?.products.filter(p => p.id !== id);
-
-      const response = await fetch(`/api/stores/update?id=${router.query.id}`, {
+      setEnableProductQuery(false);
+      const response = await fetch(`/api/store-products/delete`, {
         method: 'post',
-        body: JSON.stringify({ products: filteredProducts }),
+        body: JSON.stringify({ storeId: router.query.id, storeProductId: id }),
         headers: {
           'Content-Type': 'application/json',
         },
       });
 
       if (!response.ok) {
+        setEnableProductQuery(true);
         throw new Error('Failed to delete the product.');
       }
 
-      const responseData = await response.json();
-      return responseData.store;
+      const data = await response.json();
+      return data.store;
     },
     {
-      onMutate: async id => {
-        await queryClient.cancelQueries(['stores', 'store', router.query.id]);
-        const updatedProducts = data?.products.filter(p => p.id !== id);
-        const updatedStore = { ...data?.store, products: updatedProducts };
-        queryClient.setQueryData(
-          ['stores', 'store', router.query.id],
-          updatedStore
-        );
-      },
-      onError: () => {
-        // TODO: trigger a notafication
-        queryClient.setQueryData(
-          ['stores', 'store', router.query.id],
-          data?.store
-        );
-      },
+      // onMutate: async id => {
+      //   await queryClient.cancelQueries(['stores', 'store', router.query.id]);
+      //   const updatedProducts = data?.products.filter(p => p.id !== id);
+      //   const updatedStore = { ...data?.store, products: updatedProducts };
+      //   queryClient.setQueryData(
+      //     ['stores', 'store', router.query.id],
+      //     updatedStore
+      //   );
+      // },
+      // onError: () => {
+      //   // TODO: trigger a notafication
+      //   queryClient.setQueryData(
+      //     ['stores', 'store', router.query.id],
+      //     data?.store
+      //   );
+      // },
       onSettled: () => {
         queryClient.invalidateQueries('stores');
       },
@@ -139,9 +152,7 @@ export default function Product() {
   };
 
   const handleDeleteProductClick = () => {
-    const id = getQueryParameter(router.query.id);
-    if (!id) throw Error('A store ID is required to delete a store.');
-    deleteProductMutation.mutate(id);
+    deleteProductMutation.mutate(getQueryParameter(router.query.pid));
   };
 
   if (loading || !session) return <div />;
@@ -152,7 +163,7 @@ export default function Product() {
         <div className="container">
           {isLoading && <LoadingSpinner isLoading={isLoading} />}
           {isError && error instanceof Error && <div>Error: {error}</div>}
-          {data?.product && (
+          {storeProduct && (
             <>
               <Link href={`/stores/${router.query.id}?active=products`}>
                 <a className="back-link">
@@ -218,7 +229,7 @@ export default function Product() {
                           d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                         />
                       </svg>
-                      Edit Store
+                      Edit Product
                     </a>
                   </Link>
                   <button
@@ -239,13 +250,13 @@ export default function Product() {
                         d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                       />
                     </svg>
-                    Delete Store
+                    Delete Product
                   </button>
                 </div>
               </div>
               <div className="product-header">
-                <h2>{data.product.name}</h2>
-                <p className="prod-id">{data.product.id}</p>
+                <h2>{storeProduct.name}</h2>
+                <p className="prod-id">{storeProduct.id}</p>
               </div>
 
               <div className="product-nav">
@@ -255,6 +266,13 @@ export default function Product() {
                   className={activeNav === 'details' ? 'active' : ''}
                 >
                   <span>Details</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleNavClick('skus')}
+                  className={activeNav === 'skus' ? 'active' : ''}
+                >
+                  <span>Skus</span>
                 </button>
                 <button
                   type="button"
@@ -277,33 +295,33 @@ export default function Product() {
 
                 {activeNav === 'details' && (
                   <>
-                    {data.product.description && (
+                    {storeProduct.description && (
                       <div className="detail-item">
                         <h4>Product Description</h4>
-                        <p>{data.product.description}</p>
+                        <p>{storeProduct.description}</p>
                       </div>
                     )}
                     <div className="row">
-                      {data.product.tag && (
+                      {storeProduct.tag && (
                         <div className="detail-item">
                           <h4>Tag</h4>
-                          <p className="prod-tag">{data.product.tag}</p>
+                          <p className="prod-tag">{storeProduct.tag}</p>
                         </div>
                       )}
                       <div className="detail-item">
                         <h4>Custom names</h4>
-                        <p>{data.product.includeCustomName ? 'Yes' : 'No'}</p>
+                        <p>{storeProduct.includeCustomName ? 'Yes' : 'No'}</p>
                       </div>
                       <div className="detail-item">
                         <h4>Custom numbers</h4>
-                        <p>{data.product.includeCustomNumber ? 'Yes' : 'No'}</p>
+                        <p>{storeProduct.includeCustomNumber ? 'Yes' : 'No'}</p>
                       </div>
                     </div>
-                    {data.product.details && data.product.details.length > 0 && (
+                    {storeProduct.details && storeProduct.details.length > 0 && (
                       <div className="detail-item">
                         <h4>Details</h4>
                         <ul>
-                          {data.product.details.map((d, i) => (
+                          {storeProduct.details.map((d, i) => (
                             <li key={i}>{d}</li>
                           ))}
                         </ul>
@@ -312,18 +330,27 @@ export default function Product() {
                   </>
                 )}
 
+                {activeNav === 'skus' && (
+                  <StoreProductSkusTable
+                    storeId={getQueryParameter(router.query.id)}
+                    storeProduct={storeProduct}
+                    productSkus={storeProduct.productSkus}
+                    inventoryProductId={storeProduct.inventoryProductId}
+                  />
+                )}
+
                 {activeNav === 'sizes' && (
                   <>
                     <h3>Product Sizes</h3>
                     {router.query.id ? (
                       <Sizes
-                        sizes={data.product.sizes}
+                        sizes={storeProduct.sizes}
                         storeId={
                           Array.isArray(router.query.id)
                             ? router.query.id[0]
                             : router.query.id
                         }
-                        product={data.product}
+                        product={storeProduct}
                       />
                     ) : (
                       <div>A store ID is required.</div>
@@ -341,7 +368,7 @@ export default function Product() {
                             ? router.query.id[0]
                             : router.query.id
                         }
-                        product={data.product}
+                        product={storeProduct}
                       />
                     ) : (
                       <div>A store ID is required.</div>
@@ -356,14 +383,14 @@ export default function Product() {
       <Notification
         query="updateProduct"
         heading="Product successfully updated"
-        callbackUrl={`/stores/${router.query.id}/product?pid=${router.query.pid}&active=details`}
+        callbackUrl={`/stores/${router.query.id}/product?pid=${router.query.pid}`}
       />
       {showDeleteProductModal && (
         <DeleteModalStyles>
           <div ref={deleteProductModalRef} className="modal">
             <div>
               <h3>Delete store</h3>
-              <p>Are you sure you want to delete {data?.product?.name}?</p>
+              <p>Are you sure you want to delete {storeProduct?.name}?</p>
             </div>
             <div className="buttons">
               <button
@@ -452,7 +479,7 @@ const ProductStyles = styled.div`
     background-color: transparent;
     border: none;
     color: #6b7280;
-    border-radius: 9999px;
+    border-radius: 0.3125rem;
     cursor: pointer;
 
     svg {
@@ -494,15 +521,15 @@ const ProductStyles = styled.div`
     border: none;
     font-size: 0.875rem;
     font-weight: 400;
-    color: #111827;
+    color: #1f2937;
     text-align: left;
     cursor: pointer;
 
     &:hover {
-      color: #4338ca;
+      color: #111827;
 
       svg {
-        color: #4338ca;
+        color: #6b7280;
       }
     }
 
@@ -518,10 +545,10 @@ const ProductStyles = styled.div`
   }
 
   .delete-button:hover {
-    color: #b91c1c;
+    color: #991b1b;
 
     svg {
-      color: #b91c1c;
+      color: #991b1b;
     }
   }
 
@@ -530,6 +557,8 @@ const ProductStyles = styled.div`
 
     p {
       margin: 0.25rem 0 0;
+      font-family: 'Dank Mono', 'Menlo', monospace;
+      font-size: 1.125rem;
       color: #6b7280;
     }
   }
@@ -557,8 +586,18 @@ const ProductStyles = styled.div`
       }
 
       &.active {
-        background-color: #2c33bb;
+        background-color: #1c5eb9;
         color: #fff;
+
+        &:focus {
+          outline: 2px solid transparent;
+          outline-offset: 2px;
+        }
+
+        &:focus-visible {
+          box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
+            #1c5eb9 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+        }
       }
     }
   }
@@ -611,10 +650,10 @@ const ProductStyles = styled.div`
 
     &:focus-visible {
       text-decoration: underline;
-      color: #2c33bb;
+      color: #1c5eb9;
 
       svg {
-        color: #2c33bb;
+        color: #1c5eb9;
       }
     }
   }
@@ -649,15 +688,16 @@ const ProductStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
-        rgb(99, 102, 241) 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+        rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
   }
 `;
 
 const DeleteModalStyles = styled.div`
+  padding: 10rem 0 0;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
   position: absolute;
   top: 0;
@@ -671,7 +711,6 @@ const DeleteModalStyles = styled.div`
 
   .modal {
     position: relative;
-    margin: -8rem 0 0;
     padding: 2.25rem 2.5rem 1.75rem;
     max-width: 26rem;
     width: 100%;

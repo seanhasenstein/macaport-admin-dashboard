@@ -224,12 +224,12 @@ const UpdateStoreStyles = styled.div`
     }
 
     .primary-button {
-      background-color: #4f46e5;
+      background-color: #1c5eb9;
       color: #fff;
       border: 1px solid transparent;
 
       &:hover {
-        background-color: #4338ca;
+        background-color: #1955a8;
       }
     }
   }

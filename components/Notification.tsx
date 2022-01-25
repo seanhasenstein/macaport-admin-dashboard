@@ -20,17 +20,22 @@ export default function Notification({
   const [show, setShow] = useNotification(query);
 
   React.useEffect(() => {
-    let timerRef: NodeJS.Timeout;
+    let showRef: NodeJS.Timeout;
+    let queryRef: NodeJS.Timeout;
     if (show) {
-      timerRef = setTimeout(() => {
-        setShow(false);
+      queryRef = setTimeout(() => {
         router.push(callbackUrl, undefined, { shallow: true });
+      }, 0);
+
+      showRef = setTimeout(() => {
+        setShow(false);
       }, 10000);
     }
     return () => {
-      clearTimeout(timerRef);
+      clearTimeout(queryRef);
+      clearTimeout(showRef);
     };
-  }, [callbackUrl, router, setShow, show]);
+  }, [callbackUrl, setShow, show]);
 
   return (
     <NotificationStyles className={`${className}${show ? ' show' : ''}`}>
@@ -86,6 +91,7 @@ const NotificationStyles = styled.div`
   box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
     rgba(0, 0, 0, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 10px 15px -3px,
     rgba(0, 0, 0, 0.05) 0px 4px 6px -2px;
+  z-index: 9999;
 
   &.show {
     animation-name: slidein;
@@ -138,8 +144,8 @@ const NotificationStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
-        rgb(99, 102, 241) 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+        rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
   }
 

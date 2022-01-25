@@ -27,7 +27,7 @@ const handler = nc<Request, NextApiResponse>()
     const headerFields = [
       { id: 'orderId', title: 'ORDER ID' },
       { id: 'date', title: 'DATE' },
-      { id: 'group', title: data.groupTerm.toUpperCase() },
+      { id: data.groupTerm, title: data.groupTerm.toUpperCase() },
       { id: 'customer.firstName', title: 'FIRST NAME' },
       { id: 'customer.lastName', title: 'LAST NAME' },
       { id: 'customer.email', title: 'EMAIL' },
@@ -51,9 +51,11 @@ const handler = nc<Request, NextApiResponse>()
     ];
 
     const header = headerFields.filter(hf => {
-      const x: Field = req.body.fields.find((f: Field) => f.field === hf.id);
-      if (x) {
-        return x.checked;
+      const field: Field = req.body.fields.find(
+        (f: Field) => f.field === hf.id
+      );
+      if (field) {
+        return field.checked;
       }
     });
 
@@ -69,7 +71,7 @@ const handler = nc<Request, NextApiResponse>()
         return {
           orderId: order.orderId,
           date: format(new Date(order.createdAt), 'Pp'),
-          group: order.group,
+          [data.groupTerm]: order.group,
           ['customer.firstName']: order.customer.firstName,
           ['customer.lastName']: order.customer.lastName,
           ['customer.email']: order.customer.email,

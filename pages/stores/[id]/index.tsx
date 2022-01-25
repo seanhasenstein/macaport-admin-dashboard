@@ -34,6 +34,7 @@ export default function Store() {
   const deleteStoreRef = React.useRef<HTMLDivElement>(null);
   const deleteProductRef = React.useRef<HTMLDivElement>(null);
   const csvModalRef = React.useRef<HTMLDivElement>(null);
+  const [enableStoreQuery, setEnableStoreQuery] = React.useState(true);
   const { activeNav, setActiveNav } = useActiveNavTab(
     navValues,
     `/stores/${router.query.id}?`
@@ -78,18 +79,20 @@ export default function Store() {
           ?.find(s => s._id === router.query.id);
       },
       initialDataUpdatedAt: () =>
-        queryClient.getQueryState('stores')?.dataUpdatedAt,
+        queryClient.getQueryState(['stores'])?.dataUpdatedAt,
       onSuccess: data => {
         if (data) {
           setStoreStatus(getStoreStatus(data.openDate, data.closeDate));
         }
       },
       staleTime: 1000 * 60 * 10,
+      enabled: enableStoreQuery,
     }
   );
 
   const deleteStoreMutation = useMutation(
     async (id: string) => {
+      setEnableStoreQuery(false);
       const response = await fetch(`/api/stores/delete?id=${router.query.id}`, {
         method: 'post',
         body: JSON.stringify({ id }),
@@ -99,6 +102,7 @@ export default function Store() {
       });
 
       if (!response.ok) {
+        setEnableStoreQuery(true);
         throw new Error('Failed to delete the store.');
       }
 
@@ -132,7 +136,7 @@ export default function Store() {
     async (id: string | undefined) => {
       if (!id) {
         setShowDeleteProductModal(false);
-        throw new Error('No product id was provided.');
+        throw new Error('No store product id was provided.');
       }
       const filteredProducts = storeQuery.data?.products.filter(
         p => p.id !== id
@@ -531,7 +535,6 @@ export default function Store() {
                           <div className="value">
                             <div className="store-status">
                               <span className={storeStatus}>
-                                <div className="dot" />
                                 {storeStatus === 'upcoming'
                                   ? 'Upcoming'
                                   : storeStatus === 'open'
@@ -792,7 +795,7 @@ const StoreStyles = styled.div`
     margin: 0 0 1.25rem;
     font-size: 1.25rem;
     font-weight: 600;
-    color: #111827;
+    color: #000;
   }
 
   h4 {
@@ -834,10 +837,10 @@ const StoreStyles = styled.div`
 
     &:focus-visible {
       text-decoration: underline;
-      color: #2c33bb;
+      color: #1c5eb9;
 
       svg {
-        color: #2c33bb;
+        color: #1c5eb9;
       }
     }
   }
@@ -866,7 +869,7 @@ const StoreStyles = styled.div`
     background-color: transparent;
     border: none;
     color: #6b7280;
-    border-radius: 9999px;
+    border-radius: 0.3125rem;
     cursor: pointer;
 
     svg {
@@ -884,6 +887,9 @@ const StoreStyles = styled.div`
 
     p {
       margin: 0.25rem 0 0;
+      font-family: 'Dank Mono', 'Menlo', monospace;
+      font-weight: 700;
+      font-size: 1.125rem;
       color: #6b7280;
     }
   }
@@ -913,8 +919,18 @@ const StoreStyles = styled.div`
       }
 
       &.active {
-        background-color: #2c33bb;
+        background-color: #1c5eb9;
         color: #fff;
+
+        &:focus {
+          outline: 2px solid transparent;
+          outline-offset: 2px;
+        }
+
+        &:focus-visible {
+          box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
+            #1c5eb9 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+        }
       }
     }
 
@@ -937,60 +953,31 @@ const StoreStyles = styled.div`
 
   .store-status {
     span {
-      padding: 0.375rem 0.8125rem 0.375rem 0.75rem;
+      padding: 0.375rem 0.5rem 0.375rem;
       display: inline-flex;
       align-items: center;
       font-size: 0.75rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.1em;
       color: #374151;
-      border-radius: 9999px;
+      border-radius: 0.25rem;
       background: #fff;
       line-height: 1;
 
-      .dot {
-        margin: 0 0.5rem 0 0;
-        height: 0.625rem;
-        width: 0.625rem;
-        border-radius: 9999px;
-        background-color: #374151;
-      }
-
       &.closed {
         background-color: #fee2e2;
-        border: 1px solid #fecaca;
-        box-shadow: inset 0 1px 1px #fff;
         color: #991b1b;
-
-        .dot {
-          background-color: #ef4444;
-          border: 2px solid #fca5a5;
-        }
       }
 
       &.open {
-        background-color: #d1fae5;
-        border: 1px solid #a7f3d0;
-        box-shadow: inset 0 1px 1px #fff;
-        color: #065f46;
-
-        .dot {
-          background-color: #10b981;
-          border: 2px solid #6ee7b7;
-        }
+        color: #14864d;
+        background-color: #c9f7e0;
       }
 
       &.upcoming {
-        background-color: #fef3c7;
-        border: 1px solid #fef08a;
-        box-shadow: inset 0 1px 1px #fff;
+        background-color: #feefb4;
         color: #92400e;
-
-        .dot {
-          background-color: #f59e0b;
-          border: 2px solid #fcd34d;
-        }
       }
     }
   }
@@ -1033,28 +1020,7 @@ const StoreStyles = styled.div`
 
     a:hover {
       text-decoration: underline;
-      color: #2c33bb;
-    }
-  }
-
-  .menu-button {
-    margin-left: auto;
-    padding: 1rem 0.5rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: transparent;
-    border: none;
-    color: #6b7280;
-    cursor: pointer;
-
-    &:hover {
-      color: #111827;
-    }
-
-    svg {
-      height: 1rem;
-      width: 1rem;
+      color: #1c5eb9;
     }
   }
 
@@ -1079,7 +1045,7 @@ const StoreStyles = styled.div`
   .menu-link,
   .edit-button,
   .delete-button {
-    padding: 0.75rem 2rem 0.75rem 0;
+    padding: 0.75rem 1.5rem 0.75rem 0;
     width: 100%;
     display: flex;
     align-items: center;
@@ -1088,15 +1054,15 @@ const StoreStyles = styled.div`
     border: none;
     font-size: 0.875rem;
     font-weight: 400;
-    color: #111827;
+    color: #1f2937;
     text-align: left;
     cursor: pointer;
 
     &:hover {
-      color: #4338ca;
+      color: #000;
 
       svg {
-        color: #4338ca;
+        color: #6b7280;
       }
     }
 
@@ -1113,10 +1079,10 @@ const StoreStyles = styled.div`
   }
 
   .delete-button:hover {
-    color: #b91c1c;
+    color: #991b1b;
 
     svg {
-      color: #b91c1c;
+      color: #991b1b;
     }
   }
 

@@ -5,6 +5,32 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import BasicLayout from '../components/BasicLayout';
 
+export const getServerSideProps: GetServerSideProps = async context => {
+  try {
+    const session = await getSession(context);
+    if (session) {
+      return {
+        props: {},
+        redirect: {
+          permanent: false,
+          destination: '/',
+        },
+      };
+    }
+
+    return {
+      props: {},
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      props: {
+        error,
+      },
+    };
+  }
+};
+
 const loginSchema = Yup.object().shape({
   email: Yup.string()
     .email('A valid email is required')
@@ -60,32 +86,6 @@ export default function Login() {
     </BasicLayout>
   );
 }
-
-export const getServerSideProps: GetServerSideProps = async context => {
-  try {
-    const session = await getSession(context);
-    if (session) {
-      return {
-        props: {},
-        redirect: {
-          permanent: false,
-          destination: '/',
-        },
-      };
-    }
-
-    return {
-      props: {},
-    };
-  } catch (error) {
-    console.error(error);
-    return {
-      props: {
-        error: error.message,
-      },
-    };
-  }
-};
 
 const LoginStyles = styled.div`
   width: 100%;

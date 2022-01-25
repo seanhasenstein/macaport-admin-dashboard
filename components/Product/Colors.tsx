@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import useDragNDrop from '../../hooks/useDragNDrop';
-import { Store, Product, Color } from '../../interfaces';
+import { Store, StoreProduct, Color } from '../../interfaces';
 import SecondaryImages from './SecondaryImages';
 
 type Props = {
   storeId: string;
-  product: Product;
+  product: StoreProduct;
 };
 
 export default function Colors({ storeId, product }: Props) {

@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import useDragNDrop from '../../hooks/useDragNDrop';
-import { Store, Product, Color } from '../../interfaces';
+import { Store, StoreProduct, Color } from '../../interfaces';
 
 type Props = {
   color: Color;
-  product: Product;
+  product: StoreProduct;
   storeId: string;
 };
 

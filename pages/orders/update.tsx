@@ -162,13 +162,13 @@ const UpdateOrderStyles = styled.div`
       padding: 0.5rem 1.125rem;
       font-weight: 500;
       border-radius: 0.3125rem;
-      background-color: #4f46e5;
+      background-color: #1c5eb9;
       color: #fff;
       border: 1px solid transparent;
       cursor: pointer;
 
       &:hover {
-        background-color: #4338ca;
+        background-color: #1955a8;
       }
     }
   }
