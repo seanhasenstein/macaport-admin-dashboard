@@ -261,7 +261,7 @@ export default function UpdateProduct() {
 
     const primeImgCopy = [...primaryImages];
     primeImgCopy[index] = data.secure_url;
-    // TODO: do we need primaryImage state? Can we just use formik state?
+    // TODO: Can we just use formik state?
     setPrimaryImages(primeImgCopy);
 
     const updatedColors = colors.map(c => {
