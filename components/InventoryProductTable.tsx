@@ -37,7 +37,9 @@ export default function InventoryProductTable() {
 
   return (
     <InventoryProductStyles>
-      {isLoading && <LoadingSpinner isLoading={isLoading || isFetching} />}
+      {isLoading && (
+        <InventoryProductLoadingSpinner isLoading={isLoading || isFetching} />
+      )}
       {isError && error instanceof Error && <div>Error: {error.message}</div>}
       {inventoryProducts && (
         <div className="container">
@@ -267,4 +269,10 @@ const InventoryProductStyles = styled.div`
       color: #6b7280;
     }
   }
+`;
+
+const InventoryProductLoadingSpinner = styled(LoadingSpinner)`
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
 `;
