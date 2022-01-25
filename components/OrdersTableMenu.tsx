@@ -63,13 +63,7 @@ export default function OrdersTableMenu({ store, order, orderStatus }: Props) {
         queryClient.setQueryData(['stores', 'store', store._id], store);
       },
       onSettled: () => {
-        queryClient.invalidateQueries(['stores', 'store', store._id]);
-        queryClient.invalidateQueries([
-          'stores',
-          'store',
-          'order',
-          order.orderId,
-        ]);
+        queryClient.invalidateQueries(['stores']);
       },
     }
   );

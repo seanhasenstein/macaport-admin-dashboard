@@ -1,7 +1,7 @@
 import { NextApiResponse } from 'next';
 import nc from 'next-connect';
 import { createObjectCsvStringifier } from 'csv-writer';
-import { format } from 'date-fns';
+import { format, utcToZonedTime } from 'date-fns-tz';
 import { withAuth } from '../../../../utils/withAuth';
 import { Request, Store } from '../../../../interfaces';
 import database from '../../../../middleware/db';
@@ -68,9 +68,17 @@ const handler = nc<Request, NextApiResponse>()
       records = [];
     } else {
       records = data.orders.map(order => {
+        const zonedDate = utcToZonedTime(
+          new Date(order.createdAt),
+          'America/Chicago'
+        );
+        const createdAt = format(zonedDate, 'Pp', {
+          timeZone: 'America/Chicago',
+        });
+
         return {
           orderId: order.orderId,
-          date: format(new Date(order.createdAt), 'Pp'),
+          date: createdAt,
           [data.groupTerm]: order.group,
           ['customer.firstName']: order.customer.firstName,
           ['customer.lastName']: order.customer.lastName,

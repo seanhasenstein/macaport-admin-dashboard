@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import { useRouter } from 'next/router';
-import { useMutation } from 'react-query';
+import { useMutation, useQueryClient } from 'react-query';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import {
   InventoryColor,
@@ -26,6 +26,7 @@ type InitialValues = {
 export default function CreateInventoryProduct() {
   const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const createInventoryProduct = useMutation(
     async (inventoryProduct: InitialValues) => {
@@ -47,6 +48,7 @@ export default function CreateInventoryProduct() {
     },
     {
       onSuccess: ({ inventoryProduct }) => {
+        queryClient.invalidateQueries(['inventory-products']);
         router.push(
           `/inventory-products/${inventoryProduct.inventoryProductId}`
         );
