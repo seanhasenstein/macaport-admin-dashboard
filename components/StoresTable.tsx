@@ -90,13 +90,7 @@ export default function StoresTable() {
                 <tbody>
                   {stores.length < 1 && (
                     <tr>
-                      <td>
-                        There are currently no stores.{' '}
-                        <Link href="/stores/create">
-                          <a className="no-stores-link">Create a store</a>
-                        </Link>
-                        .
-                      </td>
+                      <td>There are currently no stores</td>
                     </tr>
                   )}
                   {stores.map(s => (

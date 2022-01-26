@@ -77,7 +77,7 @@ export default function InventoryProductTable() {
               <tbody>
                 {inventoryProducts.length < 1 ? (
                   <tr>
-                    <td>There are currently 0 inventory products</td>
+                    <td>There are currently no inventory products</td>
                   </tr>
                 ) : (
                   <>
