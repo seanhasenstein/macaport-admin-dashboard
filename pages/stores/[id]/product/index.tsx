@@ -295,6 +295,16 @@ export default function Product() {
 
                 {activeNav === 'details' && (
                   <>
+                    <div className="row">
+                      <div className="detail-item">
+                        <h4>ID</h4>
+                        <p>{storeProduct.id}</p>
+                      </div>
+                      <div className="detail-item">
+                        <h4>Merchandise Code</h4>
+                        <p>{storeProduct.merchandiseCode}</p>
+                      </div>
+                    </div>
                     {storeProduct.description && (
                       <div className="detail-item">
                         <h4>Product Description</h4>

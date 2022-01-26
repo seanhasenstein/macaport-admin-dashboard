@@ -30,6 +30,7 @@ export interface InventorySku {
 export interface InventoryProduct {
   _id: string;
   inventoryProductId: string;
+  merchandiseCode: string;
   name: string;
   description: string;
   tag: string;
@@ -75,6 +76,7 @@ export interface ProductSku {
 export interface StoreProduct {
   id: string;
   inventoryProductId: string;
+  merchandiseCode: string;
   name: string;
   description: string;
   tag: string;

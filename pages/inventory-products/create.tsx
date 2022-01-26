@@ -14,6 +14,7 @@ import BasicLayout from '../../components/BasicLayout';
 
 type InitialValues = {
   inventoryProductId: string;
+  merchandiseCode: string;
   name: string;
   description: string;
   tag: string;
@@ -69,6 +70,7 @@ export default function CreateInventoryProduct() {
         <Formik
           initialValues={{
             inventoryProductId: createId('inv_prod'),
+            merchandiseCode: '',
             name: '',
             description: '',
             tag: '',
@@ -128,6 +130,15 @@ export default function CreateInventoryProduct() {
                 <div className="form-container">
                   <h3>Create an Inventory Product</h3>
                   <div className="section">
+                    <div className="item">
+                      <label htmlFor="merchandiseCode">Merchandise Code</label>
+                      <Field name="merchandiseCode" id="merchandiseCode" />
+                      <ErrorMessage
+                        name="merchandiseCode"
+                        component="div"
+                        className="validation-error"
+                      />
+                    </div>
                     <div className="item">
                       <label htmlFor="name">Inventory Product Name</label>
                       <Field name="name" id="name" />

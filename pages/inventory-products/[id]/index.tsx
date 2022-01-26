@@ -273,7 +273,8 @@ export default function InventoryProduct() {
 
               <div className="product-header">
                 <h2>{inventoryProductQuery.data.name}</h2>
-                <p>{inventoryProductQuery.data.inventoryProductId}</p>
+                {/* <p>{inventoryProductQuery.data.inventoryProductId}</p> */}
+                <p>{inventoryProductQuery.data.merchandiseCode}</p>
               </div>
 
               <div className="product-nav">
@@ -307,6 +308,18 @@ export default function InventoryProduct() {
                   <>
                     <div className="product-details">
                       <div className="section">
+                        <div className="info-item">
+                          <div className="label">ID</div>
+                          <div className="value">
+                            {inventoryProductQuery.data.inventoryProductId}
+                          </div>
+                        </div>
+                        <div className="info-item">
+                          <div className="label">Merchandise Code</div>
+                          <div className="value">
+                            {inventoryProductQuery.data.merchandiseCode}
+                          </div>
+                        </div>
                         <div className="info-item">
                           <div className="label">Created</div>
                           <div className="value">

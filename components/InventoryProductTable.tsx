@@ -90,7 +90,8 @@ export default function InventoryProductTable() {
                             <a>
                               <div className="product-name">{product.name}</div>
                               <div className="product-id">
-                                {product.inventoryProductId}
+                                {product.merchandiseCode ||
+                                  product.inventoryProductId}
                               </div>
                             </a>
                           </Link>

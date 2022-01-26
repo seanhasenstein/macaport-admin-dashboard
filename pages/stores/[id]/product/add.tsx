@@ -383,6 +383,7 @@ export default function AddProduct() {
 
             addProductMutation.mutate({
               ...product,
+              merchandiseCode: inventoryProduct.merchandiseCode,
               includeCustomName,
               includeCustomNumber,
             });
@@ -442,7 +443,11 @@ export default function AddProduct() {
                         <option value="">Select inventory product</option>
                         {inventoryProductsQuery?.data?.map(ip => (
                           <option key={ip._id} value={ip._id}>
-                            {ip.name} ({ip.inventoryProductId})
+                            {ip.name} (
+                            {ip.merchandiseCode
+                              ? `Merch. Code: ${ip.merchandiseCode}`
+                              : `${ip.inventoryProductId}`}
+                            )
                           </option>
                         ))}
                       </select>
