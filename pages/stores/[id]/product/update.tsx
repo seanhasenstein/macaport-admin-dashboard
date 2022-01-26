@@ -26,6 +26,7 @@ import LoadingSpinner from '../../../../components/LoadingSpinner';
 
 type InitialValues = {
   id: string;
+  merchandiseCode: string;
   inventoryProductId: string;
   name: string;
   description: string;
@@ -70,6 +71,7 @@ export default function UpdateProduct() {
   const [initialValues, setInitialValues] = React.useState<InitialValues>({
     id: '',
     inventoryProductId: '',
+    merchandiseCode: '',
     name: '',
     description: '',
     tag: '',
@@ -129,6 +131,7 @@ export default function UpdateProduct() {
       setInitialValues({
         id: storeQuery?.data?.product?.id || '',
         inventoryProductId: storeQuery.data.product.inventoryProductId,
+        merchandiseCode: storeQuery.data.product.merchandiseCode,
         name: storeQuery?.data?.product?.name || '',
         description: storeQuery?.data?.product?.description || '',
         tag: storeQuery?.data?.product?.tag || '',
