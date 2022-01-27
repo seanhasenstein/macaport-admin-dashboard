@@ -26,9 +26,13 @@ export async function getStores(db: Db, filter: Record<string, unknown> = {}) {
 export async function createStore(db: Db, store: Store) {
   const storeId = createId('str');
   const now = formatISO(new Date());
-  const result = await db
-    .collection('stores')
-    .insertOne({ ...store, storeId, createdAt: now, updatedAt: now });
+  const result = await db.collection<Store>('stores').insertOne({
+    ...store,
+    storeId,
+    orders: [],
+    createdAt: now,
+    updatedAt: now,
+  });
   return result.ops[0];
 }
 

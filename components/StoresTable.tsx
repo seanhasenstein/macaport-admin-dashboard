@@ -144,10 +144,11 @@ export default function StoresTable() {
                         {s.orders ? s.orders.length : 0}
                       </td>
                       <td className="text-center store-orders">
-                        {
-                          s.orders.filter(o => o.orderStatus === 'Unfulfilled')
-                            .length
-                        }
+                        {s.orders
+                          ? s.orders.filter(
+                              o => o.orderStatus === 'Unfulfilled'
+                            ).length
+                          : 0}
                       </td>
                       <td className="store-actions">
                         <StoresTableMenu storeId={s._id} />
