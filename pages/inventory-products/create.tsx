@@ -88,7 +88,7 @@ export default function CreateInventoryProduct() {
 
             const skus = createInventoryProductSkus(
               values.sizes,
-              values.colors,
+              colors,
               values.inventoryProductId
             );
 
