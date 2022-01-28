@@ -17,39 +17,41 @@ const handler = nc<Request, NextApiResponse>()
         update
       );
 
-    // find all storeProducts that use this inventoryProduct
     const allStores = await dbStore.getStores(req.db);
 
     for (const store of allStores) {
-      // check if store has a storeProduct with the updated inventoryProduct
       if (
         store.products.some(
           p => p.inventoryProductId === update.inventoryProductId
         )
       ) {
         const updatedStoreProducts = store.products.map(p => {
-          const updatedProductSkus = updateStoreProductSkus(store, p, update);
-          const sizes = update.sizes.map(s => {
-            const prevSize = p.sizes.find(ps => ps.id === s.id);
-            return { ...prevSize, ...s, price: prevSize?.price || 0 };
-          });
-          const colors = update.colors.map(c => {
-            const prevColor = p.colors.find(pc => pc.id === c.id);
-            return {
-              ...prevColor,
-              ...c,
-              primaryImage: prevColor?.primaryImage || '',
-              secondaryImages: prevColor?.secondaryImages || [],
-            };
-          });
+          if (p.inventoryProductId === update.inventoryProductId) {
+            const updatedProductSkus = updateStoreProductSkus(store, p, update);
+            const sizes = update.sizes.map(s => {
+              const prevSize = p.sizes.find(ps => ps.id === s.id);
+              return { ...prevSize, ...s, price: prevSize?.price || 0 };
+            });
+            const colors = update.colors.map(c => {
+              const prevColor = p.colors.find(pc => pc.id === c.id);
+              return {
+                ...prevColor,
+                ...c,
+                primaryImage: prevColor?.primaryImage || '',
+                secondaryImages: prevColor?.secondaryImages || [],
+              };
+            });
 
-          return {
-            ...p,
-            merchandiseCode: update.merchandiseCode,
-            sizes,
-            colors,
-            productSkus: updatedProductSkus,
-          };
+            return {
+              ...p,
+              merchandiseCode: update.merchandiseCode,
+              sizes,
+              colors,
+              productSkus: updatedProductSkus,
+            };
+          }
+
+          return p;
         });
 
         // invoke a db storeUpdate
