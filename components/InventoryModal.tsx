@@ -70,6 +70,7 @@ export default function InventoryModal({
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['inventory-products']);
+        queryClient.invalidateQueries(['stores']);
         setShowModal(false);
       },
     }
