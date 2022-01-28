@@ -16,7 +16,7 @@ export default function Sizes({ sizes, storeId, product }: Props) {
   const sizesMutation = useMutation(
     async (sizes: Size[]) => {
       const response = await fetch(
-        `/api/stores/update-product?id=${storeId}&pid=${product.id}`,
+        `/api/stores/update-product?sid=${storeId}&pid=${product.id}`,
         {
           method: 'post',
           body: JSON.stringify({ ...product, sizes }),

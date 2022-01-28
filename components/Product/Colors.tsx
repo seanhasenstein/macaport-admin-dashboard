@@ -15,7 +15,7 @@ export default function Colors({ storeId, product }: Props) {
   const colorsMutation = useMutation(
     async (colors: Color[]) => {
       const response = await fetch(
-        `/api/stores/update-product?id=${storeId}&pid=${product.id}`,
+        `/api/stores/update-product?sid=${storeId}&pid=${product.id}`,
         {
           method: 'post',
           body: JSON.stringify({ ...product, colors }),

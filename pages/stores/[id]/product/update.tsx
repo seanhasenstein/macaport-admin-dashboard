@@ -163,7 +163,7 @@ export default function UpdateProduct() {
   const updateProductMutation = useMutation(
     async (product: StoreProduct) => {
       const response = await fetch(
-        `/api/stores/update-product?id=${router.query.id}&pid=${router.query.pid}`,
+        `/api/stores/update-product?sid=${router.query.id}&pid=${router.query.pid}`,
         {
           method: 'post',
           body: JSON.stringify(product),

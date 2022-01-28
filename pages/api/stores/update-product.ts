@@ -10,7 +10,7 @@ const handler = nc<Request, NextApiResponse>()
   .post(async (req, res) => {
     const result: Store = await store.updateStoreProduct(
       req.db,
-      req.query.id,
+      req.query.sid,
       req.query.pid,
       req.body
     );

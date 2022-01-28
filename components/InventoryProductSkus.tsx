@@ -1,144 +1,127 @@
 import React from 'react';
 import { useRouter } from 'next/router';
-import { useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
-import { ProductSku, Store, StoreProduct } from '../interfaces';
+import { useMutation, useQueryClient } from 'react-query';
+import { InventoryProduct, InventorySku } from '../interfaces';
 import useDragNDrop from '../hooks/useDragNDrop';
-import StoreProductSkusTableMenu from './StoreProductSkusTableMenu';
-import { formatToMoney } from '../utils';
 
 type Props = {
-  storeId: string | undefined;
-  storeProduct: StoreProduct;
-  productSkus: ProductSku[];
-  inventoryProductId: string;
+  inventoryProduct: InventoryProduct;
 };
 
-type UpdateActiveStatusProps = {
-  storeId: string;
-  storeProductId: string;
-  productSkuId: string;
-  updatedProductSku: ProductSku;
-};
-
-export default function StoreProductSkusTable({
-  storeId,
-  storeProduct,
-  productSkus,
-  inventoryProductId,
-}: Props) {
-  const router = useRouter();
+export default function InventoryProductSkus({ inventoryProduct }: Props) {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
-  const updateOrderMutation = useMutation(async (dndSkus: ProductSku[]) => {
-    const response = await fetch(
-      `/api/stores/update-product?sid=${router.query.id}&pid=${router.query.pid}`,
-      {
+  const updateOrderMutation = useMutation(async (dndSkus: InventorySku[]) => {
+    const response = await fetch(`/api/inventory-products/update`, {
+      method: 'post',
+      body: JSON.stringify({
+        id: inventoryProduct._id,
+        update: { skus: dndSkus },
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update the inventory order.');
+    }
+
+    const data = await response.json();
+    return data.inventoryProduct;
+  });
+
+  const dnd = useDragNDrop(
+    inventoryProduct.skus,
+    'sku',
+    updateOrderMutation.mutate
+  );
+
+  const updateActiveStatus = useMutation(
+    async (skuId: string) => {
+      if (!inventoryProduct) {
+        throw new Error('No inventory product found.');
+      }
+
+      const updatedSkus = inventoryProduct.skus.map(s => {
+        if (s.id === skuId) {
+          return { ...s, active: !s.active };
+        }
+        return s;
+      });
+
+      const { _id, ...update }: InventoryProduct = {
+        ...inventoryProduct,
+        skus: updatedSkus,
+      };
+
+      const response = await fetch(`/api/inventory-products/update`, {
         method: 'post',
-        body: JSON.stringify({ ...storeProduct, productSkus: dndSkus }),
+        body: JSON.stringify({ id: inventoryProduct._id, update }),
         headers: {
           'Content-Type': 'application/json',
         },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error('Failed to update the skus order');
-    }
-
-    const data: { store: Store } = await response.json();
-    const product = data.store.products.find(p => p.id === storeProduct.id);
-    return product;
-  });
-
-  const dnd = useDragNDrop(productSkus, 'sku', updateOrderMutation.mutate);
-
-  const updateActiveStatus = useMutation(
-    async ({
-      storeId,
-      storeProductId,
-      productSkuId,
-      updatedProductSku,
-    }: UpdateActiveStatusProps) => {
-      const response = await fetch(
-        '/api/store-products/update-sku-active-status',
-        {
-          method: 'post',
-          body: JSON.stringify({
-            storeId,
-            storeProductId,
-            productSkuId,
-            updatedProductSku,
-          }),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      });
 
       if (!response.ok) {
-        throw new Error('Failed to update productSku.active');
+        throw new Error('Failed to updated the inventory product sku.');
       }
 
       const data = await response.json();
-      return data;
+      return data.inventoryProduct;
     },
     {
-      onMutate: async ({ productSkuId, updatedProductSku }) => {
-        await queryClient.cancelQueries([
-          'stores',
-          'store',
-          'product',
-          router.query.pid,
-        ]);
-
-        const updatedProductSkus = storeProduct.productSkus.map(ps => {
-          if (ps.id === productSkuId) {
-            return updatedProductSku;
+      onMutate: async skuId => {
+        if (!inventoryProduct) {
+          throw new Error('No inventory product found.');
+        }
+        const updatedSkus = inventoryProduct.skus.map(s => {
+          if (s.id === skuId) {
+            return { ...s, active: !s.active };
           }
-          return ps;
+          return s;
         });
 
-        const updatedProduct = {
-          ...storeProduct,
-          productSkus: updatedProductSkus,
+        const update: InventoryProduct = {
+          ...inventoryProduct,
+          skus: updatedSkus,
         };
-
+        await queryClient.cancelQueries([
+          'inventory-products',
+          'inventory-product',
+          router.query.id,
+        ]);
         queryClient.setQueryData(
-          ['stores', 'store', 'product', router.query.pid],
-          updatedProduct
+          ['inventory-products', 'inventory-product', router.query.id],
+          update
         );
       },
       onError: () => {
-        // TODO: trigger a notification to announce the error and fallback
         queryClient.setQueryData(
-          ['stores', 'store', 'product', router.query.pid],
-          storeProduct
+          ['inventory-products', 'inventory-product', router.query.id],
+          inventoryProduct
         );
       },
       onSettled: () => {
+        queryClient.invalidateQueries(['inventory-products']);
         queryClient.invalidateQueries(['stores']);
       },
     }
   );
 
-  if (!storeId) {
-    throw new Error('No store ID provided.');
-  }
-
   return (
-    <StoreProductSkusTableStyles>
-      <h3>Store Product Skus</h3>
+    <InventoryProductSkusStyles>
+      <h3>Inventory Product Skus</h3>
       <div className="skus">
         <div className="sku header">
           <div />
           <div>ID</div>
           <div>Size</div>
           <div>Color</div>
-          <div>Price</div>
           <div className="text-center">Inventory</div>
           <div className="text-center">Status</div>
-          <div className="text-right">Menu</div>
         </div>
         {dnd.list.map((s, i) => (
           <div
@@ -189,39 +172,26 @@ export default function StoreProductSkusTable({
             <div>{s.size.label}</div>
             <div className="color">
               <Color hex={s.color.hex} />
-              {s.color.label}
+              {s.color.label} - {s.color.hex}
             </div>
-            <div>{formatToMoney(s.size.price)}</div>
             <div
-              className={`text-center ${
-                s.inventory && s.inventory < 6 ? ' running-low' : ''
-              }`}
+              className={`text-center${s.inventory < 6 ? ' running-low' : ''}`}
             >
               {s.inventory}
             </div>
             <div className="product-status text-center">
               <button
                 type="button"
-                onClick={() =>
-                  updateActiveStatus.mutate({
-                    storeId,
-                    storeProductId: s.storeProductId,
-                    productSkuId: s.id,
-                    updatedProductSku: { ...s, active: !s.active },
-                  })
-                }
-                disabled={!s.inventorySkuActive}
+                onClick={() => updateActiveStatus.mutate(s.id)}
                 role="switch"
-                aria-checked={s.inventorySkuActive && s.active}
-                className={`toggle-button ${
-                  s.inventorySkuActive && s.active ? 'on' : 'off'
-                }`}
+                aria-checked={s.active}
+                className={`toggle-button ${s.active ? 'on' : 'off'}`}
               >
                 <span className="sr-only">
-                  {s.inventorySkuActive ? (
+                  {s.active ? (
                     <>
-                      Turn {s.inventorySkuActive && s.active && 'off'}
-                      {s.inventorySkuActive && !s.active && 'on'}
+                      Turn {s.active && 'off'}
+                      {s.active && !s.active && 'on'}
                     </>
                   ) : (
                     'Button disabled'
@@ -230,44 +200,22 @@ export default function StoreProductSkusTable({
                 <span aria-hidden="true" className="span1" />
                 <span
                   aria-hidden="true"
-                  className={`span2 ${
-                    s.inventorySkuActive && s.active ? 'on' : 'off'
-                  }`}
+                  className={`span2 ${s.active ? 'on' : 'off'}`}
                 />
                 <span
                   aria-hidden="true"
-                  className={`span3 ${
-                    s.inventorySkuActive && s.active ? 'on' : 'off'
-                  }`}
+                  className={`span3 ${s.active ? 'on' : 'off'}`}
                 />
               </button>
-              {!s.inventorySkuActive && (
-                <span className="locked">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </span>
-              )}
             </div>
-            <StoreProductSkusTableMenu
-              inventoryProductId={inventoryProductId}
-            />
           </div>
         ))}
       </div>
-    </StoreProductSkusTableStyles>
+    </InventoryProductSkusStyles>
   );
 }
 
-const StoreProductSkusTableStyles = styled.div`
+const InventoryProductSkusStyles = styled.div`
   .skus {
     padding: 0.25rem;
     background-color: #fff;
@@ -278,7 +226,7 @@ const StoreProductSkusTableStyles = styled.div`
   .sku {
     padding: 0.75rem 2rem 0.75rem 1.5rem;
     display: grid;
-    grid-template-columns: 4rem 1.25fr 0.75fr 0.75fr 0.25fr 12rem 3rem 7rem;
+    grid-template-columns: 4rem 1.25fr 0.75fr 0.75fr 12rem 5rem;
     align-items: center;
     font-size: 0.875rem;
     font-weight: 500;
@@ -350,16 +298,6 @@ const StoreProductSkusTableStyles = styled.div`
     display: flex;
     justify-content: center;
     align-items: center;
-
-    .locked svg {
-      margin: 0 0 0 1rem;
-      position: absolute;
-      right: -1rem;
-      top: 0.3125rem;
-      height: 0.75rem;
-      width: 0.75rem;
-      color: #374151;
-    }
   }
 
   .toggle-button {
@@ -440,14 +378,6 @@ const StoreProductSkusTableStyles = styled.div`
         transform: translateX(0rem);
       }
     }
-  }
-
-  .text-center {
-    text-align: center;
-  }
-
-  .text-right {
-    text-align: right;
   }
 `;
 
