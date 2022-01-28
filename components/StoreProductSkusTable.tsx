@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import { ProductSku, StoreProduct } from '../interfaces';
 import StoreProductSkusTableMenu from './StoreProductSkusTableMenu';
+import { formatToMoney } from '../utils';
 
 type Props = {
   storeId: string | undefined;
@@ -109,6 +110,7 @@ export default function StoreProductSkusTable({
           <div>Product Sku ID</div>
           <div>Size</div>
           <div>Color</div>
+          <div>Price</div>
           <div className="text-center">Inventory</div>
           <div className="text-center">Status</div>
           <div className="text-right">Menu</div>
@@ -121,6 +123,7 @@ export default function StoreProductSkusTable({
               <Color hex={s.color.hex} />
               {s.color.label}
             </div>
+            <div>{formatToMoney(s.size.price)}</div>
             <div
               className={`text-center ${
                 s.inventory && s.inventory < 6 ? ' running-low' : ''
@@ -207,7 +210,7 @@ const StoreProductSkusTableStyles = styled.div`
   .sku {
     padding: 0.75rem 2rem;
     display: grid;
-    grid-template-columns: 1.25fr 0.75fr 0.75fr 12rem 3rem 7rem;
+    grid-template-columns: 1.25fr 0.75fr 0.75fr 0.25fr 12rem 3rem 7rem;
     align-items: center;
     font-size: 0.875rem;
     font-weight: 500;

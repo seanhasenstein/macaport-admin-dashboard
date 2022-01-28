@@ -81,9 +81,12 @@ export function formatPhoneNumber(input: string) {
     .join('');
 }
 
-export function formatHexColor(hex: string) {
-  const formattedHex = `#${hex.replace(/[^0-9A-Fa-f]/g, '').toLowerCase()}`;
-  return formattedHex;
+export function formatHexColors(colorsArray: InventoryColor[]) {
+  const colors = colorsArray.map(c => {
+    const formattedHex = `#${c.hex.replace(/[^0-9A-Fa-f]/g, '').toLowerCase()}`;
+    return { ...c, hex: formattedHex };
+  });
+  return colors;
 }
 
 export function formatToMoney(input: number, includeDecimal = false) {

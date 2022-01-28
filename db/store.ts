@@ -13,7 +13,7 @@ export async function getStoreById(db: Db, id: string) {
 
 export async function getStores(db: Db, filter: Record<string, unknown> = {}) {
   const result = await db
-    .collection('stores')
+    .collection<Store>('stores')
     .aggregate([
       {
         $match: { ...filter },

@@ -1,35 +1,25 @@
 import React from 'react';
 import { useRouter } from 'next/router';
-import { useQuery, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import { useSession } from '../../../hooks/useSession';
+import { InventoryProduct, InventorySize } from '../../../interfaces';
+import { createId, formatHexColors } from '../../../utils';
 import {
-  InventoryColor,
-  InventoryProduct,
-  InventorySize,
-  InventorySku,
-} from '../../../interfaces';
-import { createId } from '../../../utils';
+  updateInventoryProductSkus,
+  UpdateFormValues,
+} from '../../../utils/inventoryProduct';
 import BasicLayout from '../../../components/BasicLayout';
-
-type InitialValues = {
-  inventoryProductId: string;
-  name: string;
-  description: string;
-  tag: string;
-  details: string[];
-  sizes: InventorySize[];
-  colors: InventoryColor[];
-  skus?: InventorySku[];
-};
 
 export default function UpdateInventoryProduct() {
   const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [initialValues, setInitialValues] = React.useState<InitialValues>({
+  const [initialValues, setInitialValues] = React.useState<UpdateFormValues>({
+    _id: '',
     inventoryProductId: '',
+    merchandiseCode: '',
     name: '',
     description: '',
     tag: '',
@@ -66,12 +56,65 @@ export default function UpdateInventoryProduct() {
     }
   );
 
+  const updateInventoryProductMutation = useMutation(
+    async (values: UpdateFormValues) => {
+      const formattedColors = formatHexColors(values.colors);
+      const response = await fetch('/api/inventory-products/update-form', {
+        method: 'post',
+        body: JSON.stringify({ ...values, colors: formattedColors }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update the inventory product.');
+      }
+
+      const data = await response.json();
+      return data.inventoryProduct;
+    },
+    {
+      onMutate: values => {
+        queryClient.cancelQueries([
+          'inventory-products',
+          'inventory-product',
+          router.query.id,
+        ]);
+        const updatedInventoryProduct = {
+          ...inventoryProductQuery.data,
+          ...values,
+        };
+        queryClient.setQueryData(
+          ['inventory-products', 'inventory-product', router.query.id],
+          updatedInventoryProduct
+        );
+        return updatedInventoryProduct;
+      },
+      onError: () => {
+        queryClient.setQueryData(
+          ['inventory-products', 'inventory-product', router.query.id],
+          inventoryProductQuery.data
+        );
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries('inventory-products');
+        queryClient.invalidateQueries('stores');
+      },
+      onSuccess: (_data, variables) => {
+        router.push(`/inventory-products/${variables.inventoryProductId}`);
+      },
+    }
+  );
+
   React.useEffect(() => {
     if (inventoryProductQuery.data) {
       const ip = inventoryProductQuery.data;
 
       setInitialValues({
+        _id: ip._id,
         inventoryProductId: ip.inventoryProductId,
+        merchandiseCode: ip.merchandiseCode,
         name: ip.name,
         description: ip.description,
         tag: ip.tag,
@@ -83,17 +126,6 @@ export default function UpdateInventoryProduct() {
     }
   }, [inventoryProductQuery.data]);
 
-  // const updateProduct = useMutation(async () => {
-  // No extra steps updating: name, description, tag, details require
-  // When updating current sizes or colors:
-  // Need to update every storeProduct that uses this inventoryProduct (sizes, colors, and productSkus)
-  // When adding new sizes/colors:
-  // Need to create new inventoryProduct skus
-  // Need to add new sizes, colors, and skus to all storeProducts that use this inventoryProduct
-  // When deleteing sizes/colors
-  // Need to remove sizes, colors, and skus from all storeProducts that use this inventoryProduct
-  // });
-
   const handleAddClick = async (callback: () => void, selector: string) => {
     await callback();
     document.querySelector<HTMLInputElement>(selector)?.focus();
@@ -101,29 +133,25 @@ export default function UpdateInventoryProduct() {
 
   if (sessionLoading || !session) return <div />;
 
+  if (!inventoryProductQuery.data) {
+    return <div>Failed to get the inventory product.</div>;
+  }
+
   return (
     <BasicLayout title={`Update Inventory Product ${router.query.id}`}>
       <UpdateInventoryProductStyles>
         <Formik
           initialValues={initialValues}
           enableReinitialize={true}
-          onSubmit={async (values: InitialValues) => {
-            console.log(values);
-            // const colors = values.colors.map(color => {
-            //   const hex = `#${color.hex
-            //     .replace(/[^0-9A-Fa-f]/g, '')
-            //     .toLowerCase()}`;
-            //   return { ...color, hex };
-            // });
-
-            // TODO: change this to mutation
-            // const skus = createInventoryProductSkus(
-            //   values.sizes,
-            //   values.colors,
-            //   values.inventoryProductId
-            // );
-
-            // createInventoryProduct.mutate({ ...values, colors, skus });
+          onSubmit={async (values: UpdateFormValues) => {
+            const updatedSkus = updateInventoryProductSkus(
+              inventoryProductQuery.data,
+              values
+            );
+            updateInventoryProductMutation.mutate({
+              ...values,
+              skus: updatedSkus,
+            });
           }}
         >
           {({ values, isSubmitting }) => (
@@ -162,14 +190,27 @@ export default function UpdateInventoryProduct() {
                   <h3>Update Inventory Product</h3>
                   <p>
                     Updating the name, description, tag, or details will not
-                    cause any changes to the current store products that use
-                    this inventory product.
+                    cause any changes to current store products that use this
+                    inventory product.
                   </p>
-                  {/* <p>
-                    Adding,removing, or updating sizes or colors will update any
-                    store product that includes this inventory product.
-                  </p> */}
+                  <p>
+                    Updates to the merchandise code, sizes, or colors will cause
+                    updates to the store products that use this inventory
+                    product. Any new skus for store products will intially be
+                    set to 'inactive'. If size or colors were removed they will
+                    also be removed in the store products (size, color, and
+                    skus).
+                  </p>
                   <div className="section">
+                    <div className="item">
+                      <label htmlFor="name">Merchandise Code</label>
+                      <Field name="merchandiseCode" id="merchandiseCode" />
+                      <ErrorMessage
+                        name="merchandiseCode"
+                        component="div"
+                        className="validation-error"
+                      />
+                    </div>
                     <div className="item">
                       <label htmlFor="name">Inventory Product Name</label>
                       <Field name="name" id="name" />

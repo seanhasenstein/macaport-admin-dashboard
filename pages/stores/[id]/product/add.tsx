@@ -619,7 +619,7 @@ export default function AddProduct() {
                           render={() => (
                             <>
                               {values.sizes.length > 0 &&
-                                values.sizes.map((_size: Size, sizeIndex) => (
+                                values.sizes.map((size: Size, sizeIndex) => (
                                   <div key={sizeIndex} className="size-item">
                                     <div className="grid-col-2">
                                       <div className="item">
@@ -628,15 +628,12 @@ export default function AddProduct() {
                                         >
                                           Size label
                                         </label>
-                                        <Field
+                                        <input
+                                          type="text"
                                           name={`sizes.${sizeIndex}.label`}
                                           id={`sizes.${sizeIndex}.label`}
-                                          placeholder="S, M, L, XL, XXL, etc."
-                                        />
-                                        <ErrorMessage
-                                          name={`sizes.${sizeIndex}.label`}
-                                          component="div"
-                                          className="validation-error"
+                                          value={size.label}
+                                          readOnly
                                         />
                                       </div>
                                       <div className="item">
@@ -680,14 +677,12 @@ export default function AddProduct() {
                                           >
                                             Color label
                                           </label>
-                                          <Field
+                                          <input
+                                            type="text"
                                             name={`colors.${colorIndex}.label`}
                                             id={`colors.${colorIndex}.label`}
-                                          />
-                                          <ErrorMessage
-                                            name={`colors.${colorIndex}.label`}
-                                            component="div"
-                                            className="validation-error"
+                                            value={color.label}
+                                            readOnly
                                           />
                                         </div>
                                         <div className="item">
@@ -696,15 +691,12 @@ export default function AddProduct() {
                                           >
                                             Hex color value
                                           </label>
-                                          <Field
+                                          <input
+                                            type="text"
                                             name={`colors.${colorIndex}.hex`}
                                             id={`colors.${colorIndex}.hex`}
-                                            placeholder="i.e. #ffffff"
-                                          />
-                                          <ErrorMessage
-                                            name={`colors.${colorIndex}.hex`}
-                                            component="div"
-                                            className="validation-error"
+                                            value={color.hex}
+                                            readOnly
                                           />
                                         </div>
                                       </div>

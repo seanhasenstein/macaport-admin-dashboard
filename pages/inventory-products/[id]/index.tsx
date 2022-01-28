@@ -140,10 +140,6 @@ export default function InventoryProduct() {
     );
   };
 
-  const handleDeleteProductMenuClick = () => {
-    console.log('TODO...');
-  };
-
   if (sessionLoading || !session) return <div />;
 
   return (
@@ -223,9 +219,8 @@ export default function InventoryProduct() {
                     </svg>
                     Update inventory
                   </button>
-                  {/* <Link href={`/inventory-products/${router.query.id}/update`}> */}
-                  <Link href={`#`}>
-                    <a className="menu-link disabled">
+                  <Link href={`/inventory-products/${router.query.id}/update`}>
+                    <a className="menu-link">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
@@ -248,26 +243,6 @@ export default function InventoryProduct() {
                       Update product
                     </a>
                   </Link>
-                  <button
-                    type="button"
-                    onClick={handleDeleteProductMenuClick}
-                    className="delete-button disabled"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                    Delete product
-                  </button>
                 </div>
               </div>
 
@@ -411,7 +386,7 @@ export default function InventoryProduct() {
                           <div>{s.size.label}</div>
                           <div className="color">
                             <Color hex={s.color.hex} />
-                            {s.color.label}
+                            {s.color.label} - {s.color.hex}
                           </div>
                           <div
                             className={`text-center${

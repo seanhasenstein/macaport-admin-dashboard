@@ -44,8 +44,9 @@ export async function createInventoryProduct(
 export async function updateInventoryProduct(
   db: Db,
   id: string,
-  updates: InventoryProduct
+  data: InventoryProduct
 ) {
+  const { _id, ...updates } = data;
   const result = await db
     .collection('inventoryProducts')
     .findOneAndUpdate(
