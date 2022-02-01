@@ -77,12 +77,8 @@ export default function CreateStore() {
       onSettled: () => {
         queryClient.invalidateQueries(['stores']);
       },
-      onSuccess: (data, variables) => {
-        const route =
-          variables.redirectTo === 'add_product'
-            ? `/stores/${data._id}/product/add?createStore=true`
-            : `/stores/${data._id}?createStore=true`;
-        router.push(route);
+      onSuccess: data => {
+        router.push(`/stores/${data._id}?createStore=true`);
       },
     }
   );
@@ -124,18 +120,6 @@ export default function CreateStore() {
                   <h2>Create a Store</h2>
                 </div>
                 <div className="save-buttons">
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={() =>
-                      createStoreMutation.mutate({
-                        ...values,
-                        redirectTo: 'add_product',
-                      })
-                    }
-                  >
-                    Create and add products
-                  </button>
                   <button
                     type="button"
                     className="primary-button"
@@ -212,6 +196,11 @@ const CreateStoreStyles = styled.div`
     .secondary-button,
     .primary-button {
       padding: 0.5rem 1.125rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
       font-weight: 500;
       border-radius: 0.3125rem;
       cursor: pointer;
@@ -228,26 +217,42 @@ const CreateStoreStyles = styled.div`
     }
 
     .secondary-button {
-      background-color: #fff;
+      background-color: transparent;
+      color: #1f2937;
       border: 1px solid #d1d5db;
-      color: #374151;
-      box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px 0px,
-        rgba(0, 0, 0, 0.02) 0px 1px 1px 0px;
+      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 
       &:hover {
-        background-color: #f9fafb;
-        color: #111827;
+        color: #000;
+        border-color: #c6cbd2;
+        box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.1);
+
+        svg {
+          color: #6b7280;
+        }
+      }
+
+      svg {
+        height: 1rem;
+        width: 1rem;
+        color: #9ca3af;
       }
     }
 
     .primary-button {
-      background-color: #1c5eb9;
-      color: #fff;
+      background-color: #1f2937;
+      color: #f9fafb;
       border: 1px solid transparent;
 
+      svg {
+        margin: 0 0.25rem 0 0;
+        height: 0.875rem;
+        width: 0.875rem;
+        color: #4b5563;
+      }
+
       &:hover {
-        background-color: #1955a8;
+        background-color: #263244;
       }
     }
   }

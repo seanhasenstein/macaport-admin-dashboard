@@ -136,7 +136,7 @@ export default function InventoryProductSkus({
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
             />
           </svg>
           Update inventory
@@ -266,7 +266,7 @@ const InventoryProductSkusStyles = styled.div`
     align-items: center;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #1955a8;
+    color: #1f2937;
     line-height: 1;
     background-color: transparent;
     border: 1px solid #d1d5db;
@@ -278,10 +278,11 @@ const InventoryProductSkusStyles = styled.div`
       margin: 0 0.5rem 0 0;
       height: 0.875rem;
       width: 0.875rem;
+      color: #4b5563;
     }
 
     &:hover {
-      color: #164c97;
+      color: #000;
       border-color: #c6cbd2;
       box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.1);
     }

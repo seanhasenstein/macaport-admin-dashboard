@@ -420,24 +420,22 @@ const StoreFormStyles = styled.div`
 
   .add-group-button {
     margin: 1rem 0 0;
-    padding: 0.5rem 0.75rem;
+    padding: 0.625rem 1rem;
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    color: #475569;
+    color: #f9fafb;
     font-size: 0.875rem;
     font-weight: 500;
     text-align: center;
     line-height: 1;
-    background-color: #e2e8f0;
-    border: 1px solid #cbd5e1;
+    background-color: #1f2937;
+    border: none;
     border-radius: 0.3125rem;
-    box-shadow: inset 0 1px 1px #fff, 0 1px 2px 0 rgb(0 0 0 / 0.05);
     cursor: pointer;
 
     &:hover {
-      border-color: #bfcbda;
-      box-shadow: inset 0 1px 1px #fff, 0 1px 2px 0 rgb(0 0 0 / 0.1);
+      background-color: #263244;
     }
 
     &:focus {

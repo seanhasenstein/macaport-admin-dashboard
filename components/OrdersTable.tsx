@@ -141,8 +141,6 @@ export default function OrdersTable({ store, orders }: Props) {
 }
 
 const OrdersTableStyles = styled.div`
-  margin: 0 0 5rem;
-
   .buttons {
     margin: 0 0 1.125rem;
     display: inline-flex;

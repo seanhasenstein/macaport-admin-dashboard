@@ -3,22 +3,22 @@ import { useRouter } from 'next/router';
 import { useMutation, useQueryClient } from 'react-query';
 import Link from 'next/link';
 import styled from 'styled-components';
-import { StoreProduct } from '../interfaces';
+import { Store, StoreProduct } from '../interfaces';
 import useDragNDrop from '../hooks/useDragNDrop';
 import StoreProductMenu from './StoreProductMenu';
 
 type Props = {
   products: StoreProduct[];
-  storeId: string;
+  store: Store;
 };
 
-export default function StoreProducts({ products, storeId }: Props) {
+export default function StoreProducts({ products, store }: Props) {
   const router = useRouter();
   const queryClient = useQueryClient();
 
   const updateProductMutation = useMutation(
     async (updatedProducts: StoreProduct[]) => {
-      const response = await fetch(`/api/stores/update?id=${storeId}`, {
+      const response = await fetch(`/api/stores/update?id=${store._id}`, {
         method: 'post',
         body: JSON.stringify({ products: updatedProducts }),
         headers: {
@@ -32,6 +32,16 @@ export default function StoreProducts({ products, storeId }: Props) {
       return data.store;
     },
     {
+      onMutate: async updatedProducts => {
+        await queryClient.cancelQueries(['stores']);
+        queryClient.setQueryData(['stores', 'store', store._id], {
+          ...store,
+          products: updatedProducts,
+        });
+      },
+      onError: () => {
+        queryClient.setQueryData(['stores', 'store', store._id], store);
+      },
       onSuccess: () => {
         queryClient.invalidateQueries('stores');
       },
@@ -61,68 +71,66 @@ export default function StoreProducts({ products, storeId }: Props) {
           </a>
         </Link>
       </div>
-      {products?.length > 0 && (
-        <div className="products">
-          {dnd.list.map((product, index) => (
-            <div
-              key={product.id}
-              draggable={dnd.dragging}
-              onDragStart={e => dnd.handleDragStart(e, index)}
-              onDragEnter={
-                dnd.dragging ? e => dnd.handleDragEnter(e, index) : undefined
-              }
-              onDragOver={e => e.preventDefault()}
-              onDrop={dnd.handleDrop}
-              className={dnd.dragging ? dnd.getStyles(index) : 'product'}
+      <div className="products">
+        {dnd.list.map((product, index) => (
+          <div
+            key={product.id}
+            draggable={dnd.dragging}
+            onDragStart={e => dnd.handleDragStart(e, index)}
+            onDragEnter={
+              dnd.dragging ? e => dnd.handleDragEnter(e, index) : undefined
+            }
+            onDragOver={e => e.preventDefault()}
+            onDrop={dnd.handleDrop}
+            className={dnd.dragging ? dnd.getStyles(index) : 'product'}
+          >
+            <button
+              type="button"
+              onMouseDown={dnd.handleMouseDown}
+              onMouseUp={dnd.handleMouseUp}
+              className="drag-button"
             >
-              <button
-                type="button"
-                onMouseDown={dnd.handleMouseDown}
-                onMouseUp={dnd.handleMouseUp}
-                className="drag-button"
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
-                  />
-                </svg>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
-                  />
-                </svg>
-              </button>
-              <Link href={`/stores/${storeId}/product?pid=${product.id}`}>
-                <a className="product-name">
-                  {product.name} ({product.merchandiseCode})
-                </a>
-              </Link>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
+                />
+              </svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
+                />
+              </svg>
+            </button>
+            <Link href={`/stores/${store._id}/product?pid=${product.id}`}>
+              <a className="product-name">
+                {product.name} ({product.merchandiseCode})
+              </a>
+            </Link>
 
-              <StoreProductMenu
-                storeId={storeId}
-                productId={product.id}
-                inventoryProductId={product.inventoryProductId}
-              />
-            </div>
-          ))}
-        </div>
-      )}
+            <StoreProductMenu
+              storeId={store._id}
+              productId={product.id}
+              inventoryProductId={product.inventoryProductId}
+            />
+          </div>
+        ))}
+      </div>
     </StoreProductsStyles>
   );
 }
@@ -148,7 +156,7 @@ const StoreProductsStyles = styled.div`
     align-items: center;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #1955a8;
+    color: #1f2937;
     line-height: 1;
     border: 1px solid #d1d5db;
     border-radius: 0.3125rem;
@@ -159,10 +167,11 @@ const StoreProductsStyles = styled.div`
       margin: 0 0.5rem 0 0;
       height: 0.875rem;
       width: 0.875rem;
+      color: #4b5563;
     }
 
     &:hover {
-      color: #164c97;
+      color: #000;
       border-color: #c6cbd2;
       box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.1);
     }

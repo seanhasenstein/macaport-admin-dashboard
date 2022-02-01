@@ -43,6 +43,7 @@ export default function OrderStatusButton({ store, order }: Props) {
 
 const OrderStatusButtonStyles = styled.button`
   padding: 0.25rem 0.5rem;
+  min-width: 7rem;
   font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;

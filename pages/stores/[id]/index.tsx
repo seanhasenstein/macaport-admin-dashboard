@@ -572,7 +572,7 @@ export default function Store() {
                   <div className="store-products" id="products">
                     <StoreProducts
                       products={storeQuery.data.products}
-                      storeId={storeQuery.data._id}
+                      store={storeQuery.data}
                     />
                     {(!storeQuery.data.products ||
                       storeQuery.data.products.length < 1) && (

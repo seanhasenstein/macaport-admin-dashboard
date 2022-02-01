@@ -505,16 +505,15 @@ const CreateInventoryProductStyles = styled.div`
   }
 
   .secondary-button {
-    background-color: #fff;
+    background-color: transparent;
+    color: #1f2937;
     border: 1px solid #d1d5db;
-    color: #374151;
-    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-      rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px 0px,
-      rgba(0, 0, 0, 0.02) 0px 1px 1px 0px;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 
     &:hover {
-      background-color: #f9fafb;
-      color: #111827;
+      color: #000;
+      border-color: #c6cbd2;
+      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.1);
 
       svg {
         color: #6b7280;
@@ -529,12 +528,19 @@ const CreateInventoryProductStyles = styled.div`
   }
 
   .primary-button {
-    background-color: #1c5eb9;
-    color: #fff;
+    background-color: #1f2937;
+    color: #f9fafb;
     border: 1px solid transparent;
 
+    svg {
+      margin: 0 0.25rem 0 0;
+      height: 0.875rem;
+      width: 0.875rem;
+      color: #4b5563;
+    }
+
     &:hover {
-      background-color: #1955a8;
+      background-color: #263244;
     }
   }
 

@@ -1,17 +1,19 @@
 import React from 'react';
 
 export default function useDragNDrop<ListType>(
-  data: ListType[],
+  data: ListType[] | undefined,
   className: string,
   callback: (input: ListType[]) => void
 ) {
-  const [list, setList] = React.useState(data);
+  const [list, setList] = React.useState<ListType[]>([]);
   const [dragging, setDragging] = React.useState(false);
   const dragItem = React.useRef<number | null>();
   const dragItemNode = React.useRef<any | null>();
 
   React.useEffect(() => {
-    setList(data);
+    if (data) {
+      setList(data);
+    }
   }, [data]);
 
   const handleDragEnd = () => {

@@ -519,40 +519,43 @@ export default function Order() {
                         </tbody>
                       </table>
                     </div>
+                  </div>
 
-                    <div className="order-summary-row">
-                      <div className="order-summary">
-                        <div className="summary-item">
-                          <div className="summary-label">Subtotal</div>
-                          <div className="summary-value">
+                  <div className="order-summary">
+                    <h3 className="section-title">Order summary</h3>
+                    <div className="detail-grid">
+                      <div>
+                        <div className="detail-item">
+                          <div className="label">Subtotal</div>
+                          <div className="value">
                             {formatToMoney(data.order.summary.subtotal, true)}
                           </div>
                         </div>
 
-                        <div className="summary-item">
-                          <div className="summary-label">Sales Tax</div>
-                          <div className="summary-value">
+                        <div className="detail-item">
+                          <div className="label">Sales Tax</div>
+                          <div className="value">
                             {formatToMoney(data.order.summary.salesTax, true)}
                           </div>
                         </div>
 
-                        <div className="summary-item">
-                          <div className="summary-label">Shipping</div>
-                          <div className="summary-value">
+                        <div className="detail-item">
+                          <div className="label">Shipping</div>
+                          <div className="value">
                             {formatToMoney(data.order.summary.shipping, true)}
                           </div>
                         </div>
 
-                        <div className="summary-item total">
-                          <div className="summary-label">Total</div>
-                          <div className="summary-value">
+                        <div className="detail-item total">
+                          <div className="label">Total</div>
+                          <div className="value">
                             {formatToMoney(data.order.summary.total, true)}
                           </div>
                         </div>
 
-                        <div className="summary-item">
-                          <div className="summary-label">Stripe Fee</div>
-                          <div className="summary-value">
+                        <div className="detail-item">
+                          <div className="label">Stripe Fee</div>
+                          <div className="value">
                             -
                             {formatToMoney(
                               calculateStripeFee(data.order.summary.total),
@@ -561,9 +564,9 @@ export default function Order() {
                           </div>
                         </div>
 
-                        <div className="summary-item">
-                          <div className="summary-label">Net</div>
-                          <div className="summary-value">
+                        <div className="detail-item">
+                          <div className="label">Net</div>
+                          <div className="value">
                             {formatToMoney(
                               data.order.summary.total -
                                 calculateStripeFee(data.order.summary.total),
@@ -855,12 +858,12 @@ const OrderStyles = styled.div`
     }
   }
 
-  .order-items {
+  .order-items,
+  .order-summary {
     margin: 3.5rem 0 0;
   }
 
   .table-container {
-    margin: 0 0 2.5rem;
     width: 100%;
     background-color: #fff;
     border: 1px solid #e5e7eb;
@@ -957,50 +960,6 @@ const OrderStyles = styled.div`
         color: #1c5eb9;
       }
     }
-  }
-
-  .order-summary-row {
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  .order-summary {
-    margin: 0 0 3rem;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .summary-item {
-    padding: 0.3125rem 0;
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.9375rem;
-    font-weight: 500;
-
-    &.total {
-      margin-bottom: 0.3125rem;
-      padding-bottom: 0.75rem;
-      font-weight: 600;
-      border-bottom: 1px solid #dcdfe4;
-
-      .summary-label {
-        color: #111827;
-      }
-
-      .summary-value {
-        color: #059669;
-      }
-    }
-  }
-
-  .summary-label {
-    width: 14rem;
-    color: #4b5563;
-  }
-
-  .summary-value {
-    text-align: right;
-    color: #111827;
   }
 
   @media print {

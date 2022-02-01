@@ -161,6 +161,8 @@ export default function Notes({
 }
 
 const NotesStyles = styled.div`
+  margin: 4rem 0 0;
+
   .notes-header {
     margin: 0 0 2rem;
     padding: 0 0 1rem;
@@ -352,12 +354,12 @@ const NotesStyles = styled.div`
   }
 
   .save-button {
-    background-color: #1c5eb9;
+    background-color: #1f2937;
     color: #fff;
     border: 1px solid transparent;
 
     &:hover {
-      background-color: #1955a8;
+      background-color: #263244;
     }
 
     &:focus {

@@ -200,7 +200,7 @@ const StoresTableStyles = styled.div`
     align-items: center;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #1955a8;
+    color: #1f2937;
     line-height: 1;
     border: 1px solid #d1d5db;
     border-radius: 0.3125rem;
@@ -211,10 +211,11 @@ const StoresTableStyles = styled.div`
       margin: 0 0.5rem 0 0;
       height: 0.875rem;
       width: 0.875rem;
+      color: #4b5563;
     }
 
     &:hover {
-      color: #164c97;
+      color: #000;
       border-color: #c6cbd2;
       box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.1);
     }
