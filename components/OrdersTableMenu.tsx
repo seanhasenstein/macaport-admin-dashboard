@@ -1,77 +1,20 @@
 import React from 'react';
 import Link from 'next/link';
-import { useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
-import { Order, OrderStatus, Store } from '../interfaces';
+import { Order, Store } from '../interfaces';
 import useOutsideClick from '../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../hooks/useEscapeKeydownClose';
 
 type Props = {
   store: Store;
   order: Order;
-  orderStatus: OrderStatus;
 };
 
-export default function OrdersTableMenu({ store, order, orderStatus }: Props) {
+export default function OrdersTableMenu({ store, order }: Props) {
   const menuRef = React.useRef<HTMLDivElement>(null);
-  const queryClient = useQueryClient();
   const [showMenu, setShowMenu] = React.useState(false);
   useOutsideClick(showMenu, setShowMenu, menuRef);
   useEscapeKeydownClose(showMenu, setShowMenu);
-
-  const updateOrderStatusMutation = useMutation(
-    async (newStatus: OrderStatus) => {
-      const response = await fetch(
-        `/api/orders/update/status?sid=${store._id}&oid=${order.orderId}`,
-        {
-          method: 'post',
-          body: JSON.stringify({ status: newStatus }),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to update the order status.');
-      }
-
-      const data = await response.json();
-      return data.store;
-    },
-    {
-      onMutate: async newStatus => {
-        await queryClient.cancelQueries([
-          'stores',
-          'store',
-          'order',
-          order.orderId,
-        ]);
-        const updatedOrder = { ...order, orderStatus: newStatus };
-        const updatedOrders = store.orders.map(o => {
-          if (o.orderId === order.orderId) {
-            return updatedOrder;
-          }
-          return o;
-        });
-        const updatedStore = { ...store, orders: updatedOrders };
-        queryClient.setQueryData(['stores', 'store', store._id], updatedStore);
-        return { previousStatus: order.orderStatus, updatedStatus: newStatus };
-      },
-      onError: () => {
-        // TODO: trigger a notification
-        queryClient.setQueryData(['stores', 'store', store._id], store);
-      },
-      onSettled: () => {
-        queryClient.invalidateQueries(['stores']);
-      },
-    }
-  );
-
-  const handleStatusChange = (newStatus: OrderStatus) => {
-    updateOrderStatusMutation.mutate(newStatus);
-    setShowMenu(false);
-  };
 
   return (
     <OrdersTableMenuStyles>
@@ -101,80 +44,12 @@ export default function OrdersTableMenu({ store, order, orderStatus }: Props) {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            View Order
+            View order
           </a>
         </Link>
-        <Link href={`/orders/update?id=${order.orderId}&sid=${store._id}`}>
-          <a className="edit-link">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-              />
-            </svg>
-            Edit Order
-          </a>
-        </Link>
-        <div className="order-status-buttons">
-          <label
-            htmlFor={`unfulfilled-${order.orderId}`}
-            className={orderStatus === 'Unfulfilled' ? 'unfulfilled' : ''}
-          >
-            <input
-              type="radio"
-              name={`${order.orderId}`}
-              id={`unfulfilled-${order.orderId}`}
-              value="Unfulfilled"
-              checked={orderStatus === 'Unfulfilled'}
-              onChange={() => handleStatusChange('Unfulfilled')}
-            />
-            Unfulfilled
-          </label>
-          <label
-            htmlFor={`fulfilled-${order.orderId}`}
-            className={orderStatus === 'Fulfilled' ? 'fulfilled' : ''}
-          >
-            <input
-              type="radio"
-              name={`${order.orderId}`}
-              id={`fulfilled-${order.orderId}`}
-              value="Fulfilled"
-              checked={orderStatus === 'Fulfilled'}
-              onChange={() => handleStatusChange('Fulfilled')}
-            />
-            Fulfilled
-          </label>
-          <label
-            htmlFor={`completed-${order.orderId}`}
-            className={orderStatus === 'Completed' ? 'completed' : ''}
-          >
-            <input
-              type="radio"
-              name={`${order.orderId}`}
-              id={`completed-${order.orderId}`}
-              value="Completed"
-              checked={orderStatus === 'Completed'}
-              onChange={() => handleStatusChange('Completed')}
-            />
-            Completed
-          </label>
-        </div>
       </div>
     </OrdersTableMenuStyles>
   );
@@ -212,7 +87,7 @@ const OrdersTableMenuStyles = styled.div`
     position: absolute;
     right: -0.5rem;
     top: 1.625rem;
-    width: 11rem;
+    white-space: nowrap;
     display: none;
     flex-direction: column;
     align-items: flex-start;
@@ -230,7 +105,7 @@ const OrdersTableMenuStyles = styled.div`
 
   .view-link,
   .edit-link {
-    padding: 0.75rem 2rem 0.75rem 0;
+    padding: 0.75rem 1.25rem 0.75rem 0;
     width: 100%;
     display: flex;
     align-items: center;
@@ -256,83 +131,6 @@ const OrdersTableMenuStyles = styled.div`
       height: 1rem;
       width: 1rem;
       color: #9ca3af;
-    }
-  }
-
-  .order-status-buttons {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-
-    label {
-      margin: 0;
-      padding: 0.75rem 2rem 0.75rem 0;
-      display: flex;
-      align-items: center;
-      gap: 0.5625rem;
-      font-size: 0.875rem;
-      font-weight: 400;
-      color: #1f2937;
-      line-height: 1;
-      border-bottom: 1px solid #e5e7eb;
-      cursor: pointer;
-
-      &.unfulfilled,
-      &:hover.unfulfilled {
-        color: #7f1d1d;
-        font-weight: 500;
-        z-index: 100;
-
-        input {
-          color: #dc2626;
-
-          &:focus-visible {
-            box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
-              #dc2626 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
-          }
-        }
-      }
-
-      &.fulfilled,
-      &:hover.fulfilled {
-        color: #713f12;
-        font-weight: 500;
-        z-index: 100;
-
-        input {
-          color: #eab308;
-
-          &:focus-visible {
-            box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
-              #eab308 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
-          }
-        }
-      }
-
-      &.completed,
-      &:hover.completed {
-        color: #064e3b;
-        font-weight: 500;
-        z-index: 100;
-
-        input {
-          color: #10b981;
-
-          &:focus-visible {
-            box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
-              #10b981 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
-          }
-        }
-      }
-
-      &:last-of-type {
-        border-bottom: none;
-      }
-    }
-
-    input[type='radio'] {
-      height: 0.875rem;
-      width: 0.875rem;
     }
   }
 `;

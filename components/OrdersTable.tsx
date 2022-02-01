@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { calculateTotalItems, formatToMoney } from '../utils';
 import { Order, Store } from '../interfaces';
 import OrdersTableMenu from './OrdersTableMenu';
+import OrderStatusButton from './OrderStatusButton';
 
 type OrderViewOptions = 'All' | 'Unfulfilled' | 'Fulfilled' | 'Completed';
 
@@ -120,27 +121,11 @@ export default function OrdersTable({ store, orders }: Props) {
                         <td className="text-right">
                           {formatToMoney(o.summary.total, true)}
                         </td>
-                        <td className="order-status text-center">
-                          <span
-                            className={
-                              o.orderStatus === 'Completed'
-                                ? 'completed'
-                                : o.orderStatus === 'Fulfilled'
-                                ? 'fulfilled'
-                                : o.orderStatus === 'Unfulfilled'
-                                ? 'unfulfilled'
-                                : ''
-                            }
-                          >
-                            {o.orderStatus}
-                          </span>
+                        <td className="text-center">
+                          <OrderStatusButton store={store} order={o} />
                         </td>
                         <td className="order-actions">
-                          <OrdersTableMenu
-                            store={store}
-                            order={o}
-                            orderStatus={o.orderStatus}
-                          />
+                          <OrdersTableMenu store={store} order={o} />
                         </td>
                       </tr>
                     ))}
@@ -298,36 +283,10 @@ const OrdersTableStyles = styled.div`
   }
 
   .order-id {
-    font-size: 0.75rem;
-    color: #9ea4af;
-  }
-
-  .order-status {
-    span {
-      padding: 0.25rem 0.5rem;
-      font-size: 0.6875rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #374151;
-      border-radius: 0.3125rem;
-      background: #e5e7eb;
-
-      &.unfulfilled {
-        background-color: #fee2e2;
-        color: #991b1b;
-      }
-
-      &.fulfilled {
-        background-color: #fef3c7;
-        color: #92400e;
-      }
-
-      &.completed {
-        background-color: #d1fae5;
-        color: #065f46;
-      }
-    }
+    font-family: 'Dank Mono', 'Menlo', monospace;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #6b7280;
   }
 
   .order-actions {

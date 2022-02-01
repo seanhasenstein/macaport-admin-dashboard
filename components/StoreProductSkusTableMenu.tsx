@@ -53,10 +53,10 @@ export default function StoreProductSkusTableMenu({
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            View Inventory Product
+            View inventory product
           </a>
         </Link>
       </div>
@@ -95,7 +95,7 @@ const StoreProductSkusTableMenuStyles = styled.div`
     position: absolute;
     top: 1.25rem;
     right: 0;
-    width: 13.5rem;
+    white-space: nowrap;
     display: none;
     flex-direction: column;
     align-items: flex-start;
@@ -112,7 +112,7 @@ const StoreProductSkusTableMenuStyles = styled.div`
   }
 
   .link {
-    padding: 0.75rem 0 0.75rem;
+    padding: 0.75rem 1.25rem 0.75rem 0;
     width: 100%;
     display: flex;
     align-items: center;

@@ -180,7 +180,7 @@ const InventoryModalStyles = styled.div`
   z-index: 9999;
 
   .modal {
-    position: relative;
+    position: fixed;
     margin: 4rem 0 0;
     padding: 2rem 2.5rem 1.5rem;
     max-width: 40rem;

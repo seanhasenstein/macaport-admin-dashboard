@@ -6,10 +6,16 @@ import { InventoryProduct, InventorySku } from '../interfaces';
 import useDragNDrop from '../hooks/useDragNDrop';
 
 type Props = {
+  productName: string;
   inventoryProduct: InventoryProduct;
+  setShowInventoryModal: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-export default function InventoryProductSkus({ inventoryProduct }: Props) {
+export default function InventoryProductSkus({
+  productName,
+  inventoryProduct,
+  setShowInventoryModal,
+}: Props) {
   const queryClient = useQueryClient();
   const router = useRouter();
 
@@ -113,7 +119,29 @@ export default function InventoryProductSkus({ inventoryProduct }: Props) {
 
   return (
     <InventoryProductSkusStyles>
-      <h3>Inventory Product Skus</h3>
+      <div className="header-row">
+        <h3>Inventory product skus</h3>
+        <button
+          type="button"
+          onClick={() => setShowInventoryModal(true)}
+          className="update-inventory-button"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+            />
+          </svg>
+          Update inventory
+        </button>
+      </div>
       <div className="skus">
         <div className="sku header">
           <div />
@@ -168,11 +196,14 @@ export default function InventoryProductSkus({ inventoryProduct }: Props) {
                 />
               </svg>
             </button>
-            <div className="sku-id">{s.id}</div>
+            <div>
+              <div className="product-name">{productName}</div>
+              <div className="sku-id">{s.id}</div>
+            </div>
             <div>{s.size.label}</div>
             <div className="color">
               <Color hex={s.color.hex} />
-              {s.color.label} - {s.color.hex}
+              {s.color.label}
             </div>
             <div
               className={`text-center${s.inventory < 6 ? ' running-low' : ''}`}
@@ -216,11 +247,63 @@ export default function InventoryProductSkus({ inventoryProduct }: Props) {
 }
 
 const InventoryProductSkusStyles = styled.div`
+  margin: 3.5rem 0 0;
+
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+
+    h3 {
+      margin: 0;
+    }
+  }
+
+  .update-inventory-button {
+    padding: 0.6875rem 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1955a8;
+    line-height: 1;
+    background-color: transparent;
+    border: 1px solid #d1d5db;
+    border-radius: 0.3125rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    cursor: pointer;
+
+    svg {
+      margin: 0 0.5rem 0 0;
+      height: 0.875rem;
+      width: 0.875rem;
+    }
+
+    &:hover {
+      color: #164c97;
+      border-color: #c6cbd2;
+      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.1);
+    }
+
+    &:focus {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+
+    &:focus-visible {
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+        rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+    }
+  }
+
   .skus {
-    padding: 0.25rem;
+    margin: 2rem 0 0;
     background-color: #fff;
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    border-radius: 0.25rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
+      rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
   }
 
   .sku {
@@ -234,9 +317,8 @@ const InventoryProductSkusStyles = styled.div`
     border-bottom: 1px solid #e5e7eb;
 
     &.header {
-      padding: 0.75rem 2rem;
+      padding: 0.875rem 2rem;
       background-color: #f3f4f6;
-      border-top: 1px solid #e5e7eb;
       font-size: 0.75rem;
       font-weight: 600;
       color: #4b5563;
@@ -278,10 +360,18 @@ const InventoryProductSkusStyles = styled.div`
     }
   }
 
+  .product-name {
+    margin: 0 0 0.1875rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: #000;
+  }
+
   .sku-id {
     font-family: 'Dank Mono', 'Menlo', monospace;
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
     font-weight: 700;
+    color: #6b7280;
   }
 
   .color {
@@ -386,10 +476,10 @@ function Color({ hex }: { hex: string }) {
 }
 
 const ColorStyle = styled.span<{ hex: string }>`
-  margin: 0 0.875rem 0 0;
+  margin: 0 0.9375rem 0 0;
   display: flex;
-  height: 0.75rem;
-  width: 0.75rem;
+  height: 0.875rem;
+  width: 0.875rem;
   border-radius: 9999px;
   background-color: ${props => props.hex};
   box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,

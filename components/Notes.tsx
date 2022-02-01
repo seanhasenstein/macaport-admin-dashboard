@@ -81,28 +81,13 @@ export default function Notes({
   return (
     <NotesStyles>
       <div className="notes-header">
-        <h3>{label} Notes</h3>
+        <h3>{label} notes</h3>
       </div>
       <div>
         {notes?.length > 0 ? (
           <div className="notes">
             {notes.map(n => (
               <div key={n.id} className="note">
-                <div className="icon">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                </div>
                 {showNoteTextArea === n.id ? (
                   <div className="edit-note">
                     <textarea
@@ -176,12 +161,13 @@ export default function Notes({
 }
 
 const NotesStyles = styled.div`
-  max-width: 36rem;
-
   .notes-header {
+    margin: 0 0 2rem;
+    padding: 0 0 1rem;
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
+    border-bottom: 1px solid #dcdfe4;
 
     h3 {
       margin: 0;
@@ -283,6 +269,7 @@ const NotesStyles = styled.div`
 
   .add-note-section {
     padding: 1rem 0;
+    max-width: 36rem;
     width: 100%;
 
     &.new-add {
@@ -293,56 +280,36 @@ const NotesStyles = styled.div`
       padding: 0.75rem 1.125rem;
       width: 100%;
       min-height: 7rem;
-      border-radius: 0.25rem;
+      border-radius: 0.375rem;
     }
   }
 
   .notes {
     margin: 1.5rem 0 0;
-    background-color: #fff;
-    border-radius: 0.25rem;
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    max-width: 36rem;
+    width: 100%;
   }
 
   .note {
+    margin: 0 0 1.125rem;
     padding: 1rem 1.5rem;
     position: relative;
     display: flex;
-    border-bottom: 1px solid #e5e7eb;
-
-    &:last-of-type {
-      border-bottom: none;
-    }
+    border: 1px solid #dcdfe4;
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 
     .text {
       margin: 0 0 0.1875rem;
       font-size: 0.9375rem;
       font-weight: 500;
-      color: #374151;
+      color: #1f2937;
     }
 
     .date {
-      font-size: 0.75rem;
+      font-size: 0.8125rem;
       font-weight: 500;
       color: #9ca3af;
-    }
-
-    .icon {
-      margin: 0 1rem 0 0;
-      padding: 0.3125rem;
-      height: 1.5rem;
-      width: 1.5rem;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: #e2e8f0;
-      border: 1px solid #cbd5e1;
-      border-radius: 9999px;
-      box-shadow: inset 0 1px 1px #fff;
-
-      svg {
-        color: #6b7280;
-      }
     }
 
     .edit-note {
@@ -405,7 +372,6 @@ const NotesStyles = styled.div`
   }
 
   .empty-notes {
-    padding: 2rem 0 0;
     font-size: 1rem;
     font-weight: 500;
     color: #6b7280;

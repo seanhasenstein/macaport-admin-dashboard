@@ -169,9 +169,7 @@ export default function AddProduct() {
         queryClient.invalidateQueries(['stores']);
       },
       onSuccess: () => {
-        router.push(
-          `/stores/${router.query.id}?active=products&addProduct=true`
-        );
+        router.push(`/stores/${router.query.id}?addProduct=true`);
       },
     }
   );

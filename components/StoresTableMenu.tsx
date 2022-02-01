@@ -45,10 +45,10 @@ export default function StoresTableMenu({ storeId }: Props) {
                 d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            View Store
+            View store
           </a>
         </Link>
-        <Link href={`/stores/${storeId}?active=orders`}>
+        <Link href={`/stores/${storeId}#orders`}>
           <a className="link">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -63,7 +63,7 @@ export default function StoresTableMenu({ storeId }: Props) {
                 d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
               />
             </svg>
-            Store Orders
+            Store orders
           </a>
         </Link>
         <Link href={`/stores/update?id=${storeId}`}>
@@ -87,7 +87,7 @@ export default function StoresTableMenu({ storeId }: Props) {
                 d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
               />
             </svg>
-            Edit Store
+            Edit store
           </a>
         </Link>
         <a
@@ -109,7 +109,7 @@ export default function StoresTableMenu({ storeId }: Props) {
               d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
             />
           </svg>
-          Go to Store
+          Go to store
         </a>
       </div>
     </StoresTableMenuStyles>
@@ -147,7 +147,7 @@ const StoresTableMenuStyles = styled.div`
     position: absolute;
     right: 1.5rem;
     top: 3rem;
-    width: 10rem;
+    white-space: nowrap;
     display: none;
     flex-direction: column;
     align-items: flex-start;
@@ -164,7 +164,7 @@ const StoresTableMenuStyles = styled.div`
   }
 
   .link {
-    padding: 0.75rem 0 0.75rem 0;
+    padding: 0.75rem 1.25rem 0.75rem 0;
     width: 100%;
     display: flex;
     align-items: center;

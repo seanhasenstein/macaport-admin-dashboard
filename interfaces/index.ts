@@ -152,6 +152,7 @@ export interface Store {
 
 export interface OrderItem {
   sku: ProductSku;
+  merchandiseCode: string;
   name: string;
   image: string;
   price: number;

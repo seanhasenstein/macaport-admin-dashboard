@@ -4,34 +4,33 @@ import Link from 'next/link';
 import { useQueryClient, useQuery, useMutation } from 'react-query';
 import styled from 'styled-components';
 import { format } from 'date-fns';
-import useActiveNavTab from '../../hooks/useActiveNavTab';
 import { useSession } from '../../hooks/useSession';
-import { Note, Order as OrderInterface, Store } from '../../interfaces';
+import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
+import useOutsideClick from '../../hooks/useOutsideClick';
+import { Note, Store } from '../../interfaces';
 import {
   formatPhoneNumber,
   formatToMoney,
   calculateStripeFee,
 } from '../../utils';
 import Layout from '../../components/Layout';
+import OrderStatusButton from '../../components/OrderStatusButton';
 import Notes from '../../components/Notes';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PrintableOrder from '../../components/PrintableOrder';
 
-const navValues = ['details', 'items', 'notes'];
-type NavValue = typeof navValues[number];
-
 export default function Order() {
   const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
-  const { activeNav, setActiveNav } = useActiveNavTab(
-    navValues,
-    `/orders/${router.query.id}?sid=${router.query.id}&`
-  );
   const queryClient = useQueryClient();
   const [options, setOptions] = React.useState({
     includesName: false,
-    includesNumber: true,
+    includesNumber: false,
   });
+  const [showOrderMenu, setShowOrderMenu] = React.useState(false);
+  const orderMenuRef = React.useRef<HTMLDivElement>(null);
+  useOutsideClick(showOrderMenu, setShowOrderMenu, orderMenuRef);
+  useEscapeKeydownClose(showOrderMenu, setShowOrderMenu);
 
   const { isLoading, isFetching, isError, error, data } = useQuery(
     ['stores', 'store', 'order', router.query.id],
@@ -43,11 +42,9 @@ export default function Order() {
         throw new Error('Failed to fetch the order.');
       }
 
-      const data = await response.json();
-      const store: Store = data.store;
-      const order = store.orders.find(
-        (o: OrderInterface) => o.orderId === router.query.id
-      );
+      const data: { store: Store } = await response.json();
+      const store = data.store;
+      const order = store.orders.find(o => o.orderId === router.query.id);
       return { store, order };
     },
     {
@@ -59,6 +56,7 @@ export default function Order() {
         ]);
         const order = store?.orders.find(o => o.orderId === router.query.id);
         if (store && order) {
+          console.log('YES');
           return { store, order };
         }
       },
@@ -281,17 +279,6 @@ export default function Order() {
     }
   );
 
-  const handleNavClick = (value: NavValue) => {
-    setActiveNav(value);
-    router.push(
-      `/orders/${router.query.id}?sid=${router.query.sid}&active=${value}`,
-      undefined,
-      {
-        shallow: true,
-      }
-    );
-  };
-
   if (sessionLoading || !session) return <div />;
 
   return (
@@ -304,7 +291,7 @@ export default function Order() {
             {data?.order && (
               <>
                 <div className="actions-row">
-                  <Link href={`/stores/${router.query.sid}?active=orders`}>
+                  <Link href={`/stores/${router.query.sid}`}>
                     <a className="back-link">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -320,334 +307,287 @@ export default function Order() {
                       Back to store
                     </a>
                   </Link>
-                  <button
-                    type="button"
-                    onClick={() => window.print()}
-                    className="print-button"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+
+                  <div className="order-menu-container">
+                    <button
+                      type="button"
+                      onClick={() => setShowOrderMenu(!showOrderMenu)}
+                      className="order-menu-button"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-                      />
-                    </svg>
-                    Print order
-                  </button>
+                      <span className="sr-only">Menu</span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                        />
+                      </svg>
+                    </button>
+
+                    <div
+                      ref={orderMenuRef}
+                      className={`menu${showOrderMenu ? ' show' : ''}`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => window.print()}
+                        className="menu-link"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                          />
+                        </svg>
+                        Print order
+                      </button>
+
+                      <a
+                        href={`https://dashboard.stripe.com/payments/${data.order.stripeId}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="menu-link"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                          />
+                        </svg>
+                        Stripe dashboard
+                      </a>
+                    </div>
+                  </div>
                 </div>
+
                 <div className="order-header">
-                  <h2>Order #{data.order.orderId}</h2>
-                  <p>{data.order.store.name}</p>
+                  <div>
+                    <div className="order-number-status">
+                      <h2>Order #{data.order.orderId}</h2>
+                      <OrderStatusButton
+                        store={data.store}
+                        order={data.order}
+                      />
+                    </div>
+                    <p>
+                      {format(
+                        new Date(data.order.createdAt),
+                        "MMM. dd, yyyy 'at' h:mmaa"
+                      )}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="order-nav">
-                  <button
-                    type="button"
-                    onClick={() => handleNavClick('details')}
-                    className={activeNav === 'details' ? 'active' : ''}
-                  >
-                    <span>Details</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleNavClick('items')}
-                    className={activeNav === 'items' ? 'active' : ''}
-                  >
-                    <span>Order Items</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleNavClick('notes')}
-                    className={activeNav === 'notes' ? 'active' : ''}
-                  >
-                    <span>Notes</span>
-                  </button>
-                </div>
-
-                <div className="body">
+                <div className="main-content">
                   <FetchingSpinner isLoading={isFetching} />
-                  {activeNav === 'details' && (
-                    <>
-                      <div className="customer-info">
-                        <h3>
-                          {data.order.customer.firstName}{' '}
-                          {data.order.customer.lastName}
-                        </h3>
-                        <p>
-                          <a
-                            href={`mailto:${data.order.customer.email}`}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {data.order.customer.email}
-                          </a>
-                        </p>
-                        <p>{formatPhoneNumber(data.order.customer.phone)}</p>
-                      </div>
-                      <div className="order-details-grid">
-                        <div>
-                          <div className="info-item">
-                            <div className="label">Order Status</div>
-                            <div className="value">
-                              <div className="order-status">
-                                <span
-                                  className={
-                                    data.order.orderStatus === 'Unfulfilled'
-                                      ? 'unfulfilled'
-                                      : data.order.orderStatus === 'Fulfilled'
-                                      ? 'fulfilled'
-                                      : data.order.orderStatus === 'Completed'
-                                      ? 'completed'
-                                      : ''
-                                  }
-                                >
-                                  {data.order.orderStatus}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="info-item">
-                            <div className="label">Order Date</div>
-                            <div className="value">
-                              {format(
-                                new Date(data.order.createdAt),
-                                "MMM. dd, yyyy 'at' h:mmaa"
-                              )}
-                            </div>
-                          </div>
-                          <div className="info-item">
-                            <div className="label">Transaction Id</div>
-                            <div className="value">{data.order.stripeId}</div>
-                          </div>
+
+                  <div>
+                    <h3 className="section-title">Order details</h3>
+                    <div className="detail-grid">
+                      <div>
+                        <div className="detail-item">
+                          <div className="label">Store</div>
+                          <div className="value">{data.order.store.name}</div>
                         </div>
-                        <div>
-                          {data.store.requireGroupSelection && (
-                            <div className="info-item">
-                              <div className="label">
-                                {data.store.groupTerm}
-                              </div>
-                              <div className="value">{data.order.group}</div>
-                            </div>
-                          )}
-                          <div className="info-item">
-                            <div className="label">Shipping Method</div>
+
+                        {data.store.requireGroupSelection && (
+                          <div className="detail-item">
+                            <div className="label">{data.store.groupTerm}</div>
+                            <div className="value">{data.order.group}</div>
+                          </div>
+                        )}
+
+                        <div className="detail-item">
+                          <div className="label">Shipping Method</div>
+                          <div className="value">
                             {data.order.shippingMethod}
                           </div>
-                          {data.order.shippingMethod === 'Direct' ? (
-                            <div className="info-item">
-                              <div className="label">Shipping Address</div>
-                              <span>
-                                {data.order.shippingAddress?.street}{' '}
-                                {data.order.shippingAddress?.street2}
-                                <br />
-                                {data.order.shippingAddress?.city},{' '}
-                                {data.order.shippingAddress?.state}{' '}
-                                {data.order.shippingAddress?.zipcode}
-                              </span>
-                            </div>
-                          ) : data.order.shippingMethod === 'Primary' ? (
-                            <div className="info-item">
-                              <div className="label">Primary Location</div>
-                              <span>{data.order.shippingAddress.name}</span>
-                            </div>
-                          ) : null}
                         </div>
-                        <div>
-                          <div className="order-summary-row">
-                            <div className="order-summary">
-                              <div className="summary-item">
-                                <div className="summary-label">Subtotal</div>
-                                <div className="summary-value">
-                                  {formatToMoney(
-                                    data.order.summary.subtotal,
-                                    true
-                                  )}
-                                </div>
-                              </div>
-                              <div className="summary-item">
-                                <div className="summary-label">Sales Tax</div>
-                                <div className="summary-value">
-                                  {formatToMoney(
-                                    data.order.summary.salesTax,
-                                    true
-                                  )}
-                                </div>
-                              </div>
-                              <div className="summary-item">
-                                <div className="summary-label">Shipping</div>
-                                <div className="summary-value">
-                                  {formatToMoney(
-                                    data.order.summary.shipping,
-                                    true
-                                  )}
-                                </div>
-                              </div>
-                              <div className="summary-item total">
-                                <div className="summary-label">Total</div>
-                                <div className="summary-value">
-                                  {formatToMoney(
-                                    data.order.summary.total,
-                                    true
-                                  )}
-                                </div>
-                              </div>
-                              <div className="summary-item">
-                                <div className="summary-label">Stripe Fee</div>
-                                <div className="summary-value">
-                                  -
-                                  {formatToMoney(
-                                    calculateStripeFee(
-                                      data.order.summary.total
-                                    ),
-                                    true
-                                  )}
-                                </div>
-                              </div>
-                              <div className="summary-item">
-                                <div className="summary-label">Net</div>
-                                <div className="summary-value">
-                                  {formatToMoney(
-                                    data.order.summary.total -
-                                      calculateStripeFee(
-                                        data.order.summary.total
-                                      ),
-                                    true
-                                  )}
-                                </div>
-                              </div>
-                            </div>
+
+                        <div className="detail-item">
+                          <div className="label">Shipping address</div>
+                          <div className="value">
+                            {data.order.shippingAddress?.street}{' '}
+                            {data.order.shippingAddress?.street2}
+                            <br />
+                            {data.order.shippingAddress?.city},{' '}
+                            {data.order.shippingAddress?.state}{' '}
+                            {data.order.shippingAddress?.zipcode}
                           </div>
                         </div>
                       </div>
-                    </>
-                  )}
-                  {activeNav === 'items' && (
-                    <>
-                      <h4>Order Items</h4>
-                      <div className="order-items">
-                        <div className="table-container">
-                          <table>
-                            <thead>
-                              <tr>
-                                <th>Name</th>
-                                <th>Color</th>
-                                <th>Size</th>
-                                {options.includesName && <th>Name</th>}
-                                {options.includesNumber && (
-                                  <th className="text-center">Number</th>
-                                )}
-                                <th>Price</th>
-                                <th className="text-center">Qty.</th>
-                                <th className="text-right">Item Total</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {data.order.items.map(i => (
-                                <tr
-                                  key={`${i.sku.id}-${i.customName}-${i.customNumber}`}
-                                  className="order-item"
-                                >
-                                  <td>
-                                    <div className="product-name">
-                                      <Link
-                                        href={`/stores/${router.query.sid}/product?pid=${i.sku.storeProductId}`}
-                                      >
-                                        {i.name}
-                                      </Link>
-                                    </div>
-                                    <div className="product-id">{i.sku.id}</div>
-                                  </td>
-                                  <td>{i.sku.color.label}</td>
-                                  <td>{i.sku.size.label}</td>
-                                  {options.includesName && (
-                                    <td>{i.customName ? i.customName : '-'}</td>
-                                  )}
-                                  {options.includesNumber && (
-                                    <td className="text-center">
-                                      {i.customNumber ? i.customNumber : '-'}
-                                    </td>
-                                  )}
-                                  <td>{formatToMoney(i.price)}</td>
-                                  <td className="text-center">{i.quantity}</td>
-                                  <td className="text-right">
-                                    {formatToMoney(i.itemTotal, true)}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+
+                      <div>
+                        <div className="detail-item">
+                          <div className="label">Customer name</div>
+                          <div className="value">
+                            {data.order.customer.firstName}{' '}
+                            {data.order.customer.lastName}
+                          </div>
+                        </div>
+
+                        <div className="detail-item">
+                          <div className="label">Customer email</div>
+                          <div className="value">
+                            <a href={`mailto:${data.order.customer.email}`}>
+                              {data.order.customer.email}
+                            </a>
+                          </div>
+                        </div>
+
+                        <div className="detail-item">
+                          <div className="label">Customer phone</div>
+                          <div className="value">
+                            {formatPhoneNumber(data.order.customer.phone)}
+                          </div>
                         </div>
                       </div>
-                      <div className="order-summary-row">
-                        <div className="order-summary">
-                          <div className="summary-item">
-                            <div className="summary-label">Subtotal</div>
-                            <div className="summary-value">
-                              {formatToMoney(data.order.summary.subtotal, true)}
-                            </div>
+                    </div>
+                  </div>
+
+                  <div className="order-items">
+                    <h4>Order items</h4>
+                    <div className="table-container">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Name</th>
+                            <th>Color</th>
+                            <th>Size</th>
+                            {options.includesName && <th>Name</th>}
+                            {options.includesNumber && (
+                              <th className="text-center">Number</th>
+                            )}
+                            <th>Price</th>
+                            <th className="text-center">Qty.</th>
+                            <th className="text-right">Item Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {data.order.items.map(i => (
+                            <tr
+                              key={`${i.sku.id}-${i.customName}-${i.customNumber}`}
+                              className="order-item"
+                            >
+                              <td>
+                                <div className="product-name">
+                                  <Link
+                                    href={`/stores/${router.query.sid}/product?pid=${i.sku.storeProductId}`}
+                                  >
+                                    {i.name}
+                                  </Link>
+                                </div>
+                                <div className="product-id">{i.sku.id}</div>
+                              </td>
+                              <td>{i.sku.color.label}</td>
+                              <td>{i.sku.size.label}</td>
+                              {options.includesName && (
+                                <td>{i.customName ? i.customName : '-'}</td>
+                              )}
+                              {options.includesNumber && (
+                                <td className="text-center">
+                                  {i.customNumber ? i.customNumber : '-'}
+                                </td>
+                              )}
+                              <td>{formatToMoney(i.price)}</td>
+                              <td className="text-center">{i.quantity}</td>
+                              <td className="text-right">
+                                {formatToMoney(i.itemTotal, true)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="order-summary-row">
+                      <div className="order-summary">
+                        <div className="summary-item">
+                          <div className="summary-label">Subtotal</div>
+                          <div className="summary-value">
+                            {formatToMoney(data.order.summary.subtotal, true)}
                           </div>
-                          <div className="summary-item">
-                            <div className="summary-label">Sales Tax</div>
-                            <div className="summary-value">
-                              {formatToMoney(data.order.summary.salesTax, true)}
-                            </div>
+                        </div>
+
+                        <div className="summary-item">
+                          <div className="summary-label">Sales Tax</div>
+                          <div className="summary-value">
+                            {formatToMoney(data.order.summary.salesTax, true)}
                           </div>
-                          <div className="summary-item">
-                            <div className="summary-label">Shipping</div>
-                            <div className="summary-value">
-                              {formatToMoney(data.order.summary.shipping, true)}
-                            </div>
+                        </div>
+
+                        <div className="summary-item">
+                          <div className="summary-label">Shipping</div>
+                          <div className="summary-value">
+                            {formatToMoney(data.order.summary.shipping, true)}
                           </div>
-                          <div className="summary-item total">
-                            <div className="summary-label">Total</div>
-                            <div className="summary-value">
-                              {formatToMoney(data.order.summary.total, true)}
-                            </div>
+                        </div>
+
+                        <div className="summary-item total">
+                          <div className="summary-label">Total</div>
+                          <div className="summary-value">
+                            {formatToMoney(data.order.summary.total, true)}
                           </div>
-                          <div className="summary-item">
-                            <div className="summary-label">Stripe Fee</div>
-                            <div className="summary-value">
-                              -
-                              {formatToMoney(
+                        </div>
+
+                        <div className="summary-item">
+                          <div className="summary-label">Stripe Fee</div>
+                          <div className="summary-value">
+                            -
+                            {formatToMoney(
+                              calculateStripeFee(data.order.summary.total),
+                              true
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="summary-item">
+                          <div className="summary-label">Net</div>
+                          <div className="summary-value">
+                            {formatToMoney(
+                              data.order.summary.total -
                                 calculateStripeFee(data.order.summary.total),
-                                true
-                              )}
-                            </div>
-                          </div>
-                          <div className="summary-item">
-                            <div className="summary-label">Net</div>
-                            <div className="summary-value">
-                              {formatToMoney(
-                                data.order.summary.total -
-                                  calculateStripeFee(data.order.summary.total),
-                                true
-                              )}
-                            </div>
+                              true
+                            )}
                           </div>
                         </div>
                       </div>
-                    </>
-                  )}
-                  {activeNav === 'notes' && (
-                    <Notes
-                      label="Order"
-                      notes={data.order.notes}
-                      addNote={addNoteMutation}
-                      updateNote={updateNoteMutation}
-                      deleteNote={deleteNoteMutation}
-                    />
-                  )}
+                    </div>
+                  </div>
+
+                  <Notes
+                    label="Order"
+                    notes={data.order.notes}
+                    addNote={addNoteMutation}
+                    updateNote={updateNoteMutation}
+                    deleteNote={deleteNoteMutation}
+                  />
                 </div>
               </>
             )}
           </div>
         </OrderStyles>
+
         {data?.order && data.store && (
           <PrintableOrder
             order={data.order}
@@ -697,6 +637,7 @@ const OrderStyles = styled.div`
   }
 
   .actions-row {
+    margin: 0 0 2.5rem;
     display: flex;
     justify-content: space-between;
   }
@@ -734,47 +675,96 @@ const OrderStyles = styled.div`
     }
   }
 
-  .print-button {
-    padding: 0.5rem 0.75rem;
-    display: inline-flex;
+  .order-menu-container {
+    display: flex;
+    justify-content: flex-end;
+    width: 25%;
+
+    .menu {
+      top: 5.5rem;
+      right: 0;
+    }
+  }
+
+  .order-menu-button {
+    padding: 0;
+    height: 2rem;
+    width: 2rem;
+    display: flex;
     justify-content: center;
     align-items: center;
-    color: #475569;
-    font-size: 0.875rem;
-    font-weight: 500;
-    text-align: center;
-    line-height: 1;
-    background-color: #e2e8f0;
-    border: 1px solid #cbd5e1;
+    background-color: transparent;
+    border: none;
+    color: #6b7280;
     border-radius: 0.3125rem;
-    box-shadow: inset 0 1px 1px #fff, 0 1px 2px 0 rgb(0 0 0 / 0.05);
     cursor: pointer;
 
     svg {
-      margin: 0 0.375rem 0 0;
-      height: 0.875rem;
-      width: 0.875rem;
-      color: #9ca3af;
+      height: 1.25rem;
+      width: 1.25rem;
     }
 
     &:hover {
-      border-color: #bfcbda;
-      box-shadow: inset 0 1px 1px #fff, 0 1px 2px 0 rgb(0 0 0 / 0.1);
+      color: #111827;
+    }
+  }
+
+  .menu {
+    padding: 0 1rem;
+    position: absolute;
+    display: none;
+    flex-direction: column;
+    align-items: flex-start;
+    background-color: #fff;
+    border-radius: 0.5rem;
+    box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
+      rgba(17, 24, 39, 0.05) 0px 0px 0px 1px,
+      rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
+
+    &.show {
+      display: flex;
+      z-index: 100;
+    }
+  }
+
+  .menu-link {
+    padding: 0.75rem 1.5rem 0.75rem 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: transparent;
+    border: none;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: #1f2937;
+    text-align: left;
+    cursor: pointer;
+
+    &:last-child {
+      border-bottom: none;
     }
 
-    &:focus {
-      outline: 2px solid transparent;
-      outline-offset: 2px;
+    &:hover {
+      color: #000;
+
+      svg {
+        color: #6b7280;
+      }
     }
 
-    &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+    svg {
+      height: 1rem;
+      width: 1rem;
+      color: #9ca3af;
     }
   }
 
   .order-header {
-    padding: 3rem 0 2.25rem;
+    padding: 1.375rem 0 1.5rem;
+    border-top: 1px solid #dcdfe4;
+    border-bottom: 1px solid #dcdfe4;
 
     p {
       margin: 0.25rem 0 0;
@@ -784,98 +774,10 @@ const OrderStyles = styled.div`
     }
   }
 
-  .order-nav {
-    padding: 0.625rem 0;
-    border-bottom: 1px solid #e5e7eb;
-    border-top: 1px solid #e5e7eb;
-
-    button {
-      margin: 0 0.75rem 0 0;
-      padding: 0.4375rem 0.75rem;
-      background-color: transparent;
-      border: none;
-      border-radius: 9999px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      line-height: 1;
-      color: #374151;
-      cursor: pointer;
-
-      &:hover {
-        background-color: #e5e7eb;
-        color: #111827;
-      }
-
-      &.active {
-        background-color: #1c5eb9;
-        color: #fff;
-
-        &:focus {
-          outline: 2px solid transparent;
-          outline-offset: 2px;
-        }
-
-        &:focus-visible {
-          box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
-            #1c5eb9 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
-        }
-      }
-    }
-  }
-
-  .body {
-    position: relative;
-    padding: 3.5rem 0 2.5rem;
-  }
-
-  .customer-info {
-    margin: 0 0 3rem;
-
-    h3 {
-      margin: 0;
-    }
-
-    p {
-      margin: 0;
-      color: #6b7280;
-      line-height: 1.5;
-    }
-
-    a:hover {
-      text-decoration: underline;
-      color: #1c5eb9;
-    }
-  }
-
-  .order-details-grid {
-    display: grid;
-    grid-template-columns: 1fr 0.9fr 0.9fr;
-  }
-
-  .info-item {
-    padding: 0 0 2rem;
+  .order-number-status {
     display: flex;
-    flex-direction: column;
-    font-size: 1rem;
-    color: #111827;
-    line-height: 1.35;
-
-    &:last-of-type {
-      padding-bottom: 0;
-    }
-  }
-
-  .label {
-    margin: 0 0 0.375rem;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.0375em;
-    color: #89909d;
-  }
-
-  .data {
-    color: #111827;
+    align-items: center;
+    gap: 1rem;
   }
 
   .order-status {
@@ -909,12 +811,60 @@ const OrderStyles = styled.div`
     }
   }
 
+  .main-content {
+    position: relative;
+    padding: 3.5rem 0;
+  }
+
+  .section-title {
+    margin: 0 0 0.875rem;
+    padding: 0 0 0.75rem;
+    border-bottom: 1px solid #dcdfe4;
+  }
+
+  .detail-grid {
+    margin: 1.5rem 0 0;
+    padding: 0 0 0.5rem;
+    display: flex;
+    gap: 8rem;
+    border-bottom: 1px solid #dcdfe4;
+  }
+
+  .detail-item {
+    margin: 0 0 0.75rem;
+    display: grid;
+    grid-template-columns: 10rem 1fr;
+  }
+
+  .label {
+    margin: 0 0 0.4375rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: #6b7280;
+    text-transform: capitalize;
+  }
+
+  .value {
+    font-size: 0.9375rem;
+    color: #111827;
+    line-height: 1.5;
+
+    a:hover {
+      color: #1c5eb9;
+      text-decoration: underline;
+    }
+  }
+
+  .order-items {
+    margin: 3.5rem 0 0;
+  }
+
   .table-container {
     margin: 0 0 2.5rem;
     width: 100%;
     background-color: #fff;
     border: 1px solid #e5e7eb;
-    border-radius: 0.25rem;
+    border-radius: 0.375rem;
     box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
       rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
   }
@@ -950,20 +900,31 @@ const OrderStyles = styled.div`
     text-align: left;
 
     &:first-of-type {
-      border-top-left-radius: 0.25rem;
+      border-top-left-radius: 0.375rem;
     }
 
     &:last-of-type {
-      border-top-right-radius: 0.25rem;
+      border-top-right-radius: 0.375rem;
     }
   }
 
-  tr:last-of-type td {
-    border-bottom: none;
+  tr:last-of-type {
+    td {
+      border-bottom: none;
+
+      &:first-of-type {
+        border-bottom-left-radius: 0.375rem;
+      }
+
+      &:last-of-type {
+        border-bottom-right-radius: 0.375rem;
+      }
+    }
   }
 
   td {
     padding: 0.875rem 1rem;
+    background-color: #fff;
     font-size: 0.875rem;
     font-weight: 500;
     color: #4b5563;
@@ -971,12 +932,14 @@ const OrderStyles = styled.div`
     .product-name {
       margin: 0 0 1px;
       font-weight: 500;
-      color: #111827;
+      color: #000;
     }
 
     .product-id {
-      font-size: 0.75rem;
-      color: #9ca3af;
+      font-family: 'Dank Mono', monospace;
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #6b7280;
     }
 
     a {
@@ -1018,7 +981,7 @@ const OrderStyles = styled.div`
       margin-bottom: 0.3125rem;
       padding-bottom: 0.75rem;
       font-weight: 600;
-      border-bottom: 1px solid #d1d5db;
+      border-bottom: 1px solid #dcdfe4;
 
       .summary-label {
         color: #111827;

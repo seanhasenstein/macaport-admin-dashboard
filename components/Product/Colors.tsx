@@ -94,13 +94,13 @@ export default function Colors({ storeId, product }: Props) {
             </button>
           )}
           <div className="color-details">
-            <div className="color-label">
-              <div className="label">Label</div>
-              <div className="value">{color.label}</div>
+            <div className="color-item">
+              <div className="color-label">Label</div>
+              <div className="color-value">{color.label}</div>
             </div>
-            <div className="color-hex">
-              <div className="label">Hex</div>
-              <div className="value">
+            <div className="color-item">
+              <div className="color-label">Hex</div>
+              <div className="color-value">
                 <ColorSpan hex={color.hex} />
                 {color.hex}
               </div>
@@ -108,9 +108,9 @@ export default function Colors({ storeId, product }: Props) {
           </div>
           <div className="color-imgs">
             <div className="primary-img">
-              <div className="label">Primary Image</div>
+              <div className="color-label">Primary Image</div>
               {color.primaryImage ? (
-                <div className="value">
+                <div className="color-value">
                   <img
                     src={color.primaryImage}
                     alt={`${color.label} primary`}
@@ -119,7 +119,7 @@ export default function Colors({ storeId, product }: Props) {
               ) : null}
             </div>
             <div className="secondary-imgs">
-              <div className="label">Secondary Images</div>
+              <div className="color-label">Secondary Images</div>
               <SecondaryImages
                 color={color}
                 product={product}
@@ -139,7 +139,7 @@ const ColorsStyles = styled.div`
   box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 
   .prod-color {
-    padding: 0.875rem 1rem;
+    padding: 1rem 1.5rem;
     max-width: 75rem;
     width: 100%;
     display: flex;
@@ -197,7 +197,7 @@ const ColorsStyles = styled.div`
   }
 
   .primary-img {
-    .value {
+    .color-value {
       padding: 0.25rem 0.5rem;
       width: 2.75rem;
       background-color: #fff;
@@ -216,13 +216,12 @@ const ColorsStyles = styled.div`
     display: flex;
   }
 
-  .color-label,
-  .color-hex {
+  .color-item {
     width: 50%;
   }
 
-  .label {
-    margin: 0 0 0.375rem;
+  .color-label {
+    margin: 0 0 0.5rem;
     font-size: 0.875rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -230,7 +229,7 @@ const ColorsStyles = styled.div`
     color: #6b7280;
   }
 
-  .value {
+  .color-value {
     display: flex;
     align-items: center;
     color: #374151;

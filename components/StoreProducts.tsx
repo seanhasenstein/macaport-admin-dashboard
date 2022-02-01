@@ -10,18 +10,9 @@ import StoreProductMenu from './StoreProductMenu';
 type Props = {
   products: StoreProduct[];
   storeId: string;
-  setProductIdToDelete: React.Dispatch<
-    React.SetStateAction<string | undefined>
-  >;
-  setShowDeleteProductModal: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-export default function StoreProducts({
-  products,
-  storeId,
-  setProductIdToDelete,
-  setShowDeleteProductModal,
-}: Props) {
+export default function StoreProducts({ products, storeId }: Props) {
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -49,15 +40,10 @@ export default function StoreProducts({
 
   const dnd = useDragNDrop(products, 'product', updateProductMutation.mutate);
 
-  const handleDeleteProductMenuClick = (id: string) => {
-    setProductIdToDelete(id);
-    setShowDeleteProductModal(true);
-  };
-
   return (
     <StoreProductsStyles>
       <div className="product-header">
-        <h3>Store Products</h3>
+        <h3>Store products</h3>
         <Link href={`/stores/${router.query.id}/product/add`}>
           <a className="add-product-link">
             <svg
@@ -123,13 +109,15 @@ export default function StoreProducts({
                 </svg>
               </button>
               <Link href={`/stores/${storeId}/product?pid=${product.id}`}>
-                <a className="product-name">{product.name}</a>
+                <a className="product-name">
+                  {product.name} ({product.merchandiseCode})
+                </a>
               </Link>
 
               <StoreProductMenu
                 storeId={storeId}
                 productId={product.id}
-                deleteButtonClickCallback={handleDeleteProductMenuClick}
+                inventoryProductId={product.inventoryProductId}
               />
             </div>
           ))}
@@ -154,6 +142,7 @@ const StoreProductsStyles = styled.div`
   }
 
   .add-product-link {
+    padding: 0.6875rem 1rem;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -161,17 +150,21 @@ const StoreProductsStyles = styled.div`
     font-weight: 500;
     color: #1955a8;
     line-height: 1;
+    border: 1px solid #d1d5db;
+    border-radius: 0.3125rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     cursor: pointer;
 
     svg {
-      margin: 0 0.375rem 0 0;
+      margin: 0 0.5rem 0 0;
       height: 0.875rem;
       width: 0.875rem;
     }
 
     &:hover {
-      color: #174d97;
-      text-decoration: underline;
+      color: #164c97;
+      border-color: #c6cbd2;
+      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.1);
     }
 
     &:focus {
@@ -180,7 +173,8 @@ const StoreProductsStyles = styled.div`
     }
 
     &:focus-visible {
-      text-decoration: underline;
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+        rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
   }
 

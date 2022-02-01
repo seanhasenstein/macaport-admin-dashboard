@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import { format } from 'date-fns';
-import useActiveNavTab from '../../../hooks/useActiveNavTab';
 import useOutsideClick from '../../../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../../../hooks/useEscapeKeydownClose';
 import { useSession } from '../../../hooks/useSession';
@@ -21,9 +20,8 @@ import OrdersTable from '../../../components/OrdersTable';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 import Notification from '../../../components/Notification';
 import CSVDownloadModal from '../../../components/CSVDownloadModal';
+import PrintableOrder from '../../../components/PrintableOrder';
 
-const navValues = ['details', 'products', 'orders', 'notes'];
-type NavValue = typeof navValues[number];
 type StoreStatus = 'upcoming' | 'open' | 'closed';
 
 export default function Store() {
@@ -35,13 +33,8 @@ export default function Store() {
   const deleteProductRef = React.useRef<HTMLDivElement>(null);
   const csvModalRef = React.useRef<HTMLDivElement>(null);
   const [enableStoreQuery, setEnableStoreQuery] = React.useState(true);
-  const { activeNav, setActiveNav } = useActiveNavTab(
-    navValues,
-    `/stores/${router.query.id}?`
-  );
   const [storeStatus, setStoreStatus] = React.useState<StoreStatus>();
   const [showStoreMenu, setShowStoreMenu] = React.useState(false);
-  const [productIdToDelete, setProductIdToDelete] = React.useState<string>();
   const [showDeleteProductModal, setShowDeleteProductModal] =
     React.useState(false);
   const [showDeleteStoreModal, setShowDeleteStoreModal] = React.useState(false);
@@ -128,63 +121,6 @@ export default function Store() {
       },
       onSuccess: () => {
         router.push(`/?deleteStore=true`);
-      },
-    }
-  );
-
-  const deleteProductMutation = useMutation(
-    async (id: string | undefined) => {
-      if (!id) {
-        setShowDeleteProductModal(false);
-        throw new Error('No store product id was provided.');
-      }
-      const filteredProducts = storeQuery.data?.products.filter(
-        p => p.id !== id
-      );
-
-      const response = await fetch(`/api/stores/update?id=${router.query.id}`, {
-        method: 'post',
-        body: JSON.stringify({ products: filteredProducts }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete the product.');
-      }
-
-      const data = await response.json();
-      return data.store;
-    },
-    {
-      onMutate: async id => {
-        await queryClient.cancelQueries(['stores', 'store', router.query.id]);
-        const updatedProducts = storeQuery.data?.products.filter(
-          p => p.id !== id
-        );
-        const updatedStore = { ...storeQuery.data, products: updatedProducts };
-        queryClient.setQueryData(
-          ['stores', 'store', router.query.id],
-          updatedStore
-        );
-      },
-      onError: () => {
-        // TODO: trigger a notafication
-        queryClient.setQueryData(
-          ['stores', 'store', router.query.id],
-          storeQuery.data
-        );
-      },
-      onSettled: () => {
-        queryClient.invalidateQueries('stores');
-        router.push(
-          `/stores/${router.query.id}?active=products&deleteProduct=true`,
-          undefined,
-          {
-            shallow: true,
-          }
-        );
       },
     }
   );
@@ -326,17 +262,6 @@ export default function Store() {
     }
   );
 
-  const handleCancelDeleteProductClick = () => {
-    setShowDeleteProductModal(false);
-    setProductIdToDelete(undefined);
-  };
-
-  const handleDeleteProductClick = () => {
-    deleteProductMutation.mutate(productIdToDelete);
-    setShowDeleteProductModal(false);
-    setProductIdToDelete(undefined);
-  };
-
   React.useEffect(() => {
     if (storeQuery.data) {
       setStoreStatus(
@@ -344,13 +269,6 @@ export default function Store() {
       );
     }
   }, [storeQuery.data]);
-
-  const handleNavClick = (value: NavValue) => {
-    setActiveNav(value);
-    router.push(`/stores/${router.query.id}?active=${value}`, undefined, {
-      shallow: true,
-    });
-  };
 
   const handleDeleteStoreMenuClick = () => {
     setShowStoreMenu(false);
@@ -377,55 +295,31 @@ export default function Store() {
           )}
           {storeQuery.data && (
             <>
-              <Link href="/">
-                <a className="back-link">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Back to stores
-                </a>
-              </Link>
-              <div className="store-menu-container">
-                <button
-                  type="button"
-                  onClick={() => setShowStoreMenu(!showStoreMenu)}
-                  className="store-menu-button"
-                >
-                  <span className="sr-only">Menu</span>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                    />
-                  </svg>
-                </button>
-                <div
-                  ref={storeMenuRef}
-                  className={`menu${showStoreMenu ? ' show' : ''}`}
-                >
+              <div className="actions-row">
+                <Link href="/">
+                  <a className="back-link">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Back to stores
+                  </a>
+                </Link>
+
+                <div className="store-menu-container">
                   <button
                     type="button"
-                    onClick={() => {
-                      setShowCsvModal(true);
-                      setShowStoreMenu(false);
-                    }}
-                    className="menu-link"
+                    onClick={() => setShowStoreMenu(!showStoreMenu)}
+                    className="store-menu-button"
                   >
+                    <span className="sr-only">Menu</span>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
@@ -436,13 +330,20 @@ export default function Store() {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M17 16v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a2 2 0 012-2h2m3-4H9a2 2 0 00-2 2v7a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-1m-1 4l-3 3m0 0l-3-3m3 3V3"
+                        d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
                       />
                     </svg>
-                    Download orders to csv
                   </button>
-                  <Link href={`/stores/update?id=${router.query.id}`}>
-                    <a className="menu-link">
+
+                  <div
+                    ref={storeMenuRef}
+                    className={`menu${showStoreMenu ? ' show' : ''}`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => window.print()}
+                      className="menu-link"
+                    >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
@@ -453,295 +354,286 @@ export default function Store() {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                          d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
                         />
+                      </svg>
+                      Print unfulfilled orders
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCsvModal(true);
+                        setShowStoreMenu(false);
+                      }}
+                      className="menu-link"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          d="M17 16v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a2 2 0 012-2h2m3-4H9a2 2 0 00-2 2v7a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-1m-1 4l-3 3m0 0l-3-3m3 3V3"
                         />
                       </svg>
-                      Edit Store
-                    </a>
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={handleDeleteStoreMenuClick}
-                    className="delete-button"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+                      Download orders to csv
+                    </button>
+
+                    <Link href={`/stores/update?id=${router.query.id}`}>
+                      <a className="menu-link">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
+                        Edit store
+                      </a>
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={handleDeleteStoreMenuClick}
+                      className="delete-button"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                    Delete Store
-                  </button>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                      Delete store
+                    </button>
+                  </div>
                 </div>
               </div>
+
               <div className="store-header">
-                <h2>{storeQuery.data.name}</h2>
+                <div className="store-name-status">
+                  <h2>{storeQuery.data.name}</h2>
+                  <div className="store-status">
+                    <span className={storeStatus}>
+                      {storeStatus === 'upcoming'
+                        ? 'Upcoming'
+                        : storeStatus === 'open'
+                        ? 'Open'
+                        : 'Closed'}
+                    </span>
+                  </div>
+                </div>
                 <p>{storeQuery.data.storeId}</p>
               </div>
 
-              <div className="store-nav">
-                <button
-                  type="button"
-                  onClick={() => handleNavClick('details')}
-                  className={activeNav === 'details' ? 'active' : ''}
-                >
-                  <span>Details</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleNavClick('products')}
-                  className={activeNav === 'products' ? 'active' : ''}
-                >
-                  <span>Products</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleNavClick('orders')}
-                  className={activeNav === 'orders' ? 'active' : ''}
-                >
-                  <span>Orders</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleNavClick('notes')}
-                  className={activeNav === 'notes' ? 'active' : ''}
-                >
-                  <span>Notes</span>
-                </button>
-              </div>
-
-              <div className="body">
+              <div className="main-content">
                 <FetchingSpinner isLoading={storeQuery.isFetching} />
-                {activeNav === 'details' && (
-                  <>
-                    <h3>Store Details</h3>
-                    <div className="store-details">
-                      <div className="section">
-                        <div className="info-item">
-                          <div className="label">Status</div>
-                          <div className="value">
-                            <div className="store-status">
-                              <span className={storeStatus}>
-                                {storeStatus === 'upcoming'
-                                  ? 'Upcoming'
-                                  : storeStatus === 'open'
-                                  ? 'Open'
-                                  : 'Closed'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="info-item">
-                          <div className="label">Open Date</div>
-                          <div className="value">
-                            {format(
-                              new Date(storeQuery.data.openDate),
-                              "MMM. dd, yyyy 'at' h:mmaa"
-                            )}
-                          </div>
-                        </div>
-                        <div className="info-item">
-                          <div className="label">Close Date</div>
-                          <div className="value">
-                            {storeQuery.data.closeDate
-                              ? format(
-                                  new Date(storeQuery.data.closeDate),
-                                  "MMM. dd, yyyy 'at' h:mmaa"
-                                )
-                              : 'Permanently Open'}
-                          </div>
+
+                <div>
+                  <h3 className="section-title">Store details</h3>
+                  <div className="detail-grid">
+                    <div>
+                      <div className="detail-item">
+                        <div className="label">Open date</div>
+                        <div className="value">
+                          {format(
+                            new Date(storeQuery.data.openDate),
+                            "MMM. dd, yyyy 'at' h:mmaa"
+                          )}
                         </div>
                       </div>
 
-                      <div className="section">
-                        <div className="info-item">
-                          <div className="label">Primary Shipping Address</div>
-                          <div className="value">
-                            {storeQuery.data.hasPrimaryShippingLocation ? (
-                              <>
-                                {storeQuery.data.primaryShippingLocation.name}{' '}
-                                <br />
-                                {
-                                  storeQuery.data.primaryShippingLocation.street
-                                }{' '}
-                                <br />
-                                {storeQuery.data.primaryShippingLocation
-                                  .street2 ? (
-                                  <>
-                                    {
-                                      storeQuery.data.primaryShippingLocation
-                                        .street2
-                                    }{' '}
-                                    <br />
-                                  </>
-                                ) : null}
-                                {storeQuery.data.primaryShippingLocation.city}
-                                {storeQuery.data.primaryShippingLocation
-                                  .state &&
-                                  `, ${storeQuery.data.primaryShippingLocation.state}`}{' '}
-                                {
-                                  storeQuery.data.primaryShippingLocation
-                                    .zipcode
-                                }
-                              </>
-                            ) : (
-                              'None'
-                            )}
-                          </div>
-                        </div>
-                        <div className="info-item">
-                          <div className="label">Allows Direct Shipping</div>
-                          <div className="value">
-                            {storeQuery.data.allowDirectShipping ? 'Yes' : 'No'}
-                          </div>
-                        </div>
-                        <div className="info-item">
-                          <div className="label">Require group at checkout</div>
-                          <div className="value capitalize">
-                            {storeQuery.data.requireGroupSelection
-                              ? storeQuery.data.groupTerm
-                              : 'No'}
-                          </div>
+                      <div className="detail-item">
+                        <div className="label">Close date</div>
+                        <div className="value">
+                          {storeQuery.data.closeDate
+                            ? format(
+                                new Date(storeQuery.data.closeDate),
+                                "MMM. dd, yyyy 'at' h:mmaa"
+                              )
+                            : 'Permanently Open'}
                         </div>
                       </div>
-                      <div className="section">
-                        <div className="info-item">
-                          <div className="label">Name</div>
-                          <div className="value">
-                            {storeQuery.data.contact.firstName}{' '}
-                            {storeQuery.data.contact.lastName}
-                          </div>
+
+                      <div className="detail-item">
+                        <div className="label">Primary shipping</div>
+                        <div className="value">
+                          {storeQuery.data.hasPrimaryShippingLocation ? (
+                            <>
+                              {storeQuery.data.primaryShippingLocation.name}{' '}
+                              <br />
+                              {
+                                storeQuery.data.primaryShippingLocation.street
+                              }{' '}
+                              <br />
+                              {storeQuery.data.primaryShippingLocation
+                                .street2 ? (
+                                <>
+                                  {
+                                    storeQuery.data.primaryShippingLocation
+                                      .street2
+                                  }{' '}
+                                  <br />
+                                </>
+                              ) : null}
+                              {storeQuery.data.primaryShippingLocation.city}
+                              {storeQuery.data.primaryShippingLocation.state &&
+                                `, ${storeQuery.data.primaryShippingLocation.state}`}{' '}
+                              {storeQuery.data.primaryShippingLocation.zipcode}
+                            </>
+                          ) : (
+                            'None'
+                          )}
                         </div>
-                        <div className="info-item">
-                          <div className="label">Email</div>
-                          <div className="value">
-                            <a href={`mailto:${storeQuery.data.contact.email}`}>
-                              {storeQuery.data.contact.email}
-                            </a>
-                          </div>
+                      </div>
+
+                      <div className="detail-item">
+                        <div className="label">Direct shipping</div>
+                        <div className="value">
+                          {storeQuery.data.allowDirectShipping ? 'Yes' : 'No'}
                         </div>
-                        <div className="info-item">
-                          <div className="label">Phone</div>
-                          <div className="value">
-                            {formatPhoneNumber(storeQuery.data.contact.phone)}
-                          </div>
+                      </div>
+
+                      <div className="detail-item">
+                        <div className="label">Name</div>
+                        <div className="value">
+                          {storeQuery.data.contact.firstName}{' '}
+                          {storeQuery.data.contact.lastName}
+                        </div>
+                      </div>
+
+                      <div className="detail-item">
+                        <div className="label">Email</div>
+                        <div className="value">
+                          <a href={`mailto:${storeQuery.data.contact.email}`}>
+                            {storeQuery.data.contact.email}
+                          </a>
+                        </div>
+                      </div>
+
+                      <div className="detail-item">
+                        <div className="label">Phone</div>
+                        <div className="value">
+                          {formatPhoneNumber(storeQuery.data.contact.phone)}
                         </div>
                       </div>
                     </div>
-                  </>
-                )}
 
-                {activeNav === 'products' && (
-                  <div className="section" id="products">
                     <div>
-                      <StoreProducts
-                        products={storeQuery.data.products}
-                        storeId={storeQuery.data._id}
-                        setProductIdToDelete={setProductIdToDelete}
-                        setShowDeleteProductModal={setShowDeleteProductModal}
-                      />
-                      {(!storeQuery.data.products ||
-                        storeQuery.data.products.length < 1) && (
-                        <div className="empty empty-products">
-                          This store has no products.
+                      <div className="detail-item">
+                        <div className="label">Require group</div>
+                        <div className="value capitalize">
+                          {storeQuery.data.requireGroupSelection
+                            ? storeQuery.data.groupTerm
+                            : 'No'}
+                        </div>
+                      </div>
+
+                      {storeQuery.data.requireGroupSelection && (
+                        <div className="detail-item">
+                          <div className="label capitalize">
+                            {`${storeQuery.data.groupTerm}s`}
+                          </div>
+                          <div className="value">
+                            <ul>
+                              {storeQuery.data.groups.map((g, i) => (
+                                <li key={i}>{g}</li>
+                              ))}
+                            </ul>
+                          </div>
                         </div>
                       )}
                     </div>
                   </div>
-                )}
 
-                {activeNav === 'orders' && (
-                  <div className="section orders" id="orders">
-                    <h3>Store Orders</h3>
-                    {storeQuery.data.orders ? (
-                      <OrdersTable
-                        store={storeQuery.data}
-                        orders={storeQuery.data.orders}
-                      />
-                    ) : (
-                      <div className="empty empty-orders">
-                        This store has no orders.
+                  <div className="store-products" id="products">
+                    <StoreProducts
+                      products={storeQuery.data.products}
+                      storeId={storeQuery.data._id}
+                    />
+                    {(!storeQuery.data.products ||
+                      storeQuery.data.products.length < 1) && (
+                      <div className="empty empty-products">
+                        This store has no products.
                       </div>
                     )}
                   </div>
-                )}
+                </div>
 
-                {activeNav === 'notes' && (
-                  <Notes
-                    label="Store"
-                    notes={storeQuery.data.notes}
-                    addNote={addNoteMutation}
-                    updateNote={updateNoteMutation}
-                    deleteNote={deleteNoteMutation}
-                  />
-                )}
+                <div className="store-orders" id="orders">
+                  <h3>Store orders</h3>
+                  {storeQuery.data.orders ? (
+                    <OrdersTable
+                      store={storeQuery.data}
+                      orders={storeQuery.data.orders}
+                    />
+                  ) : (
+                    <div className="empty empty-orders">
+                      This store has no orders.
+                    </div>
+                  )}
+                </div>
+
+                <Notes
+                  label="Store"
+                  notes={storeQuery.data.notes}
+                  addNote={addNoteMutation}
+                  updateNote={updateNoteMutation}
+                  deleteNote={deleteNoteMutation}
+                />
               </div>
             </>
           )}
         </div>
+
         <Notification
           query="createStore"
           heading="Store successfully created"
-          callbackUrl={`/stores/${router.query.id}?active=details`}
+          callbackUrl={`/stores/${router.query.id}`}
         />
+
         <Notification
           query="updateStore"
           heading="Store successfully updated"
-          callbackUrl={`/stores/${router.query.id}?active=details`}
+          callbackUrl={`/stores/${router.query.id}`}
         />
+
         <Notification
           query="addProduct"
           heading="Product successfully added"
-          callbackUrl={`/stores/${router.query.id}?active=products`}
+          callbackUrl={`/stores/${router.query.id}`}
         />
+
         <Notification
           query="deleteProduct"
           heading="Product successfully deleted"
-          callbackUrl={`/stores/${router.query.id}?active=products`}
+          callbackUrl={`/stores/${router.query.id}`}
         />
       </StoreStyles>
-      {showDeleteProductModal && (
-        <DeleteModalStyles>
-          <div ref={deleteProductRef} className="modal">
-            <div>
-              <h3>Delete Product</h3>
-              <p>Are you sure you want to delete this product?</p>
-            </div>
-            <div className="buttons">
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={handleCancelDeleteProductClick}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="primary-button"
-                onClick={handleDeleteProductClick}
-              >
-                Delete product
-              </button>
-            </div>
-            <DeleteMutationSpinner
-              isLoading={deleteProductMutation.isLoading}
-            />
-          </div>
-        </DeleteModalStyles>
-      )}
+
       {showDeleteStoreModal && (
         <DeleteModalStyles>
           <div ref={deleteStoreRef} className="modal">
@@ -769,6 +661,7 @@ export default function Store() {
           </div>
         </DeleteModalStyles>
       )}
+
       {showCsvModal && (
         <CSVDownloadModal
           containerRef={csvModalRef}
@@ -777,6 +670,25 @@ export default function Store() {
           setShowModal={setShowCsvModal}
         />
       )}
+
+      <div className="printable-orders" aria-hidden="true">
+        {storeQuery?.data?.orders?.map(o => {
+          if (o.orderStatus === 'Unfulfilled') {
+            const options = {
+              includesName: o.items.some(i => i.customName),
+              includesNumber: o.items.some(i => i.customNumber),
+            };
+            return (
+              <PrintableOrder
+                key={o.orderId}
+                order={o}
+                store={storeQuery.data}
+                options={options}
+              />
+            );
+          }
+        })}
+      </div>
     </Layout>
   );
 }
@@ -795,7 +707,7 @@ const StoreStyles = styled.div`
     margin: 0 0 1.25rem;
     font-size: 1.25rem;
     font-weight: 600;
-    color: #000;
+    color: #111827;
   }
 
   h4 {
@@ -806,10 +718,17 @@ const StoreStyles = styled.div`
   }
 
   .container {
+    position: relative;
     margin: 0 auto;
     padding: 3rem 0 0;
     max-width: 75rem;
     width: 100%;
+  }
+
+  .actions-row {
+    margin: 0 0 2.5rem;
+    display: flex;
+    justify-content: space-between;
   }
 
   .back-link {
@@ -846,15 +765,12 @@ const StoreStyles = styled.div`
   }
 
   .store-menu-container {
-    position: absolute;
-    top: 2rem;
-    right: 2rem;
     display: flex;
     justify-content: flex-end;
     width: 25%;
 
     .menu {
-      top: 2.25rem;
+      top: 5.5rem;
       right: 0;
     }
   }
@@ -882,148 +798,6 @@ const StoreStyles = styled.div`
     }
   }
 
-  .store-header {
-    margin: 3rem 0 2.25rem;
-
-    p {
-      margin: 0.25rem 0 0;
-      font-family: 'Dank Mono', 'Menlo', monospace;
-      font-weight: 700;
-      font-size: 1.125rem;
-      color: #6b7280;
-    }
-  }
-
-  .store-nav {
-    padding: 0.625rem 0;
-    display: flex;
-    align-items: center;
-    border-bottom: 1px solid #e5e7eb;
-    border-top: 1px solid #e5e7eb;
-
-    button {
-      margin: 0 0.75rem 0 0;
-      padding: 0.4375rem 0.75rem;
-      background-color: transparent;
-      border: none;
-      border-radius: 9999px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      line-height: 1;
-      color: #374151;
-      cursor: pointer;
-
-      &:hover {
-        background-color: #e5e7eb;
-        color: #111827;
-      }
-
-      &.active {
-        background-color: #1c5eb9;
-        color: #fff;
-
-        &:focus {
-          outline: 2px solid transparent;
-          outline-offset: 2px;
-        }
-
-        &:focus-visible {
-          box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
-            #1c5eb9 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
-        }
-      }
-    }
-
-    a {
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: #374151;
-    }
-  }
-
-  .body {
-    position: relative;
-    padding: 3.5rem 0;
-  }
-
-  .store-details {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-
-  .store-status {
-    span {
-      padding: 0.375rem 0.5rem 0.375rem;
-      display: inline-flex;
-      align-items: center;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #374151;
-      border-radius: 0.25rem;
-      background: #fff;
-      line-height: 1;
-
-      &.closed {
-        background-color: #fee2e2;
-        color: #991b1b;
-      }
-
-      &.open {
-        color: #14864d;
-        background-color: #c9f7e0;
-      }
-
-      &.upcoming {
-        background-color: #feefb4;
-        color: #92400e;
-      }
-    }
-  }
-
-  .error {
-    font-size: 1.125rem;
-    font-weight: 500;
-    color: #1f2937;
-  }
-
-  .contact-info {
-    display: flex;
-  }
-
-  .info-item {
-    padding: 1.25rem 0;
-    display: flex;
-    flex-direction: column;
-    font-size: 1rem;
-    color: #111827;
-    line-height: 1.35;
-
-    &:last-of-type {
-      padding-bottom: 0;
-    }
-  }
-
-  .label {
-    margin: 0 0 0.5rem;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.0375em;
-    color: #89909d;
-  }
-
-  .value {
-    color: #111827;
-    line-height: 1.5;
-
-    a:hover {
-      text-decoration: underline;
-      color: #1c5eb9;
-    }
-  }
-
   .menu {
     padding: 0 1rem;
     position: absolute;
@@ -1043,7 +817,6 @@ const StoreStyles = styled.div`
   }
 
   .menu-link,
-  .edit-button,
   .delete-button {
     padding: 0.75rem 1.5rem 0.75rem 0;
     width: 100%;
@@ -1073,7 +846,6 @@ const StoreStyles = styled.div`
     }
   }
 
-  .edit-button,
   .menu-link {
     border-bottom: 1px solid #e5e7eb;
   }
@@ -1086,6 +858,125 @@ const StoreStyles = styled.div`
     }
   }
 
+  .store-header {
+    padding: 1.375rem 0 1.5rem;
+    border-top: 1px solid #dcdfe4;
+    border-bottom: 1px solid #dcdfe4;
+
+    p {
+      margin: 0.25rem 0 0;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #6b7280;
+    }
+  }
+
+  .store-name-status {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .store-status {
+    span {
+      padding: 0.375rem 0.5rem 0.375rem;
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #374151;
+      border-radius: 0.25rem;
+      background: #fff;
+      line-height: 1;
+
+      &.closed {
+        background-color: #fee2e2;
+        color: #991b1b;
+      }
+
+      &.upcoming {
+        background-color: #feefb4;
+        color: #92400e;
+      }
+
+      &.open {
+        color: #14864d;
+        background-color: #c9f7e0;
+      }
+    }
+  }
+
+  .main-content {
+    position: relative;
+    padding: 3.5rem 0;
+  }
+
+  .section-title {
+    margin: 0 0 0.875rem;
+    padding: 0 0 0.75rem;
+    border-bottom: 1px solid #dcdfe4;
+  }
+
+  .detail-grid {
+    margin: 1.5rem 0 0;
+    padding: 0 0 0.5rem;
+    display: flex;
+    gap: 8rem;
+    border-bottom: 1px solid #dcdfe4;
+  }
+
+  .detail-item {
+    margin: 0 0 0.75rem;
+    display: grid;
+    grid-template-columns: 10rem 1fr;
+  }
+
+  .label {
+    margin: 0 0 0.4375rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: #6b7280;
+    text-transform: capitalize;
+  }
+
+  .value {
+    font-size: 0.9375rem;
+    color: #111827;
+    line-height: 1.5;
+
+    ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    li {
+      margin: 0 0 0.25rem;
+    }
+
+    a:hover {
+      color: #1c5eb9;
+      text-decoration: underline;
+    }
+  }
+
+  .store-orders,
+  .store-products {
+    margin: 4.5rem 0 0;
+  }
+
+  .error {
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: #1f2937;
+  }
+
+  .contact-info {
+    display: flex;
+  }
+
   .empty {
     margin: 2rem 0 0;
     font-size: 1rem;
@@ -1096,13 +987,17 @@ const StoreStyles = styled.div`
   .capitalize {
     text-transform: capitalize;
   }
+
+  @media print {
+    display: none;
+  }
 `;
 
 const DeleteModalStyles = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  position: absolute;
+  position: fixed;
   top: 0;
   right: 0;
   bottom: 0;

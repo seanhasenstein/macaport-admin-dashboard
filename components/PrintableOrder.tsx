@@ -171,11 +171,19 @@ const PrintableOrderStyles = styled.div`
   display: none;
 
   @media print {
+    page-break-before: always;
     display: block;
     margin: 0 auto;
     padding: 56px 32px;
     width: 8.5in;
     height: 11in;
+
+    @page {
+      margin: 0 auto;
+      padding: 56px 32px;
+      width: 8.5in;
+      height: 11in;
+    }
   }
 
   h3 {

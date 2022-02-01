@@ -67,6 +67,7 @@ export default function InventoryProductTable() {
               <thead>
                 <tr>
                   <th>Product Name</th>
+                  <th>Code</th>
                   <th className="text-center">Sizes</th>
                   <th className="text-center">Colors</th>
                   <th className="text-center">Total Skus</th>
@@ -90,12 +91,12 @@ export default function InventoryProductTable() {
                             <a>
                               <div className="product-name">{product.name}</div>
                               <div className="product-id">
-                                {product.merchandiseCode ||
-                                  product.inventoryProductId}
+                                {product.inventoryProductId}
                               </div>
                             </a>
                           </Link>
                         </td>
+                        <td>{product.merchandiseCode}</td>
                         <td className="text-center">{product.sizes.length}</td>
                         <td className="text-center">{product.colors.length}</td>
                         <td className="text-center">{product.skus.length}</td>
@@ -145,6 +146,7 @@ const InventoryProductStyles = styled.div`
   }
 
   .create-product-link {
+    padding: 0.6875rem 1rem;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -152,17 +154,21 @@ const InventoryProductStyles = styled.div`
     font-weight: 500;
     color: #1955a8;
     line-height: 1;
+    border: 1px solid #d1d5db;
+    border-radius: 0.3125rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     cursor: pointer;
 
     svg {
-      margin: 0 0.375rem 0 0;
+      margin: 0 0.5rem 0 0;
       height: 0.875rem;
       width: 0.875rem;
     }
 
     &:hover {
-      color: #174d97;
-      text-decoration: underline;
+      color: #164c97;
+      border-color: #c6cbd2;
+      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.1);
     }
 
     &:focus {
@@ -171,7 +177,8 @@ const InventoryProductStyles = styled.div`
     }
 
     &:focus-visible {
-      text-decoration: underline;
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+        rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
   }
 
@@ -196,11 +203,11 @@ const InventoryProductStyles = styled.div`
     border-bottom: 1px solid #e5e7eb;
 
     &:first-of-type {
-      padding-left: 2rem;
+      padding-left: 1.75rem;
     }
 
     &:last-of-type {
-      padding-right: 2rem;
+      padding-right: 1.75rem;
     }
 
     &.text-center {

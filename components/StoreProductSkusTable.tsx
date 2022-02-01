@@ -128,7 +128,7 @@ export default function StoreProductSkusTable({
 
   return (
     <StoreProductSkusTableStyles>
-      <h3>Store Product Skus</h3>
+      <h3>Store product skus</h3>
       <div className="skus">
         <div className="sku header">
           <div />
@@ -185,7 +185,10 @@ export default function StoreProductSkusTable({
                 />
               </svg>
             </button>
-            <div className="sku-id">{s.id}</div>
+            <div>
+              <div className="product-name">{storeProduct.name}</div>
+              <div className="sku-id">{s.id}</div>
+            </div>
             <div>{s.size.label}</div>
             <div className="color">
               <Color hex={s.color.hex} />
@@ -268,11 +271,13 @@ export default function StoreProductSkusTable({
 }
 
 const StoreProductSkusTableStyles = styled.div`
+  margin: 3.5rem 0 0;
+
   .skus {
-    padding: 0.25rem;
     background-color: #fff;
+    border-top: 1px solid #e5e7eb;
     box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    border-radius: 0.25rem;
+    border-radius: 0.375rem;
   }
 
   .sku {
@@ -286,14 +291,14 @@ const StoreProductSkusTableStyles = styled.div`
     border-bottom: 1px solid #e5e7eb;
 
     &.header {
-      padding: 0.75rem 2rem;
+      padding: 0.75rem 2rem 0.75rem 1.5rem;
       background-color: #f3f4f6;
-      border-top: 1px solid #e5e7eb;
       font-size: 0.75rem;
       font-weight: 600;
       color: #4b5563;
       text-transform: uppercase;
       letter-spacing: 0.05em;
+      border-radius: 0.375rem 0.375rem 0 0;
     }
 
     &:last-of-type {
@@ -330,10 +335,18 @@ const StoreProductSkusTableStyles = styled.div`
     }
   }
 
+  .product-name {
+    margin: 0 0 0.1875rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: #000;
+  }
+
   .sku-id {
     font-family: 'Dank Mono', 'Menlo', monospace;
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
     font-weight: 700;
+    color: #6b7280;
   }
 
   .color {
