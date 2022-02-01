@@ -110,8 +110,67 @@ const handler = nc<Request, NextApiResponse>()
       });
     }
 
+    let orderItemsRows: Record<string, unknown>[][] = [];
+
+    if (
+      req.body.fields.some((f: Field) => f.field === 'orderItems' && f.checked)
+    ) {
+      // format rows of orderItems for every order
+      orderItemsRows = data.orders.reduce(
+        (orderItemsRowsAcc: Record<string, unknown>[][], currentOrder) => {
+          let rows: Record<string, unknown>[] = [];
+          currentOrder.items.forEach((item, i) => {
+            const itemRow = {
+              [header[0].id]: `${i + 1}`,
+              [header[1].id]: item.name,
+              [header[2].id]: `${item.merchandiseCode}`, // TODO: should be merchandiseCode?
+              [header[3].id]: `${item.sku.size.label}`,
+              [header[4].id]: `${item.sku.color.label}`,
+              [header[5].id]: `${formatToMoney(item.price, true)}`,
+              [header[6].id]: `${item.quantity}`,
+              [header[7].id]: `${formatToMoney(item.itemTotal, true)}`,
+              [header[8].id]: `${item.customName ? item.customName : '-'}`,
+              [header[9].id]: `${item.customNumber ? item.customNumber : '-'}`,
+            };
+            rows = [...rows, itemRow];
+          });
+          return [...orderItemsRowsAcc, rows];
+        },
+        []
+      );
+
+      const orderItemsHeaderRow = {
+        [header[0].id]: 'ORDER ITEMS',
+        [header[1].id]: 'NAME',
+        [header[2].id]: 'MERCH CODE',
+        [header[3].id]: 'SIZE',
+        [header[4].id]: 'COLOR',
+        [header[5].id]: 'ITEM PRICE',
+        [header[6].id]: 'QUANTITY',
+        [header[7].id]: 'ITEM TOTAL',
+        [header[8].id]: 'CUSTOM NAME',
+        [header[9].id]: 'CUSTOM NUMBER',
+      };
+
+      const blankRow = header.map(h => ({ [h.id]: '' }));
+
+      const updatedRecords = records.reduce((acc, currentRecord, i) => {
+        return [
+          ...acc,
+          currentRecord,
+          orderItemsHeaderRow,
+          ...orderItemsRows[i],
+          { ...blankRow },
+          { ...blankRow },
+        ];
+      }, []);
+
+      records = updatedRecords;
+    }
+
     res.json({
       success: true,
+      test: orderItemsRows,
       csv: `${csvStringifier.getHeaderString()} ${csvStringifier.stringifyRecords(
         records
       )}`,
