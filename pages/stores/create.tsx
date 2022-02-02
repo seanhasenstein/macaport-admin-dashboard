@@ -8,12 +8,15 @@ import { useStoresQuery } from '../../hooks/useStoresQuery';
 import { useStoreMutations } from '../../hooks/useStoreMutations';
 import BasicLayout from '../../components/BasicLayout';
 import StoreForm from '../../components/StoreForm';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 export default function CreateStore() {
   const [session, loading] = useSession({ required: true });
   const router = useRouter();
   const storesQuery = useStoresQuery();
-  const { createStore } = useStoreMutations({ stores: storesQuery.data });
+  const { createStore } = useStoreMutations({
+    stores: storesQuery.data,
+  });
 
   if (loading || !session) return <div />;
 
@@ -22,8 +25,8 @@ export default function CreateStore() {
       <CreateStoreStyles>
         <Formik
           initialValues={createStoreInitialValues}
-          onSubmit={async values => {
-            await createStore.mutate(values);
+          onSubmit={values => {
+            createStore.mutate(values);
           }}
         >
           {({ values, setFieldValue }) => (
@@ -57,7 +60,14 @@ export default function CreateStore() {
                     className="primary-button"
                     onClick={() => createStore.mutate(values)}
                   >
-                    {createStore.isLoading ? 'Loading...' : 'Create store'}
+                    {createStore.isLoading ? (
+                      <LoadingSpinner
+                        isLoading={createStore.isLoading}
+                        theme="dark"
+                      />
+                    ) : (
+                      'Create store'
+                    )}
                   </button>
                 </div>
               </div>
@@ -120,6 +130,7 @@ const CreateStoreStyles = styled.div`
     }
 
     .save-buttons {
+      position: relative;
       margin: 0;
       display: flex;
       gap: 0.875rem;
@@ -172,6 +183,10 @@ const CreateStoreStyles = styled.div`
     }
 
     .primary-button {
+      min-width: 7.25rem;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
       background-color: #1f2937;
       color: #f9fafb;
       border: 1px solid transparent;

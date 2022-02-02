@@ -47,7 +47,7 @@ export function useStoreMutations({ store, stores }: Props = {}) {
         queryClient.setQueryData(['stores'], stores);
       },
       onSettled: () => {
-        queryClient.invalidateQueries(['stores']);
+        return queryClient.invalidateQueries(['stores']);
       },
       onSuccess: data => {
         router.push(`/stores/${data._id}?createStore=true`);
@@ -82,7 +82,7 @@ export function useStoreMutations({ store, stores }: Props = {}) {
         queryClient.setQueryData(['stores', 'store', store?._id], store);
       },
       onSuccess: () => {
-        queryClient.invalidateQueries('stores');
+        return queryClient.invalidateQueries('stores');
       },
     }
   );
@@ -119,7 +119,7 @@ export function useStoreMutations({ store, stores }: Props = {}) {
         queryClient.setQueryData(['stores', 'store', router.query.id], store);
       },
       onSettled: () => {
-        queryClient.invalidateQueries(['stores']);
+        return queryClient.invalidateQueries(['stores']);
       },
       onSuccess: () => {
         router.push(`/stores/${store?._id}?updateStore=true`);
@@ -156,8 +156,8 @@ export function useStoreMutations({ store, stores }: Props = {}) {
         // TODO: trigger a notification
         queryClient.setQueryData(['stores'], context);
       },
-      onSettled: async () => {
-        queryClient.invalidateQueries(['stores']);
+      onSettled: () => {
+        return queryClient.invalidateQueries(['stores']);
       },
       onSuccess: () => {
         router.push(`/?deleteStore=true`);

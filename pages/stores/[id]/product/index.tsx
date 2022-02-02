@@ -258,7 +258,7 @@ export default function Product() {
         <DeleteModalStyles>
           <div ref={deleteProductModalRef} className="modal">
             <div>
-              <h3>Delete store</h3>
+              <h3>Delete product</h3>
               <p>Are you sure you want to delete {storeProduct?.name}?</p>
             </div>
 
@@ -275,7 +275,7 @@ export default function Product() {
                 className="primary-button"
                 onClick={handleDeleteProductClick}
               >
-                Delete the store
+                Delete the product
               </button>
             </div>
 

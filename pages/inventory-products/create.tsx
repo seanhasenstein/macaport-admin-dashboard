@@ -8,6 +8,7 @@ import {
   InitialValues,
 } from '../../hooks/useInventoryProductMutations';
 import BasicLayout from '../../components/BasicLayout';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 export default function CreateInventoryProduct() {
   const [session, sessionLoading] = useSession({ required: true });
@@ -53,7 +54,7 @@ export default function CreateInventoryProduct() {
             createProduct.mutate({ ...values, colors, skus });
           }}
         >
-          {({ values, isSubmitting }) => (
+          {({ values }) => (
             <Form>
               <div className="title">
                 <div>
@@ -80,7 +81,14 @@ export default function CreateInventoryProduct() {
                 </div>
                 <div className="save-buttons">
                   <button type="submit" className="primary-button">
-                    {isSubmitting ? 'Saving...' : 'Create inventory product'}
+                    {createProduct.isLoading ? (
+                      <LoadingSpinner
+                        isLoading={createProduct.isLoading}
+                        theme="dark"
+                      />
+                    ) : (
+                      'Create inventory product'
+                    )}
                   </button>
                 </div>
               </div>
@@ -480,6 +488,10 @@ const CreateInventoryProductStyles = styled.div`
   }
 
   .primary-button {
+    min-width: 12.25rem;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
     background-color: #1f2937;
     color: #f9fafb;
     border: 1px solid transparent;

@@ -21,6 +21,7 @@ import { useStoreQuery } from '../../../../hooks/useStoreQuery';
 import { useStoreProductMutations } from '../../../../hooks/useStoreProductMutations';
 import BasicLayout from '../../../../components/BasicLayout';
 import Notification from '../../../../components/Notification';
+import LoadingSpinner from '../../../../components/LoadingSpinner';
 
 type InitialValues = {
   inventoryProductId: string;
@@ -318,14 +319,15 @@ export default function AddProduct() {
                   <h2>Add a store product</h2>
                 </div>
                 <div className="save-buttons">
-                  {/* <button
-                    type="button"
-                    className="secondary-button"
-                  >
-                    Save and add another
-                  </button> */}
                   <button type="submit" className="primary-button">
-                    Save product
+                    {addProduct.isLoading ? (
+                      <LoadingSpinner
+                        isLoading={addProduct.isLoading}
+                        theme="dark"
+                      />
+                    ) : (
+                      'Add product'
+                    )}
                   </button>
                 </div>
               </div>
@@ -899,6 +901,10 @@ const AddProductStyles = styled.div`
   }
 
   .primary-button {
+    min-width: 7.25rem;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
     background-color: #1f2937;
     color: #f9fafb;
     border: 1px solid transparent;

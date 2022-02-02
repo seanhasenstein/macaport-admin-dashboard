@@ -58,9 +58,14 @@ export default function UpdateStore() {
                   </div>
                   <div className="save-buttons">
                     <button type="submit" className="primary-button">
-                      {updateStoreForm.isLoading
-                        ? 'Loading...'
-                        : 'Update Store'}
+                      {updateStoreForm.isLoading ? (
+                        <LoadingSpinner
+                          isLoading={updateStoreForm.isLoading}
+                          theme="dark"
+                        />
+                      ) : (
+                        'Update Store'
+                      )}
                     </button>
                   </div>
                 </div>
@@ -152,6 +157,10 @@ const UpdateStoreStyles = styled.div`
 
     .primary-button {
       background-color: #1f2937;
+      min-width: 7.75rem;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
       color: #fff;
       border: 1px solid transparent;
 

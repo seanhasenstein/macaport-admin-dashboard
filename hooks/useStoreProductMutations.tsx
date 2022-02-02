@@ -62,7 +62,7 @@ export function useStoreProductMutations({
         queryClient.setQueryData(['stores', 'store', router.query.id], store);
       },
       onSettled: () => {
-        queryClient.invalidateQueries(['stores']);
+        return queryClient.invalidateQueries(['stores']);
       },
       onSuccess: (data, variables) => {
         router.push(
@@ -113,7 +113,7 @@ export function useStoreProductMutations({
         );
       },
       onSettled: () => {
-        queryClient.invalidateQueries('stores');
+        return queryClient.invalidateQueries('stores');
       },
       onSuccess: () => {
         router.push(
@@ -187,7 +187,7 @@ export function useStoreProductMutations({
         );
       },
       onSettled: () => {
-        queryClient.invalidateQueries(['stores']);
+        return queryClient.invalidateQueries(['stores']);
       },
     }
   );
@@ -235,8 +235,8 @@ export function useStoreProductMutations({
       return updatedProduct?.colors;
     },
     {
-      onSuccess: () => {
-        queryClient.invalidateQueries('stores');
+      onSettled: () => {
+        return queryClient.invalidateQueries('stores');
       },
     }
   );
@@ -264,8 +264,8 @@ export function useStoreProductMutations({
       return updatedColor?.secondaryImages;
     },
     {
-      onSuccess: () => {
-        queryClient.invalidateQueries('stores');
+      onSettled: () => {
+        return queryClient.invalidateQueries('stores');
       },
     }
   );
@@ -293,7 +293,7 @@ export function useStoreProductMutations({
     },
     {
       onSettled: () => {
-        queryClient.invalidateQueries('stores');
+        return queryClient.invalidateQueries('stores');
       },
       onSuccess: () => {
         router.push(`/stores/${router.query.id}?deleteProduct=true`);
@@ -347,7 +347,7 @@ export function useStoreProductMutations({
         );
       },
       onSettled: () => {
-        queryClient.invalidateQueries(['stores']);
+        return queryClient.invalidateQueries(['stores']);
       },
     }
   );
@@ -407,7 +407,7 @@ export function useStoreProductMutations({
         );
       },
       onSettled: () => {
-        queryClient.invalidateQueries(['stores']);
+        return queryClient.invalidateQueries(['stores']);
       },
     }
   );
@@ -458,7 +458,7 @@ export function useStoreProductMutations({
         );
       },
       onSettled: () => {
-        queryClient.invalidateQueries(['stores']);
+        return queryClient.invalidateQueries(['stores']);
       },
     }
   );

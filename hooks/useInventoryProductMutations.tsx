@@ -48,8 +48,10 @@ export function useInventoryProductMutations(
       return data;
     },
     {
+      onSettled: () => {
+        return queryClient.invalidateQueries(['inventory-products']);
+      },
       onSuccess: ({ inventoryProduct }) => {
-        queryClient.invalidateQueries(['inventory-products']);
         router.push(
           `/inventory-products/${inventoryProduct.inventoryProductId}`
         );
@@ -106,8 +108,7 @@ export function useInventoryProductMutations(
         );
       },
       onSettled: async () => {
-        queryClient.invalidateQueries(['inventory-products']);
-        queryClient.invalidateQueries(['stores']);
+        return queryClient.invalidateQueries();
       },
     }
   );
@@ -154,8 +155,7 @@ export function useInventoryProductMutations(
         );
       },
       onSettled: () => {
-        queryClient.invalidateQueries('inventory-products');
-        queryClient.invalidateQueries('stores');
+        return queryClient.invalidateQueries();
       },
       onSuccess: (_data, variables) => {
         router.push(`/inventory-products/${variables.inventoryProductId}`);
@@ -229,8 +229,7 @@ export function useInventoryProductMutations(
         );
       },
       onSettled: async () => {
-        queryClient.invalidateQueries(['inventory-products']);
-        queryClient.invalidateQueries(['stores']);
+        return queryClient.invalidateQueries();
       },
     }
   );
@@ -310,7 +309,7 @@ export function useInventoryProductMutations(
         );
       },
       onSettled: () => {
-        queryClient.invalidateQueries('inventory-products');
+        return queryClient.invalidateQueries('inventory-products');
       },
     }
   );
@@ -377,7 +376,7 @@ export function useInventoryProductMutations(
         );
       },
       onSettled: () => {
-        queryClient.invalidateQueries(['inventory-products']);
+        return queryClient.invalidateQueries(['inventory-products']);
       },
     }
   );
@@ -432,7 +431,7 @@ export function useInventoryProductMutations(
         );
       },
       onSettled: () => {
-        queryClient.invalidateQueries(['inventory-products']);
+        return queryClient.invalidateQueries(['inventory-products']);
       },
     }
   );

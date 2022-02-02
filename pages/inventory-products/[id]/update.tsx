@@ -12,6 +12,7 @@ import { useSession } from '../../../hooks/useSession';
 import { useInventoryProductQuery } from '../../../hooks/useInventoryProductQuery';
 import { useInventoryProductMutations } from '../../../hooks/useInventoryProductMutations';
 import BasicLayout from '../../../components/BasicLayout';
+import LoadingSpinner from '../../../components/LoadingSpinner';
 
 export default function UpdateInventoryProduct() {
   const [session, sessionLoading] = useSession({ required: true });
@@ -71,7 +72,7 @@ export default function UpdateInventoryProduct() {
         <Formik
           initialValues={initialValues}
           enableReinitialize={true}
-          onSubmit={async (values: UpdateFormValues) => {
+          onSubmit={(values: UpdateFormValues) => {
             const updatedSkus = updateInventoryProductSkus(
               inventoryProductQuery.data,
               values
@@ -82,7 +83,7 @@ export default function UpdateInventoryProduct() {
             });
           }}
         >
-          {({ values, isSubmitting }) => (
+          {({ values }) => (
             <Form>
               <div className="title">
                 <div>
@@ -109,7 +110,14 @@ export default function UpdateInventoryProduct() {
                 </div>
                 <div className="save-buttons">
                   <button type="submit" className="primary-button">
-                    {isSubmitting ? 'Saving...' : 'Update inventory product'}
+                    {updateProductIncludingSkus.isLoading ? (
+                      <LoadingSpinner
+                        isLoading={updateProductIncludingSkus.isLoading}
+                        theme="dark"
+                      />
+                    ) : (
+                      'Update inventory product'
+                    )}
                   </button>
                 </div>
               </div>
@@ -477,6 +485,13 @@ const UpdateInventoryProductStyles = styled.div`
       margin: 0;
       display: flex;
       gap: 0.875rem;
+    }
+
+    .primary-button {
+      min-width: 12.5rem;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
     }
   }
 

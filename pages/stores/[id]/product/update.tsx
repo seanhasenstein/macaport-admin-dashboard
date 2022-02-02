@@ -142,7 +142,14 @@ export default function UpdateProduct() {
                     </div>
                     <div className="save-buttons">
                       <button type="submit" className="primary-button">
-                        Save product
+                        {updateProduct.isLoading ? (
+                          <LoadingSpinner
+                            isLoading={updateProduct.isLoading}
+                            theme="dark"
+                          />
+                        ) : (
+                          'Update product'
+                        )}
                       </button>
                     </div>
                   </div>
@@ -617,6 +624,13 @@ const UpdateProductStyles = styled.div`
       margin: 0;
       display: flex;
       gap: 0.875rem;
+    }
+
+    .primary-button {
+      min-width: 8.5rem;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
     }
   }
 
