@@ -1,53 +1,30 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { useQuery, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import { format } from 'date-fns';
-import { InventoryProduct as IPInterface } from '../../../interfaces';
 import { useSession } from '../../../hooks/useSession';
+import { useInventoryProductQuery } from '../../../hooks/useInventoryProductQuery';
+import { useInventoryProductMutations } from '../../../hooks/useInventoryProductMutations';
 import useOutsideClick from '../../../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../../../hooks/useEscapeKeydownClose';
 import Layout from '../../../components/Layout';
 import InventoryProductSkus from '../../../components/InventoryProductSkus';
+import Notes from '../../../components/Notes';
 import InventoryModal from '../../../components/InventoryModal';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 
 export default function InventoryProduct() {
   const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
-  const queryClient = useQueryClient();
   const productMenuRef = React.useRef<HTMLDivElement>(null);
   const [showProductMenu, setShowProductMenu] = React.useState(false);
   const [showInventoryModal, setShowInventoryModal] = React.useState(false);
   useOutsideClick(showProductMenu, setShowProductMenu, productMenuRef);
   useEscapeKeydownClose(showProductMenu, setShowProductMenu);
-
-  const inventoryProductQuery = useQuery<IPInterface>(
-    ['inventory-products', 'inventory-product', router.query.id],
-    async () => {
-      if (!router.query.id) return;
-      const response = await fetch(
-        `/api/inventory-products/${router.query.id}`
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch the inventory product.');
-      }
-
-      const data = await response.json();
-      return data.inventoryProduct;
-    },
-    {
-      initialData: () => {
-        return queryClient
-          .getQueryData<IPInterface[]>(['inventory-products'])
-          ?.find(ip => ip.inventoryProductId === router.query.id);
-      },
-      initialDataUpdatedAt: () =>
-        queryClient.getQueryState(['inventory-products'])?.dataUpdatedAt,
-      staleTime: 1000 * 60 * 10,
-    }
+  const invProdQuery = useInventoryProductQuery();
+  const { addNote, updateNote, deleteNote } = useInventoryProductMutations(
+    invProdQuery.data
   );
 
   if (sessionLoading || !session) return <div />;
@@ -56,14 +33,13 @@ export default function InventoryProduct() {
     <Layout title="Inventory Product | Macaport Dashboard">
       <InventoryProductStyles>
         <div className="container">
-          {inventoryProductQuery.isLoading && (
-            <LoadingSpinner isLoading={inventoryProductQuery.isLoading} />
+          {invProdQuery.isLoading && (
+            <LoadingSpinner isLoading={invProdQuery.isLoading} />
           )}
-          {inventoryProductQuery.isError &&
-            inventoryProductQuery.error instanceof Error && (
-              <div>Error: {inventoryProductQuery.error}</div>
-            )}
-          {inventoryProductQuery.data && (
+          {invProdQuery.isError && invProdQuery.error instanceof Error && (
+            <div>Error: {invProdQuery.error}</div>
+          )}
+          {invProdQuery.data && (
             <>
               <div className="actions-row">
                 <Link href="/#inventory-products">
@@ -163,12 +139,12 @@ export default function InventoryProduct() {
               </div>
 
               <div className="product-header">
-                <h2>{inventoryProductQuery.data.name}</h2>
-                <p>{inventoryProductQuery.data.inventoryProductId}</p>
+                <h2>{invProdQuery.data.name}</h2>
+                <p>{invProdQuery.data.inventoryProductId}</p>
               </div>
 
               <div className="main-content">
-                <FetchingSpinner isLoading={inventoryProductQuery.isFetching} />
+                <FetchingSpinner isLoading={invProdQuery.isFetching} />
                 <div>
                   <h3 className="section-title">Inventory product details</h3>
                   <div className="details-grid">
@@ -176,7 +152,7 @@ export default function InventoryProduct() {
                       <div className="detail-item">
                         <div className="label">Merchandise code</div>
                         <div className="value">
-                          {inventoryProductQuery.data.merchandiseCode}
+                          {invProdQuery.data.merchandiseCode}
                         </div>
                       </div>
 
@@ -184,7 +160,7 @@ export default function InventoryProduct() {
                         <div className="label">Created</div>
                         <div className="value">
                           {format(
-                            new Date(inventoryProductQuery.data.createdAt),
+                            new Date(invProdQuery.data.createdAt),
                             "MMM. dd, yyyy 'at' h:mmaa"
                           )}
                         </div>
@@ -194,7 +170,7 @@ export default function InventoryProduct() {
                         <div className="label">Last updated</div>
                         <div className="value">
                           {format(
-                            new Date(inventoryProductQuery.data.updatedAt),
+                            new Date(invProdQuery.data.updatedAt),
                             "MMM. dd, yyyy 'at' h:mmaa"
                           )}
                         </div>
@@ -203,23 +179,21 @@ export default function InventoryProduct() {
                       <div className="detail-item">
                         <div className="label">Description</div>
                         <div className="value">
-                          {inventoryProductQuery.data.description}
+                          {invProdQuery.data.description}
                         </div>
                       </div>
 
                       <div className="detail-item">
                         <div className="label">Tag</div>
-                        <div className="value">
-                          {inventoryProductQuery.data.tag}
-                        </div>
+                        <div className="value">{invProdQuery.data.tag}</div>
                       </div>
 
                       <div className="detail-item">
                         <div className="label">Details</div>
                         <div className="value">
                           <ul>
-                            {inventoryProductQuery.data.details.length > 0 &&
-                              inventoryProductQuery.data.details.map((d, i) => (
+                            {invProdQuery.data.details.length > 0 &&
+                              invProdQuery.data.details.map((d, i) => (
                                 <li key={i}>{d}</li>
                               ))}
                           </ul>
@@ -230,9 +204,17 @@ export default function InventoryProduct() {
                 </div>
 
                 <InventoryProductSkus
-                  productName={inventoryProductQuery.data.name}
-                  inventoryProduct={inventoryProductQuery.data}
+                  productName={invProdQuery.data.name}
+                  inventoryProduct={invProdQuery.data}
                   setShowInventoryModal={setShowInventoryModal}
+                />
+
+                <Notes
+                  label="Inventory product"
+                  notes={invProdQuery.data.notes}
+                  addNote={addNote}
+                  updateNote={updateNote}
+                  deleteNote={deleteNote}
                 />
               </div>
             </>
@@ -240,9 +222,9 @@ export default function InventoryProduct() {
         </div>
       </InventoryProductStyles>
 
-      {showInventoryModal && inventoryProductQuery.data && (
+      {showInventoryModal && invProdQuery.data && (
         <InventoryModal
-          product={inventoryProductQuery.data}
+          product={invProdQuery.data}
           showModal={showInventoryModal}
           setShowModal={setShowInventoryModal}
         />
@@ -314,10 +296,10 @@ const InventoryProductStyles = styled.div`
 
     &:focus-visible {
       text-decoration: underline;
-      color: #1c5eb9;
+      color: #1c44b9;
 
       svg {
-        color: #1c5eb9;
+        color: #1c44b9;
       }
     }
   }
@@ -469,7 +451,7 @@ const InventoryProductStyles = styled.div`
     line-height: 1.5;
 
     a:hover {
-      color: #1c5eb9;
+      color: #1c44b9;
       text-decoration: underline;
     }
   }

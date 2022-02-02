@@ -1,7 +1,7 @@
 import { useSession } from '../hooks/useSession';
 import Layout from '../components/Layout';
 import StoresTable from '../components/StoresTable';
-import InventoryProductTable from '../components/InventoryProductTable';
+import InventoryProductsTable from '../components/InventoryProductsTable';
 
 export default function Index() {
   const [session, loading] = useSession({ required: true });
@@ -11,7 +11,7 @@ export default function Index() {
   return (
     <Layout title="Macaport Dashboard Home">
       <StoresTable />
-      <InventoryProductTable />
+      <InventoryProductsTable />
     </Layout>
   );
 }

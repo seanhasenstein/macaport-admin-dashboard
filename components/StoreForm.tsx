@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { Form, Field, FieldArray, FieldArrayRenderProps } from 'formik';
+import { Field, FieldArray, FieldArrayRenderProps } from 'formik';
 import { unitedStates } from '../utils';
 import { StoreForm as StoreFormInterface } from '../interfaces';
 
@@ -26,7 +26,7 @@ export default function StoreForm({ values, setFieldValue }: Props) {
 
   return (
     <StoreFormStyles>
-      <Form>
+      <>
         <div className="section">
           <div className="item">
             <label htmlFor="name">Store Name</label>
@@ -299,7 +299,7 @@ export default function StoreForm({ values, setFieldValue }: Props) {
             </>
           )}
         </div>
-      </Form>
+      </>
     </StoreFormStyles>
   );
 }
@@ -444,7 +444,7 @@ const StoreFormStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
         rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
   }

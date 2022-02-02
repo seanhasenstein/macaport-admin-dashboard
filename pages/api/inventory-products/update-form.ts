@@ -21,7 +21,7 @@ const handler = nc<Request, NextApiResponse>()
 
     for (const store of allStores) {
       if (
-        store.products.some(
+        store.products?.some(
           p => p.inventoryProductId === update.inventoryProductId
         )
       ) {

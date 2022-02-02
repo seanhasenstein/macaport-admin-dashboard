@@ -226,7 +226,7 @@ const StoresTableStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
         rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
   }
@@ -314,7 +314,7 @@ const StoresTableStyles = styled.div`
 
       &:focus-visible .store-name {
         text-decoration: underline;
-        color: #1c5eb9;
+        color: #1c44b9;
       }
     }
 
@@ -375,15 +375,6 @@ const StoresTableStyles = styled.div`
 
     .dot {
       background-color: #f87171;
-    }
-  }
-
-  .no-stores-link {
-    color: #2563eb;
-    text-decoration: underline;
-
-    &:hover {
-      color: #1d4ed8;
     }
   }
 `;

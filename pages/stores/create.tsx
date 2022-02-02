@@ -1,87 +1,19 @@
 import React from 'react';
 import { useRouter } from 'next/router';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
-import { Formik } from 'formik';
+import { Formik, Form } from 'formik';
+import { createStoreInitialValues } from '../../utils/storeForm';
 import { useSession } from '../../hooks/useSession';
-import { Store, StoreForm as StoreFormInterface } from '../../interfaces';
-import { createId } from '../../utils';
-import {
-  createStoreInitialValues,
-  formatDataForDb,
-} from '../../utils/storeForm';
+import { useStoresQuery } from '../../hooks/useStoresQuery';
+import { useStoreMutations } from '../../hooks/useStoreMutations';
 import BasicLayout from '../../components/BasicLayout';
 import StoreForm from '../../components/StoreForm';
 
 export default function CreateStore() {
   const [session, loading] = useSession({ required: true });
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  const storesQuery = useQuery<Store[]>(
-    ['stores'],
-    async () => {
-      const response = await fetch('/api/stores');
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch the stores.');
-      }
-
-      const data = await response.json();
-      return data.stores;
-    },
-    {
-      initialData: () => {
-        return queryClient.getQueryData(['stores']);
-      },
-      initialDataUpdatedAt: () => {
-        return queryClient.getQueryState(['stores'])?.dataUpdatedAt;
-      },
-      staleTime: 1000 * 60 * 10,
-    }
-  );
-
-  const createStoreMutation = useMutation(
-    async (store: StoreFormInterface) => {
-      const response = await fetch(`/api/stores/create`, {
-        method: 'POST',
-        body: JSON.stringify(formatDataForDb(store)),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create the store.');
-      }
-
-      const data = await response.json();
-      return data.store;
-    },
-    {
-      onMutate: async newStore => {
-        await queryClient.cancelQueries(['stores']);
-        const formattedNewStore = formatDataForDb(newStore);
-        const previousStores = storesQuery.data || [];
-        const stores = [
-          ...previousStores,
-          { ...formattedNewStore, _id: createId() },
-        ];
-        queryClient.setQueryData(['stores'], stores);
-        return { previousStores, newStore };
-      },
-      onError: () => {
-        // TODO: trigger a notification
-        queryClient.setQueryData(['stores'], storesQuery.data);
-      },
-      onSettled: () => {
-        queryClient.invalidateQueries(['stores']);
-      },
-      onSuccess: data => {
-        router.push(`/stores/${data._id}?createStore=true`);
-      },
-    }
-  );
+  const storesQuery = useStoresQuery();
+  const { createStore } = useStoreMutations({ stores: storesQuery.data });
 
   if (loading || !session) return <div />;
 
@@ -91,11 +23,11 @@ export default function CreateStore() {
         <Formik
           initialValues={createStoreInitialValues}
           onSubmit={async values => {
-            await createStoreMutation.mutate(values);
+            await createStore.mutate(values);
           }}
         >
           {({ values, setFieldValue }) => (
-            <>
+            <Form>
               <div className="title">
                 <div>
                   <button
@@ -123,9 +55,9 @@ export default function CreateStore() {
                   <button
                     type="button"
                     className="primary-button"
-                    onClick={() => createStoreMutation.mutate(values)}
+                    onClick={() => createStore.mutate(values)}
                   >
-                    Create store
+                    {createStore.isLoading ? 'Loading...' : 'Create store'}
                   </button>
                 </div>
               </div>
@@ -135,7 +67,7 @@ export default function CreateStore() {
                   <StoreForm values={values} setFieldValue={setFieldValue} />
                 </div>
               </div>
-            </>
+            </Form>
           )}
         </Formik>
       </CreateStoreStyles>
@@ -211,7 +143,7 @@ const CreateStoreStyles = styled.div`
       }
 
       &:focus-visible {
-        box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+        box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
           rgba(0, 0, 0, 0) 0px 0px 0px 0px;
       }
     }

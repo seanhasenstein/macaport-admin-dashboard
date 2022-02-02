@@ -91,7 +91,7 @@ a {
 
 * {
   box-sizing: border-box;
-  outline-color: #1c5eb9;
+  outline-color: #1c44b9;
 }
 
 .sr-only {
@@ -126,8 +126,8 @@ input:not([type="checkbox"], [type="radio"]), textarea {
   &:focus {
     outline: 2px solid transparent;
     outline-offset: 2px;
-    border-color: #1c5eb9;
-    box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px, #1c5eb9 0px 0px 0px 1px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+    border-color: #1c44b9;
+    box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px, #1c44b9 0px 0px 0px 1px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
   }
 }
 
@@ -142,7 +142,7 @@ input[type="checkbox"]:checked, input[type='radio']:checked {
 input[type='checkbox']:focus-visible, input[type='radio']:focus-visible {
   outline: 2px solid transparent;
   outline-offset: 2px;
-  box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+  box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
 }
 
 input[type='checkbox'] {
@@ -154,7 +154,7 @@ input[type='checkbox'] {
   user-select: none;
   flex-shrink: 0;
   border-radius: 0.25rem;
-  color: #1c5eb9;
+  color: #1c44b9;
 }
 
 input[type="checkbox"]:checked {
@@ -167,7 +167,7 @@ input[type="radio"] {
   width: 1rem;
   border-radius: 100%;
   flex-shrink: 0;
-  color: #1c5eb9;
+  color: #1c44b9;
 }
 
 input[type="radio"]:checked {
@@ -198,8 +198,8 @@ select {
 select:focus {
   outline: 2px solid transparent;
   outline-offset: 2px;
-  border-color: #1c5eb9;
-  box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px, #1c5eb9 0px 0px 0px 1px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+  border-color: #1c44b9;
+  box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px, #1c44b9 0px 0px 0px 1px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
 }
 
 textarea {

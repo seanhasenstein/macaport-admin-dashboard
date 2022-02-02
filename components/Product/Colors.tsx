@@ -1,47 +1,21 @@
-import { useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
+import { StoreProduct } from '../../interfaces';
+import { useStoreProductMutations } from '../../hooks/useStoreProductMutations';
 import useDragNDrop from '../../hooks/useDragNDrop';
-import { Store, StoreProduct, Color } from '../../interfaces';
 import SecondaryImages from './SecondaryImages';
 
 type Props = {
-  storeId: string;
   product: StoreProduct;
 };
 
-export default function Colors({ storeId, product }: Props) {
-  const queryClient = useQueryClient();
-
-  const colorsMutation = useMutation(
-    async (colors: Color[]) => {
-      const response = await fetch(
-        `/api/stores/update-product?sid=${storeId}&pid=${product.id}`,
-        {
-          method: 'post',
-          body: JSON.stringify({ ...product, colors }),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-      if (!response.ok) {
-        throw new Error('Failed to update the colors.');
-      }
-      const { store }: { store: Store } = await response.json();
-      const updatedProduct = store.products.find(p => p.id === product.id);
-      return updatedProduct?.colors;
-    },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('stores');
-      },
-    }
-  );
-
+export default function Colors({ product }: Props) {
+  const { updateColorsOrder } = useStoreProductMutations({
+    storeProduct: product,
+  });
   const dnd = useDragNDrop(
     product?.colors,
     'prod-color',
-    colorsMutation.mutate
+    updateColorsOrder.mutate
   );
 
   return (
@@ -120,11 +94,7 @@ export default function Colors({ storeId, product }: Props) {
             </div>
             <div className="secondary-imgs">
               <div className="color-label">Secondary Images</div>
-              <SecondaryImages
-                color={color}
-                product={product}
-                storeId={storeId}
-              />
+              <SecondaryImages color={color} product={product} />
             </div>
           </div>
         </div>

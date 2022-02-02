@@ -1,17 +1,13 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import { useSession } from '../../../../hooks/useSession';
 import {
   CloudinaryStatus,
   Color,
   InventoryProduct,
   Size,
-  Store,
-  StoreProduct,
 } from '../../../../interfaces';
 import {
   createId,
@@ -19,6 +15,10 @@ import {
   removeNonAlphanumeric,
   createStoreProductSkus,
 } from '../../../../utils';
+import { useSession } from '../../../../hooks/useSession';
+import { useInventoryProductsQuery } from '../../../../hooks/useInventoryProductsQuery';
+import { useStoreQuery } from '../../../../hooks/useStoreQuery';
+import { useStoreProductMutations } from '../../../../hooks/useStoreProductMutations';
 import BasicLayout from '../../../../components/BasicLayout';
 import Notification from '../../../../components/Notification';
 
@@ -63,7 +63,6 @@ const validationSchema = Yup.object().shape({
 export default function AddProduct() {
   const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [primaryImageStatus, setPrimaryImageStatus] =
     React.useState<CloudinaryStatus>('idle');
   const [secondaryImageStatus, setSecondaryImageStatus] =
@@ -75,104 +74,9 @@ export default function AddProduct() {
   const [inventoryProduct, setInventoryProduct] =
     React.useState<InventoryProduct>();
 
-  const inventoryProductsQuery = useQuery<InventoryProduct[]>(
-    ['inventory-products'],
-    async () => {
-      const response = await fetch('/api/inventory-products');
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch the inventory products.');
-      }
-
-      const data = await response.json();
-      return data.inventoryProducts;
-    },
-    {
-      initialData: () => {
-        return queryClient.getQueryData(['inventory-products']);
-      },
-      initialDataUpdatedAt: () => {
-        return queryClient.getQueryState(['inventory-products'])?.dataUpdatedAt;
-      },
-      staleTime: 1000 * 60 * 10,
-    }
-  );
-
-  const storeQuery = useQuery<Store>(
-    ['stores', 'store', router.query.id],
-    async () => {
-      if (!router.query.id) return;
-      const response = await fetch(`/api/stores/${router.query.id}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch the store.');
-      }
-      const data = await response.json();
-      return data.store;
-    },
-    {
-      initialData: () => {
-        return queryClient.getQueryData<Store>([
-          'stores',
-          'store',
-          router.query.id,
-        ]);
-      },
-      initialDataUpdatedAt: () =>
-        queryClient.getQueryState(['stores', 'store', router.query.id])
-          ?.dataUpdatedAt,
-      staleTime: 1000 * 60 * 10,
-    }
-  );
-
-  const addProductMutation = useMutation(
-    async (product: StoreProduct) => {
-      const response = await fetch(
-        `/api/stores/add-product?id=${router.query.id}`,
-        {
-          method: 'post',
-          body: JSON.stringify(product),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to add the product.');
-      }
-
-      const data = await response.json();
-      return data.store;
-    },
-    {
-      onMutate: async newProduct => {
-        await queryClient.cancelQueries(['stores', 'store', router.query.id]);
-        const storeProducts = storeQuery.data?.products || [];
-        const updatedStore = {
-          ...storeQuery.data,
-          products: [...storeProducts, newProduct],
-        };
-        queryClient.setQueryData(
-          ['stores', 'store', router.query.id],
-          updatedStore
-        );
-        return { previousStore: storeQuery.data, newProduct };
-      },
-      onError: () => {
-        // TODO: trigger a notification
-        queryClient.setQueryData(
-          ['stores', 'store', router.query.id],
-          storeQuery.data
-        );
-      },
-      onSettled: () => {
-        queryClient.invalidateQueries(['stores']);
-      },
-      onSuccess: () => {
-        router.push(`/stores/${router.query.id}?addProduct=true`);
-      },
-    }
-  );
+  const inventoryProductsQuery = useInventoryProductsQuery();
+  const storeQuery = useStoreQuery();
+  const { addProduct } = useStoreProductMutations({ store: storeQuery.data });
 
   const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_NAME}/image/upload`;
 
@@ -379,11 +283,12 @@ export default function AddProduct() {
             );
             const product = { ...values, colors, sizes, productSkus: skus };
 
-            addProductMutation.mutate({
+            addProduct.mutate({
               ...product,
               merchandiseCode: inventoryProduct.merchandiseCode,
               includeCustomName,
               includeCustomNumber,
+              notes: [],
             });
           }}
         >
@@ -958,19 +863,28 @@ const AddProductStyles = styled.div`
     font-weight: 500;
     border-radius: 0.3125rem;
     cursor: pointer;
+
+    &:focus {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+
+    &:focus-visible {
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
+        rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+    }
   }
 
   .secondary-button {
-    background-color: #fff;
+    background-color: transparent;
+    color: #1f2937;
     border: 1px solid #d1d5db;
-    color: #374151;
-    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-      rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px 0px,
-      rgba(0, 0, 0, 0.02) 0px 1px 1px 0px;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 
     &:hover {
-      background-color: #f9fafb;
-      color: #111827;
+      color: #000;
+      border-color: #c6cbd2;
+      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.1);
 
       svg {
         color: #6b7280;
@@ -985,12 +899,19 @@ const AddProductStyles = styled.div`
   }
 
   .primary-button {
-    background-color: #1c5eb9;
-    color: #fff;
+    background-color: #1f2937;
+    color: #f9fafb;
     border: 1px solid transparent;
 
+    svg {
+      margin: 0 0.25rem 0 0;
+      height: 0.875rem;
+      width: 0.875rem;
+      color: #4b5563;
+    }
+
     &:hover {
-      background-color: #1955a8;
+      background-color: #263244;
     }
   }
 
@@ -1285,7 +1206,7 @@ const AddProductStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
         rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
 

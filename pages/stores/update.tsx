@@ -1,14 +1,11 @@
 import React from 'react';
 import { useRouter } from 'next/router';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
-import { Formik } from 'formik';
+import { Formik, Form } from 'formik';
+import { formatUpdateInitialValues } from '../../utils/storeForm';
 import { useSession } from '../../hooks/useSession';
-import { Store, StoreForm as StoreFormInterface } from '../../interfaces';
-import {
-  formatDataForDb,
-  formatUpdateInitialValues,
-} from '../../utils/storeForm';
+import { useStoreQuery } from '../../hooks/useStoreQuery';
+import { useStoreMutations } from '../../hooks/useStoreMutations';
 import BasicLayout from '../../components/BasicLayout';
 import StoreForm from '../../components/StoreForm';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -16,76 +13,8 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 export default function UpdateStore() {
   const [session, loading] = useSession({ required: true });
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  const {
-    isLoading,
-    isError,
-    data: store,
-    error,
-  } = useQuery<Store>(
-    ['stores', 'store', router.query.id],
-    async () => {
-      if (!router.query.id) return;
-      const response = await fetch(`/api/stores/${router.query.id}`);
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch the store.');
-      }
-
-      const data = await response.json();
-      return data.store;
-    },
-    {
-      initialData: () => {
-        return queryClient
-          .getQueryData<Store[]>('stores')
-          ?.find(s => s._id === router.query.id);
-      },
-      initialDataUpdatedAt: () =>
-        queryClient.getQueryState('stores')?.dataUpdatedAt,
-      staleTime: 600000,
-    }
-  );
-
-  const updateStoreMutation = useMutation(
-    async (store: StoreFormInterface) => {
-      const response = await fetch(`/api/stores/update?id=${router.query.id}`, {
-        method: 'POST',
-        body: JSON.stringify(formatDataForDb(store)),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update the store.');
-      }
-
-      const data = await response.json();
-      return data.store;
-    },
-    {
-      onMutate: async updatedStore => {
-        await queryClient.cancelQueries(['stores', 'store', router.query.id]);
-        queryClient.setQueryData(['stores', 'store', router.query.id], {
-          ...formatDataForDb(updatedStore),
-          _id: store?._id,
-        });
-        return { previousStore: store, updatedStore };
-      },
-      onError: () => {
-        // TODO: trigger a notification
-        queryClient.setQueryData(['stores', 'store', router.query.id], store);
-      },
-      onSettled: () => {
-        queryClient.invalidateQueries(['stores']);
-      },
-      onSuccess: data => {
-        router.push(`/stores/${data._id}?updateStore=true`);
-      },
-    }
-  );
+  const { isLoading, isError, error, data: store } = useStoreQuery();
+  const { updateStoreForm } = useStoreMutations({ store });
 
   if (loading || !session) return <div />;
 
@@ -98,12 +27,12 @@ export default function UpdateStore() {
           <Formik
             initialValues={formatUpdateInitialValues(store)}
             enableReinitialize={true}
-            onSubmit={async values => {
-              await updateStoreMutation.mutate(values);
+            onSubmit={values => {
+              updateStoreForm.mutate(values);
             }}
           >
             {({ values, setFieldValue }) => (
-              <>
+              <Form>
                 <div className="title">
                   <div>
                     <button
@@ -128,12 +57,10 @@ export default function UpdateStore() {
                     <h2>Update Store</h2>
                   </div>
                   <div className="save-buttons">
-                    <button
-                      type="button"
-                      className="primary-button"
-                      onClick={() => updateStoreMutation.mutate(values)}
-                    >
-                      Save store
+                    <button type="submit" className="primary-button">
+                      {updateStoreForm.isLoading
+                        ? 'Loading...'
+                        : 'Update Store'}
                     </button>
                   </div>
                 </div>
@@ -143,7 +70,7 @@ export default function UpdateStore() {
                     <StoreForm values={values} setFieldValue={setFieldValue} />
                   </div>
                 </div>
-              </>
+              </Form>
             )}
           </Formik>
         )}

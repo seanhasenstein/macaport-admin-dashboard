@@ -1,47 +1,13 @@
 import { useRouter } from 'next/router';
-import { useQueryClient, useQuery } from 'react-query';
 import styled from 'styled-components';
 import { useSession } from '../../hooks/useSession';
-import { Order, Store } from '../../interfaces';
+import { useOrderQuery } from '../../hooks/useOrderQuery';
 import BasicLayout from '../../components/BasicLayout';
 
 export default function UpdateOrder() {
   const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const {
-    isLoading,
-    isError,
-    data: order,
-    error,
-  } = useQuery<Order>(
-    ['order', router.query.id],
-    async () => {
-      if (!router.query.id) return;
-      const response = await fetch(
-        `/api/orders/${router.query.id}?sid=${router.query.sid}`
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch the order.');
-      }
-
-      const data = await response.json();
-      return data.order;
-    },
-    {
-      initialData: () => {
-        const store = queryClient
-          .getQueryData<Store[]>('stores')
-          ?.find(s => s._id === router.query.sid);
-        const order = store?.orders.find(o => o.orderId === router.query.id);
-        return order;
-      },
-      initialDataUpdatedAt: () =>
-        queryClient.getQueryState('stores')?.dataUpdatedAt,
-      staleTime: 600000,
-    }
-  );
+  const { isLoading, isError, error, data } = useOrderQuery();
 
   if (sessionLoading || !session) return <div />;
 
@@ -63,7 +29,7 @@ export default function UpdateOrder() {
             </div>
           </>
         )}
-        {order && (
+        {data?.order && (
           <>
             <div className="title">
               <div>
@@ -100,7 +66,7 @@ export default function UpdateOrder() {
             </div>
             <div className="main-content">
               <p>TODO: Add this page...</p>
-              <pre>{JSON.stringify(order, null, 2)}</pre>
+              <pre>{JSON.stringify(data.order, null, 2)}</pre>
             </div>
           </>
         )}
@@ -162,7 +128,7 @@ const UpdateOrderStyles = styled.div`
       padding: 0.5rem 1.125rem;
       font-weight: 500;
       border-radius: 0.3125rem;
-      background-color: #1c5eb9;
+      background-color: #1c44b9;
       color: #fff;
       border: 1px solid transparent;
       cursor: pointer;

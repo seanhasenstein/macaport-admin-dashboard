@@ -1,7 +1,7 @@
 import React from 'react';
-import { useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import { InventoryProduct, InventorySku } from '../interfaces';
+import { useInventoryProductMutations } from '../hooks/useInventoryProductMutations';
 import useOutsideClick from '../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../hooks/useEscapeKeydownClose';
 import LoadingSpinner from './LoadingSpinner';
@@ -17,7 +17,6 @@ export default function InventoryModal({
   showModal,
   setShowModal,
 }: Props) {
-  const queryClient = useQueryClient();
   const modalRef = React.useRef<HTMLDivElement>(null);
   useOutsideClick(showModal, setShowModal, modalRef);
   useEscapeKeydownClose(showModal, setShowModal);
@@ -25,6 +24,7 @@ export default function InventoryModal({
   const [selectAll, setSelectAll] = React.useState(() =>
     product.skus.every(s => s.active)
   );
+  const { updateProduct } = useInventoryProductMutations(product);
 
   React.useEffect(() => {
     if (showModal) {
@@ -44,37 +44,6 @@ export default function InventoryModal({
       setSelectAll(false);
     }
   }, [selectAll, updatedProduct.skus]);
-
-  const updateInventoryProduct = useMutation(
-    async (updatedProduct: InventoryProduct) => {
-      const { _id, ...update } = updatedProduct;
-      const response = await fetch(`/api/inventory-products/update`, {
-        method: 'post',
-        body: JSON.stringify({
-          id: product._id,
-          update,
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update the inventory product.');
-      }
-
-      const data: { inventoryProduct: InventoryProduct } =
-        await response.json();
-      return data.inventoryProduct;
-    },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['inventory-products']);
-        queryClient.invalidateQueries(['stores']);
-        setShowModal(false);
-      },
-    }
-  );
 
   const handleSelectAllChange = () => {
     setSelectAll(!selectAll);
@@ -139,8 +108,8 @@ export default function InventoryModal({
           </div>
         </div>
         <div className="actions">
-          {updateInventoryProduct.isLoading ? (
-            <LoadingSpinner isLoading={updateInventoryProduct.isLoading} />
+          {updateProduct.isLoading ? (
+            <LoadingSpinner isLoading={updateProduct.isLoading} />
           ) : (
             <button
               type="button"
@@ -153,8 +122,14 @@ export default function InventoryModal({
 
           <button
             type="button"
-            onClick={() => updateInventoryProduct.mutate(updatedProduct)}
-            disabled={updateInventoryProduct.isLoading}
+            onClick={() =>
+              updateProduct.mutate(updatedProduct, {
+                onSettled: () => {
+                  setShowModal(false);
+                },
+              })
+            }
+            disabled={updateProduct.isLoading}
             className="update-button"
           >
             Update Inventory Product
@@ -317,7 +292,7 @@ const InventoryModalStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
         rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
   }

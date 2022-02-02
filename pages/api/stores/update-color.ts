@@ -15,6 +15,7 @@ const handler = nc<Request, NextApiResponse>()
       req.query.cid,
       req.body
     );
+
     res.json({ store: result });
   });
 

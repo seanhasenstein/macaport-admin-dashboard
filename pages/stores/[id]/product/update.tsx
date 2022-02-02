@@ -1,41 +1,16 @@
 import React from 'react';
 import { useRouter } from 'next/router';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import styled from 'styled-components';
+import { Size, FormSize } from '../../../../interfaces';
+import { removeNonAlphanumeric, updateProductSkus } from '../../../../utils';
 import { useSession } from '../../../../hooks/useSession';
-import {
-  Store,
-  Size,
-  FormSize,
-  Color,
-  ProductSku,
-  StoreProduct,
-  CloudinaryStatus,
-} from '../../../../interfaces';
-import {
-  createId,
-  removeNonAlphanumeric,
-  updateProductSkus,
-  getCloudinarySignature,
-  formatFromStripeToPrice,
-} from '../../../../utils';
+import { useUpdateStoreProduct } from '../../../../hooks/useUpdateStoreProduct';
+import { useStoreQuery } from '../../../../hooks/useStoreQuery';
+import { useStoreProductMutations } from '../../../../hooks/useStoreProductMutations';
 import BasicLayout from '../../../../components/BasicLayout';
 import LoadingSpinner from '../../../../components/LoadingSpinner';
-
-type InitialValues = {
-  id: string;
-  merchandiseCode: string;
-  inventoryProductId: string;
-  name: string;
-  description: string;
-  tag: string;
-  details: string[];
-  sizes: FormSize[];
-  colors: Color[];
-  productSkus: ProductSku[];
-};
 
 const validationSchema = Yup.object().shape({
   name: Yup.string().required('Product name is required'),
@@ -43,10 +18,10 @@ const validationSchema = Yup.object().shape({
     Yup.object().shape({
       label: Yup.string().required('A label is required'),
       price: Yup.string()
-        .matches(
-          /^([0-9]{1,})(\.)([0-9]{2})$/,
-          'Must be a valid price (i.e. 10.00)'
-        )
+        // .matches(
+        //   /^([0-9]{1,})(\.)([0-9]{2})$/,
+        //   'Must be a valid price (i.e. 10.00)'
+        // )
         .required('A price is required'),
     })
   ),
@@ -67,305 +42,26 @@ const validationSchema = Yup.object().shape({
 export default function UpdateProduct() {
   const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const [initialValues, setInitialValues] = React.useState<InitialValues>({
-    id: '',
-    inventoryProductId: '',
-    merchandiseCode: '',
-    name: '',
-    description: '',
-    tag: '',
-    details: [],
-    sizes: [],
-    colors: [],
-    productSkus: [],
+  const storeQuery = useStoreQuery();
+  const { updateProduct } = useStoreProductMutations({
+    store: storeQuery.data,
   });
-  const [primaryImageStatus, setPrimaryImageStatus] =
-    React.useState<CloudinaryStatus>('idle');
-  const [secondaryImageStatus, setSecondaryImageStatus] =
-    React.useState<CloudinaryStatus>('idle');
-  const [primaryImages, setPrimaryImages] = React.useState<string[]>([]);
-  const [secondaryImages, setSecondaryImages] = React.useState<string[][]>([]);
-  const [includeCustomName, setIncludeCustomName] = React.useState(false);
-  const [includeCustomNumber, setIncludeCustomNumber] = React.useState(false);
-
-  const storeQuery = useQuery(
-    ['stores', 'store', router.query.id, 'product', router.query.pid, 'update'],
-    async () => {
-      if (!router.query.id) return;
-
-      const response = await fetch(`/api/stores/${router.query.id}`);
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch the store.');
-      }
-
-      const data = await response.json();
-      const store: Store = data.store;
-      const product = store.products.find(p => p.id === router.query.pid);
-      if (!product) throw Error('No product found.');
-      return { store, product };
-    },
-    {
-      initialData: () => {
-        const store = queryClient.getQueryData<Store>([
-          'stores',
-          'store',
-          router.query.id,
-        ]);
-        const product = store?.products?.find(p => p.id === router.query.pid);
-        if (store && product) {
-          return { store, product };
-        }
-      },
-      initialDataUpdatedAt: () => {
-        return queryClient.getQueryState(['stores', 'store', router.query.id])
-          ?.dataUpdatedAt;
-      },
-      staleTime: 1000 * 60 * 10,
-    }
-  );
-
-  React.useEffect(() => {
-    if (storeQuery?.data?.product) {
-      setInitialValues({
-        id: storeQuery?.data?.product?.id || '',
-        inventoryProductId: storeQuery.data.product.inventoryProductId,
-        merchandiseCode: storeQuery.data.product.merchandiseCode,
-        name: storeQuery?.data?.product?.name || '',
-        description: storeQuery?.data?.product?.description || '',
-        tag: storeQuery?.data?.product?.tag || '',
-        details: storeQuery?.data?.product?.details || [],
-        sizes:
-          storeQuery?.data?.product?.sizes.map(s => ({
-            ...s,
-            price: formatFromStripeToPrice(s.price),
-          })) || [],
-        colors: storeQuery?.data?.product?.colors || [],
-        productSkus: storeQuery?.data?.product?.productSkus || [],
-      });
-
-      const primaryImages = storeQuery.data.product.colors.map(
-        (c: Color) => c.primaryImage
-      );
-
-      const secondaryImages = storeQuery.data.product.colors.map(
-        (c: Color) => c.secondaryImages
-      );
-
-      setPrimaryImages(primaryImages);
-      setSecondaryImages(secondaryImages);
-      setIncludeCustomName(storeQuery.data.product.includeCustomName);
-      setIncludeCustomNumber(storeQuery.data.product.includeCustomNumber);
-    }
-  }, [storeQuery?.data?.product]);
-
-  const updateProductMutation = useMutation(
-    async (product: StoreProduct) => {
-      const response = await fetch(
-        `/api/stores/update-product?sid=${router.query.id}&pid=${router.query.pid}`,
-        {
-          method: 'post',
-          body: JSON.stringify(product),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to add the product.');
-      }
-
-      const data = await response.json();
-      return data.store;
-    },
-    {
-      onMutate: async updatedProduct => {
-        await queryClient.cancelQueries(['stores', 'store', router.query.id]);
-        const updatedProducts = storeQuery?.data?.store.products.map(p => {
-          if (p.id === router.query.pid) {
-            return updatedProduct;
-          }
-          return p;
-        });
-        const updatedStore = {
-          ...storeQuery.data?.store,
-          products: updatedProducts,
-        };
-        queryClient.setQueryData(
-          ['stores', 'store', router.query.id],
-          updatedStore
-        );
-        queryClient.setQueryData(
-          ['stores', 'store', 'product', router.query.pid],
-          updatedProduct
-        );
-      },
-      onError: () => {
-        // TODO: trigger a notifcation
-        queryClient.setQueryData(
-          ['stores', 'store', router.query.id],
-          storeQuery.data?.store
-        );
-        queryClient.setQueryData(
-          ['stores', 'store', 'product', router.query.pid],
-          storeQuery.data?.product
-        );
-      },
-      onSettled: () => {
-        queryClient.invalidateQueries('stores');
-      },
-      onSuccess: () => {
-        router.push(
-          `/stores/${router.query.id}/product?pid=${router.query.pid}&updateProduct=true`
-        );
-      },
-    }
-  );
-
-  const url = `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_NAME}/image/upload`;
-
-  const handlePrimaryImageChange = async (
-    index: number,
-    productId: string,
-    color: Color,
-    colors: Color[],
-    setFieldValue: (
-      field: string,
-      value: any,
-      shouldValidate?: boolean | undefined
-    ) => void,
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    if (e.target.files === null || e.target.files[0] === undefined) {
-      return;
-    }
-
-    setPrimaryImageStatus('loading');
-    const publicId = `stores/${router.query.id}/${productId}/${
-      color.id
-    }/${createId('primary')}`;
-    const { signature, timestamp } = await getCloudinarySignature(publicId);
-
-    const formData = new FormData();
-    formData.append('file', e.target.files[0]);
-    formData.append('api_key', `${process.env.NEXT_PUBLIC_CLOUDINARY_KEY}`);
-    formData.append('public_id', publicId);
-    formData.append('timestamp', `${timestamp}`);
-    formData.append('signature', signature);
-
-    const response = await fetch(url, {
-      method: 'post',
-      body: formData,
-    });
-
-    const data = await response.json();
-
-    const primeImgCopy = [...primaryImages];
-    primeImgCopy[index] = data.secure_url;
-    // TODO: Can we just use formik state?
-    setPrimaryImages(primeImgCopy);
-
-    const updatedColors = colors.map(c => {
-      if (c.id == color.id) {
-        return { ...color, primaryImage: data.secure_url };
-      }
-
-      return c;
-    });
-
-    setFieldValue('colors', updatedColors);
-    setPrimaryImageStatus('idle');
-  };
-
-  const handleSecondaryImagesChange = async (
-    index: number,
-    productId: string,
-    color: Color,
-    colors: Color[],
-    setFieldValue: (
-      field: string,
-      value: any,
-      shouldValidate?: boolean | undefined
-    ) => void,
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    if (e.target.files === null || e.target.files[0] === undefined) {
-      return;
-    }
-
-    setSecondaryImageStatus('loading');
-    const secImgsCopy = [...secondaryImages];
-
-    for (let i = 0; i < e.target.files.length; i++) {
-      const publicId = `stores/${router.query.id}/${productId}/${
-        color.id
-      }/${createId('secondary')}`;
-
-      const { signature, timestamp } = await getCloudinarySignature(publicId);
-
-      const formData = new FormData();
-      formData.append('file', e.target.files[i]);
-      formData.append('api_key', `${process.env.NEXT_PUBLIC_CLOUDINARY_KEY}`);
-      formData.append('public_id', publicId);
-      formData.append('timestamp', `${timestamp}`);
-      formData.append('signature', signature);
-
-      const response = await fetch(url, {
-        method: 'post',
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      secImgsCopy[index] = [...(secImgsCopy[index] || []), data.secure_url];
-    }
-
-    // TODO: do we need secondaryImages state? Can we just use formik state?
-    setSecondaryImages(secImgsCopy);
-
-    const updatedColors = colors.map(c => {
-      if (c.id === color.id) {
-        return { ...color, secondaryImages: secImgsCopy[index] };
-      }
-      return c;
-    });
-    setFieldValue('colors', updatedColors);
-    setSecondaryImageStatus('idle');
-  };
-
-  const handleRemoveSecondaryImage = (
-    colorIndex: number,
-    secImgIndex: number,
-    color: Color,
-    colors: Color[],
-    setFieldValue: (
-      field: string,
-      value: any,
-      shouldValidate?: boolean | undefined
-    ) => void
-  ) => {
-    const secImgsCopy = [...secondaryImages];
-    const secImgIndexCopy = [...secondaryImages[colorIndex]];
-    secImgIndexCopy.splice(secImgIndex, 1);
-    secImgsCopy[colorIndex] = secImgIndexCopy;
-    setSecondaryImages(secImgsCopy);
-
-    const updatedColors = colors.map(c => {
-      if (c.id === color.id) {
-        return { ...color, secondaryImages: secImgsCopy[colorIndex] };
-      }
-      return c;
-    });
-
-    setFieldValue('colors', updatedColors);
-  };
-
-  const handleAddClick = async (callback: () => void, selector: string) => {
-    await callback();
-    document.querySelector<HTMLInputElement>(selector)?.focus();
-  };
+  const {
+    initialValues,
+    includeCustomName,
+    setIncludeCustomName,
+    includeCustomNumber,
+    setIncludeCustomNumber,
+    primaryImages,
+    secondaryImages,
+    product,
+    primaryImageStatus,
+    secondaryImageStatus,
+    handlePrimaryImageChange,
+    handleSecondaryImagesChange,
+    handleRemoveSecondaryImage,
+    handleAddClick,
+  } = useUpdateStoreProduct({ storeQuery });
 
   if (sessionLoading || !session) return <div />;
 
@@ -385,7 +81,7 @@ export default function UpdateProduct() {
               enableReinitialize={true}
               validationSchema={validationSchema}
               onSubmit={values => {
-                if (!storeQuery?.data?.product) {
+                if (!product) {
                   throw new Error('Failed to load the product.');
                 }
 
@@ -404,7 +100,7 @@ export default function UpdateProduct() {
                 };
 
                 const updatedSkus = updateProductSkus(
-                  storeQuery.data.product.productSkus,
+                  product.productSkus,
                   updatedFormValues
                 );
 
@@ -416,7 +112,7 @@ export default function UpdateProduct() {
                   includeCustomNumber,
                 };
 
-                updateProductMutation.mutate(updatedProduct);
+                updateProduct.mutate(updatedProduct);
               }}
             >
               {({ values, setFieldValue }) => (
@@ -942,7 +638,7 @@ const UpdateProductStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
         rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
   }
@@ -1279,7 +975,7 @@ const UpdateProductStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
         rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
 

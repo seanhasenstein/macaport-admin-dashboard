@@ -38,6 +38,7 @@ export interface InventoryProduct {
   sizes: InventorySize[];
   colors: InventoryColor[];
   skus: InventorySku[];
+  notes: Note[];
   createdAt: string;
   updatedAt: string;
 }
@@ -86,6 +87,7 @@ export interface StoreProduct {
   colors: Color[];
   includeCustomName: boolean;
   includeCustomNumber: boolean;
+  notes: Note[];
 }
 
 export interface StoreForm {

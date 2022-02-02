@@ -1,24 +1,23 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { useMutation, useQuery, useQueryClient } from 'react-query';
 import styled from 'styled-components';
+import { getQueryParameter } from '../../../../utils';
+import { useSession } from '../../../../hooks/useSession';
+import { useStoreProductQuery } from '../../../../hooks/useStoreProductQuery';
+import { useStoreProductMutations } from '../../../../hooks/useStoreProductMutations';
 import useOutsideClick from '../../../../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../../../../hooks/useEscapeKeydownClose';
-import { useSession } from '../../../../hooks/useSession';
-import { StoreProduct } from '../../../../interfaces';
-import { getQueryParameter } from '../../../../utils';
 import Layout from '../../../../components/Layout';
 import Colors from '../../../../components/Product/Colors';
 import StoreProductSkusTable from '../../../../components/StoreProductSkusTable';
+import Notes from '../../../../components/Notes';
 import LoadingSpinner from '../../../../components/LoadingSpinner';
 import Notification from '../../../../components/Notification';
 
 export default function Product() {
-  const [enableProductQuery, setEnableProductQuery] = React.useState(true);
   const [session, loading] = useSession({ required: true });
   const router = useRouter();
-  const queryClient = useQueryClient();
   const productMenuRef = React.useRef<HTMLDivElement>(null);
   const deleteProductModalRef = React.useRef<HTMLDivElement>(null);
   const [showProductMenu, setShowProductMenu] = React.useState<boolean>(false);
@@ -32,97 +31,15 @@ export default function Product() {
   );
   useEscapeKeydownClose(showProductMenu, setShowProductMenu);
   useEscapeKeydownClose(showDeleteProductModal, setShowDeleteProductModal);
-
   const {
     isLoading,
     isFetching,
     isError,
     error,
     data: storeProduct,
-  } = useQuery(
-    ['stores', 'store', 'product', router.query.pid],
-    async () => {
-      if (!router.query.id || !router.query.pid) return;
-      // const response = await fetch(`/api/stores/${router.query.id}`);
-      const response = await fetch(
-        `/api/store-products/${router.query.id}?pid=${router.query.pid}`
-      );
-
-      if (!response.ok) throw new Error('Failed to fetch the store product.');
-
-      const data: { storeProduct: StoreProduct } = await response.json();
-      // const product = store.products.find(p => p.id === router.query.pid);
-
-      // if (!product) throw new Error('No product found.');
-
-      return data.storeProduct;
-    },
-    {
-      // initialData: () => {
-      //   // TODO: update store query to hydrate storeProducts with inventory etc.
-      //   if (!router.query.id) return;
-      //   const stores = queryClient.getQueryData<Store[]>(['stores']);
-      //   const store = stores?.find((s: Store) => s._id === router.query.id);
-      //   const product = store?.products.find(p => p.id === router.query.pid);
-      //   if (store && product) {
-      //     return { product, products: store.products, store };
-      //   }
-      // },
-      // initialDataUpdatedAt: () =>
-      //   queryClient.getQueryState('stores')?.dataUpdatedAt,
-      staleTime: 1000 * 60 * 10,
-      enabled: enableProductQuery,
-    }
-  );
-
-  const deleteProductMutation = useMutation(
-    async (id: string | undefined) => {
-      if (!id) {
-        setShowDeleteProductModal(false);
-        throw new Error('No store product id provided.');
-      }
-      setEnableProductQuery(false);
-      const response = await fetch(`/api/store-products/delete`, {
-        method: 'post',
-        body: JSON.stringify({ storeId: router.query.id, storeProductId: id }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        setEnableProductQuery(true);
-        throw new Error('Failed to delete the product.');
-      }
-
-      const data = await response.json();
-      return data.store;
-    },
-    {
-      // onMutate: async id => {
-      //   await queryClient.cancelQueries(['stores', 'store', router.query.id]);
-      //   const updatedProducts = data?.products.filter(p => p.id !== id);
-      //   const updatedStore = { ...data?.store, products: updatedProducts };
-      //   queryClient.setQueryData(
-      //     ['stores', 'store', router.query.id],
-      //     updatedStore
-      //   );
-      // },
-      // onError: () => {
-      //   // TODO: trigger a notafication
-      //   queryClient.setQueryData(
-      //     ['stores', 'store', router.query.id],
-      //     data?.store
-      //   );
-      // },
-      onSettled: () => {
-        queryClient.invalidateQueries('stores');
-      },
-      onSuccess: () => {
-        router.push(`/stores/${router.query.id}?deleteProduct=true`);
-      },
-    }
-  );
+  } = useStoreProductQuery();
+  const { deleteProduct, addNote, updateNote, deleteNote } =
+    useStoreProductMutations({ storeProduct });
 
   const handleDeleteProductMenuClick = () => {
     setShowProductMenu(false);
@@ -130,7 +47,7 @@ export default function Product() {
   };
 
   const handleDeleteProductClick = () => {
-    deleteProductMutation.mutate(getQueryParameter(router.query.pid));
+    deleteProduct.mutate(getQueryParameter(router.query.pid));
   };
 
   if (loading || !session) return <div />;
@@ -267,7 +184,7 @@ export default function Product() {
                       {storeProduct.tag && (
                         <div className="detail-item">
                           <div className="label">Tag</div>
-                          <p className="prod-tag">{storeProduct.tag}</p>
+                          <div className="value">{storeProduct.tag}</div>
                         </div>
                       )}
 
@@ -312,18 +229,19 @@ export default function Product() {
                 <div className="product-colors-section">
                   <h3>Product colors</h3>
                   {router.query.id ? (
-                    <Colors
-                      storeId={
-                        Array.isArray(router.query.id)
-                          ? router.query.id[0]
-                          : router.query.id
-                      }
-                      product={storeProduct}
-                    />
+                    <Colors product={storeProduct} />
                   ) : (
                     <div>A store ID is required.</div>
                   )}
                 </div>
+
+                <Notes
+                  label="Store product"
+                  notes={storeProduct.notes}
+                  addNote={addNote}
+                  updateNote={updateNote}
+                  deleteNote={deleteNote}
+                />
               </div>
             </>
           )}
@@ -361,9 +279,7 @@ export default function Product() {
               </button>
             </div>
 
-            <DeleteMutationSpinner
-              isLoading={deleteProductMutation.isLoading}
-            />
+            <DeleteMutationSpinner isLoading={deleteProduct.isLoading} />
           </div>
         </DeleteModalStyles>
       )}
@@ -440,10 +356,10 @@ const ProductStyles = styled.div`
 
     &:focus-visible {
       text-decoration: underline;
-      color: #1c5eb9;
+      color: #1c44b9;
 
       svg {
-        color: #1c5eb9;
+        color: #1c44b9;
       }
     }
   }
@@ -594,7 +510,7 @@ const ProductStyles = styled.div`
     line-height: 1.5;
 
     a:hover {
-      color: #1c5eb9;
+      color: #1c44b9;
       text-decoration: underline;
     }
 
@@ -639,7 +555,7 @@ const ProductStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
         rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
   }

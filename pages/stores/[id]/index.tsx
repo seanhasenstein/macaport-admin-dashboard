@@ -1,18 +1,18 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import { format } from 'date-fns';
-import useOutsideClick from '../../../hooks/useOutsideClick';
-import useEscapeKeydownClose from '../../../hooks/useEscapeKeydownClose';
-import { useSession } from '../../../hooks/useSession';
-import { Store as StoreInterface, Note } from '../../../interfaces';
 import {
   formatPhoneNumber,
   getQueryParameter,
   getStoreStatus,
 } from '../../../utils';
+import { useSession } from '../../../hooks/useSession';
+import { useStoreQuery } from '../../../hooks/useStoreQuery';
+import { useStoreMutations } from '../../../hooks/useStoreMutations';
+import useOutsideClick from '../../../hooks/useOutsideClick';
+import useEscapeKeydownClose from '../../../hooks/useEscapeKeydownClose';
 import Layout from '../../../components/Layout';
 import Notes from '../../../components/Notes';
 import StoreProducts from '../../../components/StoreProducts';
@@ -27,12 +27,10 @@ type StoreStatus = 'upcoming' | 'open' | 'closed';
 export default function Store() {
   const [session, loading] = useSession({ required: true });
   const router = useRouter();
-  const queryClient = useQueryClient();
   const storeMenuRef = React.useRef<HTMLDivElement>(null);
   const deleteStoreRef = React.useRef<HTMLDivElement>(null);
   const deleteProductRef = React.useRef<HTMLDivElement>(null);
   const csvModalRef = React.useRef<HTMLDivElement>(null);
-  const [enableStoreQuery, setEnableStoreQuery] = React.useState(true);
   const [storeStatus, setStoreStatus] = React.useState<StoreStatus>();
   const [showStoreMenu, setShowStoreMenu] = React.useState(false);
   const [showDeleteProductModal, setShowDeleteProductModal] =
@@ -53,214 +51,10 @@ export default function Store() {
   useEscapeKeydownClose(showStoreMenu, setShowStoreMenu);
   useEscapeKeydownClose(showDeleteStoreModal, setShowDeleteStoreModal);
   useEscapeKeydownClose(showDeleteProductModal, setShowDeleteProductModal);
-
-  const storeQuery = useQuery<StoreInterface>(
-    ['stores', 'store', router.query.id],
-    async () => {
-      if (!router.query.id) return;
-      const response = await fetch(`/api/stores/${router.query.id}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch the store.');
-      }
-      const data = await response.json();
-      return data.store;
-    },
-    {
-      initialData: () => {
-        return queryClient
-          .getQueryData<StoreInterface[]>('stores')
-          ?.find(s => s._id === router.query.id);
-      },
-      initialDataUpdatedAt: () =>
-        queryClient.getQueryState(['stores'])?.dataUpdatedAt,
-      onSuccess: data => {
-        if (data) {
-          setStoreStatus(getStoreStatus(data.openDate, data.closeDate));
-        }
-      },
-      staleTime: 1000 * 60 * 10,
-      enabled: enableStoreQuery,
-    }
-  );
-
-  const deleteStoreMutation = useMutation(
-    async (id: string) => {
-      setEnableStoreQuery(false);
-      const response = await fetch(`/api/stores/delete?id=${router.query.id}`, {
-        method: 'post',
-        body: JSON.stringify({ id }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        setEnableStoreQuery(true);
-        throw new Error('Failed to delete the store.');
-      }
-
-      const data = await response.json();
-      return data;
-    },
-    {
-      onMutate: async id => {
-        await queryClient.cancelQueries(['stores', 'store', router.query.id]);
-        const previousStores = queryClient.getQueryData<StoreInterface[]>([
-          'stores',
-        ]);
-        const updatedStores = previousStores?.filter(s => s._id !== id);
-        queryClient.setQueryData(['stores'], updatedStores);
-        return previousStores;
-      },
-      onError: (_error, _id, context) => {
-        // TODO: trigger a notification
-        queryClient.setQueryData(['stores'], context);
-      },
-      onSettled: async () => {
-        queryClient.invalidateQueries(['stores']);
-      },
-      onSuccess: () => {
-        router.push(`/?deleteStore=true`);
-      },
-    }
-  );
-
-  const addNoteMutation = useMutation(
-    async (note: Note) => {
-      if (!storeQuery.data) return;
-      const prevNotes = storeQuery.data.notes || [];
-
-      const response = await fetch(`/api/stores/update?id=${router.query.id}`, {
-        method: 'post',
-        body: JSON.stringify({ notes: [...prevNotes, note] }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create the note.');
-      }
-
-      const data = await response.json();
-      return data.store;
-    },
-    {
-      onMutate: async newNote => {
-        await queryClient.cancelQueries(['stores', 'store', router.query.id]);
-        const previousNotes = storeQuery.data?.notes || [];
-        queryClient.setQueryData(['stores', 'store', router.query.id], {
-          ...storeQuery.data,
-          notes: [...previousNotes, newNote],
-        });
-        return { previousNotes, newNote };
-      },
-      onError: () => {
-        // TODO: trigger a notification that the mutation failed.
-        queryClient.setQueryData(
-          ['stores', 'store', router.query.id],
-          storeQuery.data
-        );
-      },
-      onSettled: () => {
-        queryClient.invalidateQueries('stores');
-      },
-    }
-  );
-
-  const updateNoteMutation = useMutation(
-    async (note: Note) => {
-      const notes = storeQuery.data?.notes.map(n => {
-        if (n.id === note.id) {
-          return note;
-        } else {
-          return n;
-        }
-      });
-
-      const response = await fetch(`/api/stores/update?id=${router.query.id}`, {
-        method: 'post',
-        body: JSON.stringify({ notes }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update the note.');
-      }
-
-      const data = await response.json();
-      return data.store;
-    },
-    {
-      onMutate: async updatedNote => {
-        await queryClient.cancelQueries(['stores', 'store', router.query.id]);
-        const previousNotes = storeQuery.data?.notes;
-        const updatedNotes = previousNotes?.map(n =>
-          n.id === updatedNote.id ? updatedNote : n
-        );
-        queryClient.setQueryData(['stores', 'store', router.query.id], {
-          ...storeQuery.data,
-          notes: updatedNotes,
-        });
-        return { previousNotes, updatedNote };
-      },
-      onError: () => {
-        // TODO: trigger a notification
-        queryClient.setQueryData(
-          ['stores', 'store', router.query.id],
-          storeQuery.data
-        );
-      },
-      onSettled: () => {
-        queryClient.invalidateQueries('stores');
-      },
-    }
-  );
-
-  const deleteNoteMutation = useMutation(
-    async (id: string) => {
-      const notes = storeQuery.data?.notes.filter(n => n.id !== id);
-
-      const response = await fetch(`/api/stores/update?id=${router.query.id}`, {
-        method: 'post',
-        body: JSON.stringify({ notes }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete the note.');
-      }
-
-      const data = await response.json();
-      return data.store;
-    },
-    {
-      onMutate: async id => {
-        await queryClient.cancelQueries(['stores', 'store', router.query.id]);
-        const previousNotes = storeQuery.data?.notes;
-        const updatedNotes = previousNotes?.filter(n => n.id !== id);
-        queryClient.setQueryData(['stores', 'store', router.query.id], {
-          ...storeQuery.data,
-          notes: updatedNotes,
-        });
-        return { previousNotes };
-      },
-      onError: () => {
-        // TODO: trigger a notification?
-        queryClient.setQueryData(
-          ['stores', 'store', router.query.id],
-          storeQuery.data
-        );
-      },
-      onSettled: () => {
-        queryClient.invalidateQueries('stores');
-      },
-    }
-  );
+  const storeQuery = useStoreQuery();
+  const { deleteStore, addNote, updateNote, deleteNote } = useStoreMutations({
+    store: storeQuery.data,
+  });
 
   React.useEffect(() => {
     if (storeQuery.data) {
@@ -278,7 +72,7 @@ export default function Store() {
   const handleDeleteStoreClick = () => {
     const id = getQueryParameter(router.query.id);
     if (!id) throw Error('A store ID is required to delete a store.');
-    deleteStoreMutation.mutate(id);
+    deleteStore.mutate(id);
   };
 
   if (loading || !session) return <div />;
@@ -600,9 +394,9 @@ export default function Store() {
                 <Notes
                   label="Store"
                   notes={storeQuery.data.notes}
-                  addNote={addNoteMutation}
-                  updateNote={updateNoteMutation}
-                  deleteNote={deleteNoteMutation}
+                  addNote={addNote}
+                  updateNote={updateNote}
+                  deleteNote={deleteNote}
                 />
               </div>
             </>
@@ -657,7 +451,7 @@ export default function Store() {
                 Delete the store
               </button>
             </div>
-            <DeleteMutationSpinner isLoading={deleteStoreMutation.isLoading} />
+            <DeleteMutationSpinner isLoading={deleteStore.isLoading} />
           </div>
         </DeleteModalStyles>
       )}
@@ -756,10 +550,10 @@ const StoreStyles = styled.div`
 
     &:focus-visible {
       text-decoration: underline;
-      color: #1c5eb9;
+      color: #1c44b9;
 
       svg {
-        color: #1c5eb9;
+        color: #1c44b9;
       }
     }
   }
@@ -957,7 +751,7 @@ const StoreStyles = styled.div`
     }
 
     a:hover {
-      color: #1c5eb9;
+      color: #1c44b9;
       text-decoration: underline;
     }
   }

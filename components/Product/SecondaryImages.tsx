@@ -1,42 +1,18 @@
-import { useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
+import { useStoreProductMutations } from '../../hooks/useStoreProductMutations';
 import useDragNDrop from '../../hooks/useDragNDrop';
-import { Store, StoreProduct, Color } from '../../interfaces';
+import { StoreProduct, Color } from '../../interfaces';
 
 type Props = {
   color: Color;
   product: StoreProduct;
-  storeId: string;
 };
 
-export default function SecondaryImages({ color, product, storeId }: Props) {
-  const queryClient = useQueryClient();
-  const secondaryImagesMutation = useMutation(
-    async (secondaryImages: string[]) => {
-      const response = await fetch(
-        `/api/stores/update-color?sid=${storeId}&pid=${product.id}&colorId=${color.id}`,
-        {
-          method: 'post',
-          body: JSON.stringify({ ...color, secondaryImages }),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-      if (!response.ok) {
-        throw new Error('Failed to update the secondary images.');
-      }
-      const { store }: { store: Store } = await response.json();
-      const updatedProduct = store.products.find(p => p.id === product.id);
-      const updatedColor = updatedProduct?.colors.find(c => c.id === color.id);
-      return updatedColor?.secondaryImages;
-    },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('stores');
-      },
-    }
-  );
+export default function SecondaryImages({ color, product }: Props) {
+  const { updateSecondaryImgOrder } = useStoreProductMutations({
+    color,
+    storeProduct: product,
+  });
 
   const {
     list,
@@ -50,7 +26,7 @@ export default function SecondaryImages({ color, product, storeId }: Props) {
   } = useDragNDrop(
     color.secondaryImages,
     'secondary-img',
-    secondaryImagesMutation.mutate
+    updateSecondaryImgOrder.mutate
   );
 
   return (

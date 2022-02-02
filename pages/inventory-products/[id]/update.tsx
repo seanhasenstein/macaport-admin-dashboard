@@ -1,21 +1,25 @@
 import React from 'react';
 import { useRouter } from 'next/router';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
-import { useSession } from '../../../hooks/useSession';
-import { InventoryProduct, InventorySize } from '../../../interfaces';
-import { createId, formatHexColors } from '../../../utils';
+import { InventorySize } from '../../../interfaces';
+import { createId } from '../../../utils';
 import {
   updateInventoryProductSkus,
   UpdateFormValues,
 } from '../../../utils/inventoryProduct';
+import { useSession } from '../../../hooks/useSession';
+import { useInventoryProductQuery } from '../../../hooks/useInventoryProductQuery';
+import { useInventoryProductMutations } from '../../../hooks/useInventoryProductMutations';
 import BasicLayout from '../../../components/BasicLayout';
 
 export default function UpdateInventoryProduct() {
   const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
-  const queryClient = useQueryClient();
+  const inventoryProductQuery = useInventoryProductQuery();
+  const { updateProductIncludingSkus } = useInventoryProductMutations(
+    inventoryProductQuery.data
+  );
   const [initialValues, setInitialValues] = React.useState<UpdateFormValues>({
     _id: '',
     inventoryProductId: '',
@@ -27,85 +31,8 @@ export default function UpdateInventoryProduct() {
     sizes: [],
     colors: [],
     skus: [],
+    notes: [],
   });
-
-  const inventoryProductQuery = useQuery<InventoryProduct>(
-    ['inventory-products', 'inventory-product', router.query.id],
-    async () => {
-      if (!router.query.id) return;
-      const response = await fetch(
-        `/api/inventory-products/${router.query.id}`
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch the inventory product.');
-      }
-
-      const data = await response.json();
-      return data.inventoryProduct;
-    },
-    {
-      initialData: () => {
-        return queryClient
-          .getQueryData<InventoryProduct[]>(['inventory-products'])
-          ?.find(ip => ip.inventoryProductId === router.query.id);
-      },
-      initialDataUpdatedAt: () =>
-        queryClient.getQueryState(['inventory-products'])?.dataUpdatedAt,
-      staleTime: 1000 * 60 * 10,
-    }
-  );
-
-  const updateInventoryProductMutation = useMutation(
-    async (values: UpdateFormValues) => {
-      const formattedColors = formatHexColors(values.colors);
-      const response = await fetch('/api/inventory-products/update-form', {
-        method: 'post',
-        body: JSON.stringify({ ...values, colors: formattedColors }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update the inventory product.');
-      }
-
-      const data = await response.json();
-      return data.inventoryProduct;
-    },
-    {
-      onMutate: values => {
-        queryClient.cancelQueries([
-          'inventory-products',
-          'inventory-product',
-          router.query.id,
-        ]);
-        const updatedInventoryProduct = {
-          ...inventoryProductQuery.data,
-          ...values,
-        };
-        queryClient.setQueryData(
-          ['inventory-products', 'inventory-product', router.query.id],
-          updatedInventoryProduct
-        );
-        return updatedInventoryProduct;
-      },
-      onError: () => {
-        queryClient.setQueryData(
-          ['inventory-products', 'inventory-product', router.query.id],
-          inventoryProductQuery.data
-        );
-      },
-      onSettled: () => {
-        queryClient.invalidateQueries('inventory-products');
-        queryClient.invalidateQueries('stores');
-      },
-      onSuccess: (_data, variables) => {
-        router.push(`/inventory-products/${variables.inventoryProductId}`);
-      },
-    }
-  );
 
   React.useEffect(() => {
     if (inventoryProductQuery.data) {
@@ -122,6 +49,7 @@ export default function UpdateInventoryProduct() {
         sizes: ip.sizes,
         colors: ip.colors,
         skus: ip.skus,
+        notes: ip.notes,
       });
     }
   }, [inventoryProductQuery.data]);
@@ -148,7 +76,7 @@ export default function UpdateInventoryProduct() {
               inventoryProductQuery.data,
               values
             );
-            updateInventoryProductMutation.mutate({
+            updateProductIncludingSkus.mutate({
               ...values,
               skus: updatedSkus,
             });
@@ -570,7 +498,7 @@ const UpdateInventoryProductStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
         rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
   }
@@ -909,7 +837,7 @@ const UpdateInventoryProductStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
         rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
 

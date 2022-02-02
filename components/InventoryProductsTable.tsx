@@ -13,7 +13,7 @@ function getTotalAvailableSkus(skus: InventorySku[]) {
   );
 }
 
-export default function InventoryProductTable() {
+export default function InventoryProductsTable() {
   const {
     isLoading,
     isFetching,
@@ -178,7 +178,7 @@ const InventoryProductStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
         rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
   }
@@ -246,7 +246,7 @@ const InventoryProductStyles = styled.div`
     padding: 1rem 1rem;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #111827;
+    color: #374151;
 
     a {
       &:hover .product-name {
@@ -260,7 +260,7 @@ const InventoryProductStyles = styled.div`
 
       &:focus-visible .product-name {
         text-decoration: underline;
-        color: #1c5eb9;
+        color: #1c44b9;
       }
     }
 

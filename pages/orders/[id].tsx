@@ -1,18 +1,19 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { useQueryClient, useQuery, useMutation } from 'react-query';
 import styled from 'styled-components';
 import { format } from 'date-fns';
-import { useSession } from '../../hooks/useSession';
-import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
-import useOutsideClick from '../../hooks/useOutsideClick';
-import { Note, Store } from '../../interfaces';
 import {
   formatPhoneNumber,
   formatToMoney,
   calculateStripeFee,
 } from '../../utils';
+
+import { useSession } from '../../hooks/useSession';
+import { useOrderQuery } from '../../hooks/useOrderQuery';
+import { useOrderMutation } from '../../hooks/useOrderMutations';
+import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
+import useOutsideClick from '../../hooks/useOutsideClick';
 import Layout from '../../components/Layout';
 import OrderStatusButton from '../../components/OrderStatusButton';
 import Notes from '../../components/Notes';
@@ -22,7 +23,6 @@ import PrintableOrder from '../../components/PrintableOrder';
 export default function Order() {
   const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [options, setOptions] = React.useState({
     includesName: false,
     includesNumber: false,
@@ -31,42 +31,11 @@ export default function Order() {
   const orderMenuRef = React.useRef<HTMLDivElement>(null);
   useOutsideClick(showOrderMenu, setShowOrderMenu, orderMenuRef);
   useEscapeKeydownClose(showOrderMenu, setShowOrderMenu);
-
-  const { isLoading, isFetching, isError, error, data } = useQuery(
-    ['stores', 'store', 'order', router.query.id],
-    async () => {
-      if (!router.query.sid) return;
-      const response = await fetch(`/api/stores/${router.query.sid}`);
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch the order.');
-      }
-
-      const data: { store: Store } = await response.json();
-      const store = data.store;
-      const order = store.orders.find(o => o.orderId === router.query.id);
-      return { store, order };
-    },
-    {
-      initialData: () => {
-        const store = queryClient.getQueryData<Store>([
-          'stores',
-          'store',
-          router.query.sid,
-        ]);
-        const order = store?.orders.find(o => o.orderId === router.query.id);
-        if (store && order) {
-          console.log('YES');
-          return { store, order };
-        }
-      },
-      initialDataUpdatedAt: () => {
-        return queryClient.getQueryState(['stores', 'store', router.query.sid])
-          ?.dataUpdatedAt;
-      },
-      staleTime: 1000 * 60 * 10,
-    }
-  );
+  const { isLoading, isFetching, isError, error, data } = useOrderQuery();
+  const { addNote, updateNote, deleteNote } = useOrderMutation({
+    order: data?.order,
+    store: data?.store,
+  });
 
   React.useEffect(() => {
     if (data?.order) {
@@ -75,209 +44,6 @@ export default function Order() {
       setOptions({ includesName, includesNumber });
     }
   }, [data?.order]);
-
-  const addNoteMutation = useMutation(
-    async (note: Note) => {
-      if (!data?.order) return;
-      const prevNotes = data.order.notes || [];
-      const response = await fetch(
-        `/api/orders/update/notes?id=${router.query.sid}&oid=${router.query.id}`,
-        {
-          method: 'post',
-          body: JSON.stringify({ notes: [...prevNotes, note] }),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to add the note.');
-      }
-
-      const responseData = await response.json();
-      return responseData.store;
-    },
-    {
-      onMutate: async newNote => {
-        await queryClient.cancelQueries([
-          'stores',
-          'store',
-          'order',
-          router.query.id,
-        ]);
-        const previousNotes = data?.order?.notes || [];
-        const updatedOrders = data?.store.orders.map(o => {
-          if (o.orderId === router.query.id) {
-            return { ...o, notes: [...previousNotes, newNote] };
-          }
-          return o;
-        });
-
-        queryClient.setQueryData(
-          ['stores', 'store', 'order', router.query.id],
-          {
-            store: { ...data?.store, orders: updatedOrders },
-            order: { ...data?.order, notes: [...previousNotes, newNote] },
-          }
-        );
-
-        return { previousNotes, newNote };
-      },
-      onError: () => {
-        // TODO: trigger a notification
-        queryClient.setQueryData(
-          ['stores', 'store', 'order', router.query.id],
-          { store: data?.store, order: data?.order }
-        );
-      },
-      onSettled: () => {
-        queryClient.invalidateQueries('stores');
-        queryClient.invalidateQueries(['order', router.query.id]);
-      },
-    }
-  );
-
-  const updateNoteMutation = useMutation(
-    async (note: Note) => {
-      const notes = data?.order?.notes.map(n => {
-        if (n.id === note.id) {
-          return note;
-        } else {
-          return n;
-        }
-      });
-
-      const response = await fetch(
-        `/api/orders/update/notes?id=${router.query.sid}&oid=${router.query.id}`,
-        {
-          method: 'post',
-          body: JSON.stringify({ notes }),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to update the note.');
-      }
-
-      const responseData = await response.json();
-      return responseData.store;
-    },
-    {
-      onMutate: async updatedNote => {
-        await queryClient.cancelQueries([
-          'stores',
-          'store',
-          'order',
-          router.query.id,
-        ]);
-        const previousNotes = data?.order?.notes;
-        const updatedNotes = previousNotes?.map(n =>
-          n.id === updatedNote.id ? updatedNote : n
-        );
-        const updatedOrders = data?.store.orders.map(o => {
-          if (o.orderId === router.query.id) {
-            return { ...o, notes: updatedNotes };
-          }
-          return o;
-        });
-        queryClient.setQueryData(
-          ['stores', 'store', 'order', router.query.id],
-          {
-            store: { ...data?.store, orders: updatedOrders },
-            order: { ...data?.order, notes: updatedNotes },
-          }
-        );
-        return { previousNotes, updatedNote };
-      },
-      onError: () => {
-        // TODO: trigger a notifaction
-        queryClient.setQueryData(
-          ['stores', 'store', 'order', router.query.id],
-          { store: data?.store, order: data?.order }
-        );
-      },
-      onSettled: () => {
-        queryClient.invalidateQueries('stores');
-        // TODO: do I need this second invalidation?
-        queryClient.invalidateQueries([
-          'stores',
-          'store',
-          'order',
-          router.query.id,
-        ]);
-      },
-    }
-  );
-
-  const deleteNoteMutation = useMutation(
-    async (id: string) => {
-      const notes = data?.order?.notes.filter(n => n.id !== id);
-
-      const response = await fetch(
-        `/api/orders/update/notes?id=${router.query.sid}&oid=${router.query.id}`,
-        {
-          method: 'post',
-          body: JSON.stringify({ notes }),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to delete the note.');
-      }
-
-      const responseData = await response.json();
-      return responseData.store;
-    },
-    {
-      onMutate: async id => {
-        await queryClient.cancelQueries([
-          'stores',
-          'store',
-          'order',
-          router.query.id,
-        ]);
-        const previousNotes = data?.order?.notes;
-        const updatedNotes = previousNotes?.filter(n => n.id !== id);
-        const updatedOrder = { ...data?.order, notes: updatedNotes };
-        const updatedOrders = data?.store.orders.map(o => {
-          if (o.orderId === router.query.id) {
-            return { ...o, notes: updatedNotes };
-          }
-          return o;
-        });
-        const updatedStore = { ...data?.store, orders: updatedOrders };
-        queryClient.setQueryData(
-          ['stores', 'store', 'order', router.query.id],
-          { store: updatedStore, order: updatedOrder }
-        );
-        return { previousNotes };
-      },
-      onError: () => {
-        // TODO: trigger a notification
-        queryClient.setQueryData(
-          ['stores', 'store', 'order', router.query.id],
-          { store: data?.store, order: data?.order }
-        );
-      },
-      onSettled: () => {
-        queryClient.invalidateQueries('stores');
-        // TODO: do I need this 2nd invalidation?
-        queryClient.invalidateQueries([
-          'stores',
-          'store',
-          'order',
-          router.query.id,
-        ]);
-      },
-    }
-  );
 
   if (sessionLoading || !session) return <div />;
 
@@ -581,9 +347,9 @@ export default function Order() {
                   <Notes
                     label="Order"
                     notes={data.order.notes}
-                    addNote={addNoteMutation}
-                    updateNote={updateNoteMutation}
-                    deleteNote={deleteNoteMutation}
+                    addNote={addNote}
+                    updateNote={updateNote}
+                    deleteNote={deleteNote}
                   />
                 </div>
               </>
@@ -670,10 +436,10 @@ const OrderStyles = styled.div`
 
     &:focus-visible {
       text-decoration: underline;
-      color: #1c5eb9;
+      color: #1c44b9;
 
       svg {
-        color: #1c5eb9;
+        color: #1c44b9;
       }
     }
   }
@@ -853,7 +619,7 @@ const OrderStyles = styled.div`
     line-height: 1.5;
 
     a:hover {
-      color: #1c5eb9;
+      color: #1c44b9;
       text-decoration: underline;
     }
   }
@@ -957,7 +723,7 @@ const OrderStyles = styled.div`
 
       &:focus-visible {
         text-decoration: underline;
-        color: #1c5eb9;
+        color: #1c44b9;
       }
     }
   }

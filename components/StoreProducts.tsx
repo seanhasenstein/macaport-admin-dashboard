@@ -1,9 +1,9 @@
 import React from 'react';
 import { useRouter } from 'next/router';
-import { useMutation, useQueryClient } from 'react-query';
 import Link from 'next/link';
 import styled from 'styled-components';
 import { Store, StoreProduct } from '../interfaces';
+import { useStoreMutations } from '../hooks/useStoreMutations';
 import useDragNDrop from '../hooks/useDragNDrop';
 import StoreProductMenu from './StoreProductMenu';
 
@@ -14,41 +14,8 @@ type Props = {
 
 export default function StoreProducts({ products, store }: Props) {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  const updateProductMutation = useMutation(
-    async (updatedProducts: StoreProduct[]) => {
-      const response = await fetch(`/api/stores/update?id=${store._id}`, {
-        method: 'post',
-        body: JSON.stringify({ products: updatedProducts }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      if (!response.ok) {
-        throw new Error('Failed to update the products.');
-      }
-      const data = await response.json();
-      return data.store;
-    },
-    {
-      onMutate: async updatedProducts => {
-        await queryClient.cancelQueries(['stores']);
-        queryClient.setQueryData(['stores', 'store', store._id], {
-          ...store,
-          products: updatedProducts,
-        });
-      },
-      onError: () => {
-        queryClient.setQueryData(['stores', 'store', store._id], store);
-      },
-      onSuccess: () => {
-        queryClient.invalidateQueries('stores');
-      },
-    }
-  );
-
-  const dnd = useDragNDrop(products, 'product', updateProductMutation.mutate);
+  const { updateStoreProducts } = useStoreMutations({ store });
+  const dnd = useDragNDrop(products, 'product', updateStoreProducts.mutate);
 
   return (
     <StoreProductsStyles>
@@ -182,7 +149,7 @@ const StoreProductsStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
         rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
   }

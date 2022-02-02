@@ -51,11 +51,6 @@ export default function Notes({
   const [newNoteText, setNewNoteText] = React.useState('');
   const [updateNoteText, setUpdateNoteText] = React.useState('');
 
-  const handleEditButtonClick = (note: Note) => {
-    setShowNoteTextArea(note.id);
-    setUpdateNoteText(note.text);
-  };
-
   const handleAddNoteButtonClick = () => {
     const newNote = {
       id: createId('note'),
@@ -65,6 +60,11 @@ export default function Notes({
     addNote.mutate(newNote);
     setNewNoteText('');
     setShowNoteTextArea(undefined);
+  };
+
+  const handleEditButtonClick = (note: Note) => {
+    setShowNoteTextArea(note.id);
+    setUpdateNoteText(note.text);
   };
 
   const handleUpdateNoteButtonClick = (note: Note) => {
@@ -83,7 +83,10 @@ export default function Notes({
       <div className="notes-header">
         <h3>{label} notes</h3>
       </div>
-      <div>
+      <div className="notes-container">
+        <UpdateDeleteLoadingSpinner
+          isLoading={updateNote.isLoading || deleteNote.isLoading}
+        />
         {notes?.length > 0 ? (
           <div className="notes">
             {notes.map(n => (
@@ -164,7 +167,6 @@ const NotesStyles = styled.div`
   margin: 4rem 0 0;
 
   .notes-header {
-    margin: 0 0 2rem;
     padding: 0 0 1rem;
     display: flex;
     justify-content: space-between;
@@ -174,6 +176,13 @@ const NotesStyles = styled.div`
     h3 {
       margin: 0;
     }
+  }
+
+  .notes-container {
+    position: relative;
+    padding: 1.75rem 0 0;
+    max-width: 36rem;
+    width: 100%;
   }
 
   .menu-button-container {
@@ -368,7 +377,7 @@ const NotesStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
         rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
   }
@@ -378,4 +387,10 @@ const NotesStyles = styled.div`
     font-weight: 500;
     color: #6b7280;
   }
+`;
+
+const UpdateDeleteLoadingSpinner = styled(LoadingSpinner)`
+  position: absolute;
+  top: 1.25rem;
+  right: 0;
 `;

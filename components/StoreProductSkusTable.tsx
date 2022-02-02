@@ -1,8 +1,7 @@
 import React from 'react';
-import { useRouter } from 'next/router';
-import { useMutation, useQueryClient } from 'react-query';
 import styled from 'styled-components';
-import { ProductSku, Store, StoreProduct } from '../interfaces';
+import { ProductSku, StoreProduct } from '../interfaces';
+import { useStoreProductMutations } from '../hooks/useStoreProductMutations';
 import useDragNDrop from '../hooks/useDragNDrop';
 import StoreProductSkusTableMenu from './StoreProductSkusTableMenu';
 import { formatToMoney } from '../utils';
@@ -14,113 +13,16 @@ type Props = {
   inventoryProductId: string;
 };
 
-type UpdateActiveStatusProps = {
-  storeId: string;
-  storeProductId: string;
-  productSkuId: string;
-  updatedProductSku: ProductSku;
-};
-
 export default function StoreProductSkusTable({
   storeId,
   storeProduct,
   productSkus,
   inventoryProductId,
 }: Props) {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-
-  const updateOrderMutation = useMutation(async (dndSkus: ProductSku[]) => {
-    const response = await fetch(
-      `/api/stores/update-product?sid=${router.query.id}&pid=${router.query.pid}`,
-      {
-        method: 'post',
-        body: JSON.stringify({ ...storeProduct, productSkus: dndSkus }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error('Failed to update the skus order');
-    }
-
-    const data: { store: Store } = await response.json();
-    const product = data.store.products.find(p => p.id === storeProduct.id);
-    return product;
+  const { updateProductSkusOrder, updateSkuStatus } = useStoreProductMutations({
+    storeProduct,
   });
-
-  const dnd = useDragNDrop(productSkus, 'sku', updateOrderMutation.mutate);
-
-  const updateActiveStatus = useMutation(
-    async ({
-      storeId,
-      storeProductId,
-      productSkuId,
-      updatedProductSku,
-    }: UpdateActiveStatusProps) => {
-      const response = await fetch(
-        '/api/store-products/update-sku-active-status',
-        {
-          method: 'post',
-          body: JSON.stringify({
-            storeId,
-            storeProductId,
-            productSkuId,
-            updatedProductSku,
-          }),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to update productSku.active');
-      }
-
-      const data = await response.json();
-      return data;
-    },
-    {
-      onMutate: async ({ productSkuId, updatedProductSku }) => {
-        await queryClient.cancelQueries([
-          'stores',
-          'store',
-          'product',
-          router.query.pid,
-        ]);
-
-        const updatedProductSkus = storeProduct.productSkus.map(ps => {
-          if (ps.id === productSkuId) {
-            return updatedProductSku;
-          }
-          return ps;
-        });
-
-        const updatedProduct = {
-          ...storeProduct,
-          productSkus: updatedProductSkus,
-        };
-
-        queryClient.setQueryData(
-          ['stores', 'store', 'product', router.query.pid],
-          updatedProduct
-        );
-      },
-      onError: () => {
-        // TODO: trigger a notification to announce the error and fallback
-        queryClient.setQueryData(
-          ['stores', 'store', 'product', router.query.pid],
-          storeProduct
-        );
-      },
-      onSettled: () => {
-        queryClient.invalidateQueries(['stores']);
-      },
-    }
-  );
+  const dnd = useDragNDrop(productSkus, 'sku', updateProductSkusOrder.mutate);
 
   if (!storeId) {
     throw new Error('No store ID provided.');
@@ -197,7 +99,7 @@ export default function StoreProductSkusTable({
             <div>{formatToMoney(s.size.price)}</div>
             <div
               className={`text-center ${
-                s.inventory && s.inventory < 6 ? ' running-low' : ''
+                s.inventory && s.inventory < 3 ? ' running-low' : ''
               }`}
             >
               {s.inventory}
@@ -206,7 +108,7 @@ export default function StoreProductSkusTable({
               <button
                 type="button"
                 onClick={() =>
-                  updateActiveStatus.mutate({
+                  updateSkuStatus.mutate({
                     storeId,
                     storeProductId: s.storeProductId,
                     productSkuId: s.id,
@@ -394,7 +296,7 @@ const StoreProductSkusTableStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
         rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
 

@@ -1,61 +1,18 @@
 import styled from 'styled-components';
 import { useRouter } from 'next/router';
-import { useMutation, useQueryClient } from 'react-query';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
-import {
-  InventoryColor,
-  InventoryProduct,
-  InventorySize,
-  InventorySku,
-} from '../../interfaces';
 import { createId, createInventoryProductSkus } from '../../utils';
 import { useSession } from '../../hooks/useSession';
+import {
+  useInventoryProductMutations,
+  InitialValues,
+} from '../../hooks/useInventoryProductMutations';
 import BasicLayout from '../../components/BasicLayout';
-
-type InitialValues = {
-  inventoryProductId: string;
-  merchandiseCode: string;
-  name: string;
-  description: string;
-  tag: string;
-  details: string[];
-  sizes: InventorySize[];
-  colors: InventoryColor[];
-  skus?: InventorySku[];
-};
 
 export default function CreateInventoryProduct() {
   const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  const createInventoryProduct = useMutation(
-    async (inventoryProduct: InitialValues) => {
-      const response = await fetch('/api/inventory-products/create', {
-        method: 'post',
-        body: JSON.stringify(inventoryProduct),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create the inventory product.');
-      }
-
-      const data: { inventoryProduct: InventoryProduct } =
-        await response.json();
-      return data;
-    },
-    {
-      onSuccess: ({ inventoryProduct }) => {
-        queryClient.invalidateQueries(['inventory-products']);
-        router.push(
-          `/inventory-products/${inventoryProduct.inventoryProductId}`
-        );
-      },
-    }
-  );
+  const { createProduct } = useInventoryProductMutations();
 
   const handleAddClick = async (callback: () => void, selector: string) => {
     await callback();
@@ -77,6 +34,7 @@ export default function CreateInventoryProduct() {
             details: [],
             sizes: [],
             colors: [],
+            notes: [],
           }}
           onSubmit={(values: InitialValues) => {
             const colors = values.colors.map(color => {
@@ -92,7 +50,7 @@ export default function CreateInventoryProduct() {
               values.inventoryProductId
             );
 
-            createInventoryProduct.mutate({ ...values, colors, skus });
+            createProduct.mutate({ ...values, colors, skus });
           }}
         >
           {({ values, isSubmitting }) => (
@@ -246,51 +204,45 @@ export default function CreateInventoryProduct() {
                       render={arrayHelpers => (
                         <>
                           {values.sizes.length > 0 &&
-                            values.sizes.map(
-                              (_size: InventorySize, sizeIndex) => (
-                                <div key={sizeIndex} className="size-item">
-                                  <div>
-                                    <div className="item">
-                                      <label
-                                        htmlFor={`sizes.${sizeIndex}.label`}
-                                      >
-                                        Size Label
-                                      </label>
-                                      <Field
-                                        name={`sizes.${sizeIndex}.label`}
-                                        id={`sizes.${sizeIndex}.label`}
-                                        placeholder="S, M, L, XL, XXL, etc."
-                                      />
-                                      <ErrorMessage
-                                        name={`sizes.${sizeIndex}.label`}
-                                        component="div"
-                                        className="validation-error"
-                                      />
-                                    </div>
+                            values.sizes.map((_size, sizeIndex) => (
+                              <div key={sizeIndex} className="size-item">
+                                <div>
+                                  <div className="item">
+                                    <label htmlFor={`sizes.${sizeIndex}.label`}>
+                                      Size Label
+                                    </label>
+                                    <Field
+                                      name={`sizes.${sizeIndex}.label`}
+                                      id={`sizes.${sizeIndex}.label`}
+                                      placeholder="S, M, L, XL, XXL, etc."
+                                    />
+                                    <ErrorMessage
+                                      name={`sizes.${sizeIndex}.label`}
+                                      component="div"
+                                      className="validation-error"
+                                    />
                                   </div>
-                                  <button
-                                    type="button"
-                                    className="remove-button"
-                                    onClick={() =>
-                                      arrayHelpers.remove(sizeIndex)
-                                    }
-                                  >
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      viewBox="0 0 20 20"
-                                      fill="currentColor"
-                                    >
-                                      <path
-                                        fillRule="evenodd"
-                                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                        clipRule="evenodd"
-                                      />
-                                    </svg>
-                                    <span className="sr-only">Remove size</span>
-                                  </button>
                                 </div>
-                              )
-                            )}
+                                <button
+                                  type="button"
+                                  className="remove-button"
+                                  onClick={() => arrayHelpers.remove(sizeIndex)}
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                  <span className="sr-only">Remove size</span>
+                                </button>
+                              </div>
+                            ))}
                           <button
                             type="button"
                             className="secondary-button"
@@ -499,7 +451,7 @@ const CreateInventoryProductStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
         rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
   }
@@ -830,7 +782,7 @@ const CreateInventoryProductStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
         rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
 

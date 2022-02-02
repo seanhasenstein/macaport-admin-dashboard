@@ -85,7 +85,10 @@ export default function OrdersTable({ store, orders }: Props) {
                 {filteredOrders.length === 0 ? (
                   <tr>
                     <td className="empty">
-                      There are no {orderViewOption.toLowerCase()} orders
+                      There are no{' '}
+                      {orderViewOption !== 'All' &&
+                        orderViewOption.toLowerCase()}{' '}
+                      orders
                     </td>
                   </tr>
                 ) : (
@@ -274,7 +277,7 @@ const OrdersTableStyles = styled.div`
       }
 
       &:focus-visible {
-        color: #1c5eb9;
+        color: #1c44b9;
         text-decoration: underline;
       }
     }

@@ -1,8 +1,7 @@
 import React from 'react';
-import { useRouter } from 'next/router';
 import styled from 'styled-components';
-import { useMutation, useQueryClient } from 'react-query';
-import { InventoryProduct, InventorySku } from '../interfaces';
+import { InventoryProduct } from '../interfaces';
+import { useInventoryProductMutations } from '../hooks/useInventoryProductMutations';
 import useDragNDrop from '../hooks/useDragNDrop';
 
 type Props = {
@@ -16,106 +15,10 @@ export default function InventoryProductSkus({
   inventoryProduct,
   setShowInventoryModal,
 }: Props) {
-  const queryClient = useQueryClient();
-  const router = useRouter();
+  const { updateSkuActiveStatus, updateSkuOrder } =
+    useInventoryProductMutations(inventoryProduct);
 
-  const updateOrderMutation = useMutation(async (dndSkus: InventorySku[]) => {
-    const response = await fetch(`/api/inventory-products/update`, {
-      method: 'post',
-      body: JSON.stringify({
-        id: inventoryProduct._id,
-        update: { skus: dndSkus },
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to update the inventory order.');
-    }
-
-    const data = await response.json();
-    return data.inventoryProduct;
-  });
-
-  const dnd = useDragNDrop(
-    inventoryProduct.skus,
-    'sku',
-    updateOrderMutation.mutate
-  );
-
-  const updateActiveStatus = useMutation(
-    async (skuId: string) => {
-      if (!inventoryProduct) {
-        throw new Error('No inventory product found.');
-      }
-
-      const updatedSkus = inventoryProduct.skus.map(s => {
-        if (s.id === skuId) {
-          return { ...s, active: !s.active };
-        }
-        return s;
-      });
-
-      const { _id, ...update }: InventoryProduct = {
-        ...inventoryProduct,
-        skus: updatedSkus,
-      };
-
-      const response = await fetch(`/api/inventory-products/update`, {
-        method: 'post',
-        body: JSON.stringify({ id: inventoryProduct._id, update }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to updated the inventory product sku.');
-      }
-
-      const data = await response.json();
-      return data.inventoryProduct;
-    },
-    {
-      onMutate: async skuId => {
-        if (!inventoryProduct) {
-          throw new Error('No inventory product found.');
-        }
-        const updatedSkus = inventoryProduct.skus.map(s => {
-          if (s.id === skuId) {
-            return { ...s, active: !s.active };
-          }
-          return s;
-        });
-
-        const update: InventoryProduct = {
-          ...inventoryProduct,
-          skus: updatedSkus,
-        };
-        await queryClient.cancelQueries([
-          'inventory-products',
-          'inventory-product',
-          router.query.id,
-        ]);
-        queryClient.setQueryData(
-          ['inventory-products', 'inventory-product', router.query.id],
-          update
-        );
-      },
-      onError: () => {
-        queryClient.setQueryData(
-          ['inventory-products', 'inventory-product', router.query.id],
-          inventoryProduct
-        );
-      },
-      onSettled: () => {
-        queryClient.invalidateQueries(['inventory-products']);
-        queryClient.invalidateQueries(['stores']);
-      },
-    }
-  );
+  const dnd = useDragNDrop(inventoryProduct.skus, 'sku', updateSkuOrder.mutate);
 
   return (
     <InventoryProductSkusStyles>
@@ -206,14 +109,14 @@ export default function InventoryProductSkus({
               {s.color.label}
             </div>
             <div
-              className={`text-center${s.inventory < 6 ? ' running-low' : ''}`}
+              className={`text-center${s.inventory < 3 ? ' running-low' : ''}`}
             >
               {s.inventory}
             </div>
             <div className="product-status text-center">
               <button
                 type="button"
-                onClick={() => updateActiveStatus.mutate(s.id)}
+                onClick={() => updateSkuActiveStatus.mutate(s.id)}
                 role="switch"
                 aria-checked={s.active}
                 className={`toggle-button ${s.active ? 'on' : 'off'}`}
@@ -293,7 +196,7 @@ const InventoryProductSkusStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
         rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
   }
@@ -410,7 +313,7 @@ const InventoryProductSkusStyles = styled.div`
     }
 
     &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c5eb9 0px 0px 0px 4px,
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
         rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     }
 
