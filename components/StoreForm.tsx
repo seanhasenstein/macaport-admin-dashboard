@@ -191,7 +191,7 @@ export default function StoreForm({ values, setFieldValue }: Props) {
                   name="primaryShippingLocation.state"
                   id="primaryShippingLocation.state"
                 >
-                  <option value="default">Select state</option>
+                  <option value="">Select state</option>
                   {unitedStates.map((s, i) => (
                     <option key={i} value={s}>
                       {s}

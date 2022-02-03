@@ -196,8 +196,9 @@ export default function Order() {
                             {data.order.shippingAddress?.street}{' '}
                             {data.order.shippingAddress?.street2}
                             <br />
-                            {data.order.shippingAddress?.city},{' '}
-                            {data.order.shippingAddress?.state}{' '}
+                            {data.order.shippingAddress?.city}
+                            {data.order.shippingAddress?.state &&
+                              `, ${data.order.shippingAddress?.state}`}{' '}
                             {data.order.shippingAddress?.zipcode}
                           </div>
                         </div>

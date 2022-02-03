@@ -278,21 +278,27 @@ export default function Store() {
                           {storeQuery.data.hasPrimaryShippingLocation ? (
                             <>
                               {storeQuery.data.primaryShippingLocation.name}{' '}
-                              <br />
-                              {
-                                storeQuery.data.primaryShippingLocation.street
-                              }{' '}
-                              <br />
                               {storeQuery.data.primaryShippingLocation
-                                .street2 ? (
+                                .street && (
                                 <>
+                                  <br />
+                                  {
+                                    storeQuery.data.primaryShippingLocation
+                                      .street
+                                  }
+                                </>
+                              )}{' '}
+                              {storeQuery.data.primaryShippingLocation
+                                .street2 && (
+                                <>
+                                  <br />
                                   {
                                     storeQuery.data.primaryShippingLocation
                                       .street2
                                   }{' '}
                                   <br />
                                 </>
-                              ) : null}
+                              )}
                               {storeQuery.data.primaryShippingLocation.city}
                               {storeQuery.data.primaryShippingLocation.state &&
                                 `, ${storeQuery.data.primaryShippingLocation.state}`}{' '}
