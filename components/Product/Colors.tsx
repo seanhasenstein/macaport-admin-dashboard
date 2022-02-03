@@ -215,12 +215,12 @@ function ColorSpan(props: ColorProps) {
 }
 
 const ColorSpanStyles = styled.span<ColorProps>`
-  margin: 0 0.5rem 0 0;
-  display: block;
+  margin: 0 0.6875rem 0 0;
+  display: flex;
+  background-color: ${props => props.hex};
   height: 1rem;
   width: 1rem;
-  border: 1px solid #d1d5db;
   border-radius: 9999px;
-  background-color: ${props => props.hex};
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 `;

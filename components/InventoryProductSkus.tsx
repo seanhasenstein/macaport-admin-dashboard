@@ -376,17 +376,16 @@ const InventoryProductSkusStyles = styled.div`
 `;
 
 function Color({ hex }: { hex: string }) {
-  return <ColorStyle hex={hex} />;
+  return <ColorStyle hex={hex} title={hex} />;
 }
 
 const ColorStyle = styled.span<{ hex: string }>`
-  margin: 0 0.9375rem 0 0;
+  margin: 0 0.6875rem 0 0;
   display: flex;
-  height: 0.875rem;
-  width: 0.875rem;
-  border-radius: 9999px;
   background-color: ${props => props.hex};
-  box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
-    rgba(17, 24, 39, 0.1) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 4px 6px -1px,
-    rgba(0, 0, 0, 0.1) 0px 2px 4px -1px;
+  height: 1rem;
+  width: 1rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 `;
