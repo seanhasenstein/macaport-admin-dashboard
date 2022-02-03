@@ -193,9 +193,25 @@ export default function Order() {
                         <div className="detail-item">
                           <div className="label">Shipping address</div>
                           <div className="value">
-                            {data.order.shippingAddress?.street}{' '}
-                            {data.order.shippingAddress?.street2}
-                            <br />
+                            {data.order.shippingAddress?.name &&
+                              data.order.shippingAddress?.name}
+                            {data.order.shippingAddress?.street && (
+                              <>
+                                <br />
+                                {data.order.shippingAddress?.street}
+                              </>
+                            )}{' '}
+                            {data.order.shippingAddress?.street2 && (
+                              <>
+                                <br />
+                                {data.order.shippingAddress?.street2}
+                              </>
+                            )}
+                            {data.order.shippingAddress.city ||
+                            data.order.shippingAddress.state ||
+                            data.order.shippingAddress.zipcode ? (
+                              <br />
+                            ) : null}
                             {data.order.shippingAddress?.city}
                             {data.order.shippingAddress?.state &&
                               `, ${data.order.shippingAddress?.state}`}{' '}
