@@ -197,6 +197,7 @@ export function createStoreProductSkus(
       return {
         id,
         storeProductId,
+        inventoryProductId: inventoryProductSku.inventoryProductId,
         inventorySkuId: inventoryProductSku?.id,
         size: s,
         color: c,

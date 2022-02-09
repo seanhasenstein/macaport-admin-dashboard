@@ -125,6 +125,7 @@ export function updateStoreProductSkus(
         return {
           id: createId('prod_sku'),
           storeProductId: previousStoreProduct.id,
+          inventoryProductId: inventorySku?.inventoryProductId || '',
           inventorySkuId: inventorySku?.id || '',
           color: { ...color, primaryImage: '', secondaryImages: [] },
           size: { ...size, price: prevSize?.price || 0 },
@@ -144,6 +145,7 @@ export function updateStoreProductSkus(
           const newSku = {
             id: createId('prod_sku'),
             storeProductId: previousStoreProduct.id,
+            inventoryProductId: inventorySku?.inventoryProductId || '',
             inventorySkuId: inventorySku?.id || '',
             color: { ...color, primaryImage: '', secondaryImages: [] },
             size: { ...size, price: 0 },
