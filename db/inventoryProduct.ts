@@ -25,6 +25,18 @@ export async function getInventoryProducts(
   return await result;
 }
 
+export async function getInventoryProductSku(
+  db: Db,
+  inventoryProductId: string,
+  inventorySkuId: string
+) {
+  const result: InventoryProduct = await db
+    .collection('inventoryProducts')
+    .findOne({ inventoryProductId });
+
+  return result.skus.find(s => s.id === inventorySkuId);
+}
+
 export async function createInventoryProduct(
   db: Db,
   product: InventoryProduct
@@ -55,4 +67,20 @@ export async function updateInventoryProduct(
       { upsert: true, returnDocument: 'after' }
     );
   return result.value;
+}
+
+export async function updateInventoryProductSku(
+  db: Db,
+  inventoryProductId: string,
+  inventorySkuId: string,
+  updatedInventory: number
+) {
+  const result = await db
+    .collection('inventoryProducts')
+    .updateOne(
+      { inventoryProductId },
+      { $set: { 'skus.$[sku].inventory': updatedInventory } },
+      { arrayFilters: [{ 'sku.id': { $eq: inventorySkuId } }] }
+    );
+  return result;
 }

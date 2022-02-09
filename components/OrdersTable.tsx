@@ -7,7 +7,12 @@ import { Order, Store } from '../interfaces';
 import OrdersTableMenu from './OrdersTableMenu';
 import OrderStatusButton from './OrderStatusButton';
 
-type OrderViewOptions = 'All' | 'Unfulfilled' | 'Fulfilled' | 'Completed';
+type OrderViewOptions =
+  | 'All'
+  | 'Unfulfilled'
+  | 'Fulfilled'
+  | 'Completed'
+  | 'Canceled';
 
 type Props = {
   store: Store;
@@ -64,6 +69,13 @@ export default function OrdersTable({ store, orders }: Props) {
               >
                 Completed Orders
               </button>
+              <button
+                type="button"
+                className={orderViewOption === 'Canceled' ? 'active' : ''}
+                onClick={() => setOrderViewOption('Canceled')}
+              >
+                Completed Orders
+              </button>
             </div>
           </div>
           <div className="table-container">
@@ -116,10 +128,12 @@ export default function OrdersTable({ store, orders }: Props) {
                         {store.requireGroupSelection && <td>{o.group}</td>}
                         <td>{o.shippingMethod}</td>
                         <td className="text-center total-items">
-                          {o.items.length}
+                          {o.orderStatus === 'Canceled' ? 0 : o.items.length}
                         </td>
                         <td className="text-center">
-                          {calculateTotalItems(o.items)}
+                          {o.orderStatus === 'Canceled'
+                            ? 0
+                            : calculateTotalItems(o.items)}
                         </td>
                         <td className="text-right">
                           {formatToMoney(o.summary.total, true)}

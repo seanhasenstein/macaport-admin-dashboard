@@ -20,7 +20,7 @@ export default function OrdersTableMenu({ store, order }: Props) {
     <OrdersTableMenuStyles>
       <button
         type="button"
-        className="order-menu-button"
+        className="toggle-menu-button"
         onClick={() => setShowMenu(!showMenu)}
       >
         <svg
@@ -33,7 +33,7 @@ export default function OrdersTableMenu({ store, order }: Props) {
       </button>
       <div ref={menuRef} className={`menu ${showMenu ? 'show' : ''}`}>
         <Link href={`/orders/${order.orderId}?sid=${store._id}`}>
-          <a className="view-link">
+          <a className="menu-link">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -50,6 +50,27 @@ export default function OrdersTableMenu({ store, order }: Props) {
             View order
           </a>
         </Link>
+        <a
+          href={`https://dashboard.stripe.com/payments/${order.stripeId}`}
+          target="_blank"
+          rel="noreferrer"
+          className="menu-link"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+            />
+          </svg>
+          Stripe dashboard
+        </a>
       </div>
     </OrdersTableMenuStyles>
   );
@@ -58,7 +79,7 @@ export default function OrdersTableMenu({ store, order }: Props) {
 const OrdersTableMenuStyles = styled.div`
   position: relative;
 
-  .order-menu-button {
+  .toggle-menu-button {
     margin-left: auto;
     padding: 0;
     height: 1.5rem;
@@ -103,8 +124,7 @@ const OrdersTableMenuStyles = styled.div`
     }
   }
 
-  .view-link,
-  .edit-link {
+  .menu-link {
     padding: 0.75rem 1.25rem 0.75rem 0;
     width: 100%;
     display: flex;
@@ -118,6 +138,10 @@ const OrdersTableMenuStyles = styled.div`
     text-align: left;
     cursor: pointer;
     border-bottom: 1px solid #e5e7eb;
+
+    &:last-child {
+      border-bottom: none;
+    }
 
     &:hover {
       color: #000;

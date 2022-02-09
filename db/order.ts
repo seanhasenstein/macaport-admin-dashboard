@@ -1,5 +1,5 @@
 import { Db, ObjectID } from 'mongodb';
-import { Store, Note, OrderStatus } from '../interfaces';
+import { Store, Note, OrderStatus, Order } from '../interfaces';
 
 export async function getOrderById(db: Db, storeId: string, orderId: string) {
   try {
@@ -54,5 +54,44 @@ export async function updateOrderNotes(
       returnDocument: 'after',
     }
   );
+  return result.value;
+}
+
+export async function cancelOrder(
+  db: Db,
+  storeId: string,
+  orderId: string,
+  order: Order
+) {
+  const updatedItems = order.items.map(i => ({
+    ...i,
+    quantity: 0,
+    itemTotal: 0,
+  }));
+  const updatedOrder: Order = {
+    ...order,
+    orderStatus: 'Canceled',
+    items: updatedItems,
+    summary: {
+      ...order.summary,
+      subtotal: 0,
+      salesTax: 0,
+      shipping: 0,
+      total: 0,
+    },
+    refund: {
+      status: 'Full',
+      amount: order.summary.total,
+    },
+  };
+
+  const result = await db
+    .collection('stores')
+    .findOneAndUpdate(
+      { _id: new ObjectID(storeId) },
+      { $set: { 'orders.$[order]': updatedOrder } },
+      { arrayFilters: [{ 'order.orderId': orderId }], returnDocument: 'after' }
+    );
+
   return result.value;
 }

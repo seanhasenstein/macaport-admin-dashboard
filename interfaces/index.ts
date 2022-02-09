@@ -66,6 +66,7 @@ export interface Size {
 export interface ProductSku {
   id: string;
   storeProductId: string;
+  inventoryProductId: string;
   inventorySkuId: string;
   size: Size;
   color: Color;
@@ -164,7 +165,11 @@ export interface OrderItem {
   customNumber: string;
 }
 
-export type OrderStatus = 'Unfulfilled' | 'Fulfilled' | 'Completed';
+export type OrderStatus =
+  | 'Unfulfilled'
+  | 'Fulfilled'
+  | 'Completed'
+  | 'Canceled';
 
 export interface Order {
   orderId: string;
@@ -194,9 +199,13 @@ export interface Order {
   summary: {
     subtotal: number;
     shipping: number;
-    transactionFee: number;
     salesTax: number;
     total: number;
+    stripeFee: number;
+  };
+  refund: {
+    status: 'None' | 'Partial' | 'Full';
+    amount: number;
   };
   notes: Note[];
   createdAt: string;
