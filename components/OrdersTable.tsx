@@ -74,7 +74,7 @@ export default function OrdersTable({ store, orders }: Props) {
                 className={orderViewOption === 'Canceled' ? 'active' : ''}
                 onClick={() => setOrderViewOption('Canceled')}
               >
-                Completed Orders
+                Canceled Orders
               </button>
             </div>
           </div>

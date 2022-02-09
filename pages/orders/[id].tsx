@@ -416,7 +416,69 @@ export default function Order() {
             <div ref={cancelOrderRef} className="modal">
               <div>
                 <h3>Cancel order</h3>
-                <p>Are you sure you want to cancel this order?</p>
+                <p>
+                  Are you sure you want to cancel this order? This will cause
+                  the following changes:
+                </p>
+                <ul>
+                  <li>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Order status set to 'canceled'
+                  </li>
+                  <li>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Order totals to $0.00
+                  </li>
+                  <li>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    All order items quantity to 0 and item total to $0.00
+                  </li>
+                  <li>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    All order items quantity will be added back to inventory
+                    products inventory.
+                  </li>
+                </ul>
               </div>
               <div className="buttons">
                 <button
@@ -843,7 +905,7 @@ const CancelOrderModalStyles = styled.div`
     width: 100%;
     text-align: left;
     background-color: #fff;
-    border-radius: 0.5rem;
+    border-radius: 0.375rem;
     box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
 
     h3 {
@@ -854,34 +916,72 @@ const CancelOrderModalStyles = styled.div`
     }
 
     p {
-      margin: 0 0 1.5rem;
+      margin: 0 0 1rem;
       font-size: 1rem;
-      color: #4b5563;
+      color: #1f2937;
       line-height: 1.5;
     }
 
+    ul {
+      margin: 1rem 0;
+      padding: 0;
+    }
+
+    li {
+      margin: 0 0 0.75rem;
+      display: flex;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      list-style: none;
+      line-height: 1.5;
+
+      svg {
+        margin: 4px 0 0;
+        flex-shrink: 0;
+        height: 0.875rem;
+        width: 0.875rem;
+        color: #059669;
+      }
+    }
+
     .buttons {
-      margin: 1.25rem 0 0;
+      margin: 2rem 0 0;
       display: flex;
       justify-content: flex-end;
       align-items: center;
-      gap: 0.625rem;
+      gap: 0.75rem;
     }
 
     .primary-button,
     .secondary-button {
+      padding: 0.5rem 1.25rem;
       font-size: 0.875rem;
       font-weight: 500;
+      border-radius: 0.25rem;
       cursor: pointer;
+
+      &:hover {
+        color: #000;
+        border-color: #c6cbd2;
+        box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.1);
+      }
+
+      &:focus {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+      }
+
+      &:focus-visible {
+        box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
+          rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+      }
     }
 
     .primary-button {
-      padding: 0.5rem 1.25rem;
       color: #b91c1c;
       background-color: #fee2e2;
       border: 1px solid #fdcfcf;
       box-shadow: inset 0 1px 1px #fff;
-      border-radius: 0.25rem;
 
       &:hover {
         color: #a81919;
@@ -889,35 +989,15 @@ const CancelOrderModalStyles = styled.div`
         box-shadow: inset 0 1px 1px #fff, rgba(0, 0, 0, 0) 0px 0px 0px 0px,
           rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
       }
-
-      &:focus {
-        outline: 2px solid transparent;
-        outline-offset: 2px;
-      }
-
-      &:focus-visible {
-        text-decoration: underline;
-      }
     }
 
     .secondary-button {
-      color: #4b5563;
+      color: #1f2937;
       background-color: transparent;
-      border: none;
-
-      &:hover {
-        color: #1f2937;
-        text-decoration: underline;
-      }
-
-      &:focus {
-        outline: 2px solid transparent;
-        outline-offset: 2px;
-      }
-
-      &:focus-visible {
-        text-decoration: underline;
-      }
+      border: 1px solid #d1d5db;
+      border-radius: 0.3125rem;
+      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      cursor: pointer;
     }
   }
 `;
