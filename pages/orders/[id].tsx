@@ -379,9 +379,16 @@ export default function Order() {
                         <div className="detail-item">
                           <div className="label">Net</div>
                           <div className="value">
+                            {data.order.summary.total -
+                              data.order.summary.stripeFee <
+                            0
+                              ? '-'
+                              : ''}
                             {formatToMoney(
-                              data.order.summary.total -
-                                data.order.summary.stripeFee,
+                              Math.abs(
+                                data.order.summary.total -
+                                  data.order.summary.stripeFee
+                              ),
                               true
                             )}
                           </div>
@@ -433,7 +440,7 @@ export default function Order() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    Order status set to 'canceled'
+                    Order status set to 'canceled'.
                   </li>
                   <li>
                     <svg
@@ -447,7 +454,7 @@ export default function Order() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    Order totals to $0.00
+                    Order totals to $0.00.
                   </li>
                   <li>
                     <svg
@@ -461,7 +468,7 @@ export default function Order() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    All order items quantity to 0 and item total to $0.00
+                    All order items quantity to 0 and item total to $0.00.
                   </li>
                   <li>
                     <svg
