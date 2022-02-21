@@ -1,23 +1,14 @@
 import { NextApiResponse } from 'next';
-import { connectToDb } from '../db/connect';
+import { connectToDb } from '../db';
 import { Request } from '../interfaces';
-
-declare global {
-  namespace NodeJS {
-    interface Global {
-      mongo: any;
-    }
-  }
-}
 
 export default async function database(
   req: Request,
-  res: NextApiResponse,
+  _res: NextApiResponse,
   next: () => void
 ) {
-  const { db, dbClient } = await connectToDb();
+  const db = await connectToDb();
   req.db = db;
-  req.dbClient = dbClient;
 
   next();
 }

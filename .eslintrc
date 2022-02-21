@@ -10,6 +10,7 @@
   "plugins": ["@typescript-eslint", "react", "react-hooks", "jsx-a11y"],
   "extends": [
     "eslint:recommended",
+    "plugin:@next/next/recommended",
     "plugin:@typescript-eslint/eslint-recommended",
     "plugin:@typescript-eslint/recommended",
     "plugin:react/recommended",
