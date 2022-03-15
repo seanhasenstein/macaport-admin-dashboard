@@ -3,6 +3,7 @@ import { signOut } from 'next-auth/client';
 import styled from 'styled-components';
 import useEscapeKeydownClose from '../hooks/useEscapeKeydownClose';
 import useOutsideClick from '../hooks/useOutsideClick';
+import Link from 'next/link';
 
 type Props = {
   sidebarOpen: boolean;
@@ -19,27 +20,46 @@ export default function NavSidebar({ sidebarOpen, setSidebarOpen }: Props) {
       ref={containerRef}
       className={`sidebar-nav${sidebarOpen ? ' open' : ''}`}
     >
-      <button
-        type="button"
-        onClick={() => setSidebarOpen(false)}
-        className="close-sidebar-button"
-        tabIndex={sidebarOpen ? 0 : -1}
-      >
-        <span className="sr-only">Close sidebar</span>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M6 18L18 6M6 6l12 12"
-          />
-        </svg>
-      </button>
+      <div>
+        <div className="header">
+          <h3>Dashboard navigation</h3>
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(false)}
+            className="close-sidebar-button"
+            tabIndex={sidebarOpen ? 0 : -1}
+          >
+            <span className="sr-only">Close sidebar</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+        <div className="main-nav">
+          <Link href="/">Home</Link>
+          <Link href="/stores">All stores</Link>
+          <Link href="/inventory-products">Inventory products</Link>
+          <Link href="stores/create">Create a store</Link>
+          <Link href="inventory-products/create">Create inventory product</Link>
+          <a
+            href="https://dashboard.stripe.com/dashboard"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Stripe dashboard
+          </a>
+        </div>
+      </div>
       <button
         type="button"
         onClick={() => signOut({ callbackUrl: '/login' })}
@@ -66,51 +86,98 @@ export default function NavSidebar({ sidebarOpen, setSidebarOpen }: Props) {
 }
 
 const NavSidebarStyles = styled.div`
-  padding: 2rem;
-  width: 300px;
+  padding: 1.5rem 2rem 2rem;
+  width: 20rem;
   position: fixed;
   top: 0;
-  right: -100%;
+  right: 0;
   bottom: 0;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: space-between;
   background-color: #fff;
   box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
   z-index: 9999;
-  transition: right 500ms ease-in-out;
+  transform: translateX(100%);
+  transition: transform 200ms linear;
 
   &.open {
-    right: 0;
+    transform: translateX(0);
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+
+  .header {
+    margin: 0 0 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .main-nav {
+    display: flex;
+    flex-direction: column;
+
+    a {
+      padding: 0.75rem 0;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: #374151;
+      border-bottom: 1px solid #e5e7eb;
+      transition: color 150ms linear;
+
+      &:first-of-type {
+        border-top: 1px solid #e5e7eb;
+      }
+
+      &:hover {
+        color: #000;
+      }
+
+      &:focus {
+        outline: none;
+      }
+
+      &:focus-visible {
+        color: #1c44b9;
+        text-decoration: underline;
+      }
+    }
   }
 
   .logout-button {
-    padding: 0.4375rem;
+    padding: 0.5rem;
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
-    color: #475569;
+    color: #f3f4f6;
     font-size: 0.875rem;
     font-weight: 500;
     text-align: center;
     line-height: 1;
-    background-color: #e2e8f0;
-    border: 1px solid #cbd5e1;
+    background-color: #111827;
+    border: none;
     border-radius: 0.25rem;
-    box-shadow: inset 0 1px 1px #fff, 0 1px 2px 0 rgb(0 0 0 / 0.05);
     cursor: pointer;
+    transition: all 200ms linear;
 
     svg {
       margin: 0 0 0 0.25rem;
       height: 0.8125rem;
       width: 0.8125rem;
-      color: #94a3b8;
+      color: #6b7280;
     }
 
     &:hover {
-      border-color: #bfcbda;
-      box-shadow: inset 0 1px 1px #fff, 0 1px 2px 0 rgb(0 0 0 / 0.1);
+      background-color: #1f2937;
+      color: #fff;
     }
 
     &:focus {
@@ -126,9 +193,9 @@ const NavSidebarStyles = styled.div`
 
   .close-sidebar-button {
     padding: 0.125rem;
-    position: absolute;
-    top: 1.5rem;
-    right: 1.5rem;
+    /* position: absolute;
+    top: 1rem;
+    right: 1rem; */
     display: flex;
     justify-content: center;
     align-items: center;
