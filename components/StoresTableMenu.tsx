@@ -3,13 +3,21 @@ import Link from 'next/link';
 import styled from 'styled-components';
 import useOutsideClick from '../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../hooks/useEscapeKeydownClose';
+import { getStoreStatus } from '../utils';
 
 type Props = {
   storeId: string;
+  openDate: string;
+  closeDate: string | null;
 };
 
-export default function StoresTableMenu({ storeId }: Props) {
+export default function StoresTableMenu({
+  storeId,
+  openDate,
+  closeDate,
+}: Props) {
   const menuRef = React.useRef<HTMLDivElement>(null);
+  const storeStatus = getStoreStatus(openDate, closeDate);
   const [showMenu, setShowMenu] = React.useState(false);
   useOutsideClick(showMenu, setShowMenu, menuRef);
   useEscapeKeydownClose(showMenu, setShowMenu);
@@ -45,7 +53,7 @@ export default function StoresTableMenu({ storeId }: Props) {
                 d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            View store
+            View store data
           </a>
         </Link>
         <Link href={`/stores/${storeId}#orders`}>
@@ -90,27 +98,29 @@ export default function StoresTableMenu({ storeId }: Props) {
             Edit store
           </a>
         </Link>
-        <a
-          href={`${process.env.NEXT_PUBLIC_DOMAIN}/store/${storeId}`}
-          target="_blank"
-          rel="noreferrer"
-          className="link"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+        {storeStatus === 'open' && (
+          <a
+            href={`${process.env.NEXT_PUBLIC_DOMAIN}/store/${storeId}`}
+            target="_blank"
+            rel="noreferrer"
+            className="link"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-            />
-          </svg>
-          Go to store
-        </a>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+              />
+            </svg>
+            Go to store site
+          </a>
+        )}
       </div>
     </StoresTableMenuStyles>
   );

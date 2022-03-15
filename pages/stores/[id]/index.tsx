@@ -90,7 +90,7 @@ export default function Store() {
           {storeQuery.data && (
             <>
               <div className="actions-row">
-                <Link href="/">
+                <Link href="/stores">
                   <a className="back-link">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -521,7 +521,7 @@ const StoreStyles = styled.div`
     position: relative;
     margin: 0 auto;
     padding: 3rem 0 0;
-    max-width: 75rem;
+    max-width: 74rem;
     width: 100%;
   }
 

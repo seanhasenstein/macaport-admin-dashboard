@@ -321,7 +321,7 @@ const ProductStyles = styled.div`
     position: relative;
     margin: 0 auto;
     padding: 3rem 0 0;
-    max-width: 75rem;
+    max-width: 74rem;
     width: 100%;
   }
 

@@ -110,7 +110,7 @@ const ColorsStyles = styled.div`
 
   .prod-color {
     padding: 1rem 1.5rem;
-    max-width: 75rem;
+    max-width: 74rem;
     width: 100%;
     display: flex;
     justify-content: space-between;

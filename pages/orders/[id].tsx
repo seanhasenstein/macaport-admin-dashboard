@@ -540,7 +540,7 @@ const OrderStyles = styled.div`
   .order-summary-row {
     position: relative;
     margin: 0 auto;
-    max-width: 75rem;
+    max-width: 74rem;
     width: 100%;
   }
 
