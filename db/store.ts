@@ -39,7 +39,7 @@ export async function createStore(db: Db, store: Store) {
 export async function updateStore(
   db: Db,
   id: string,
-  updates: Record<string, unknown>
+  updates: Record<string, any>
 ) {
   const result = await db
     .collection('stores')

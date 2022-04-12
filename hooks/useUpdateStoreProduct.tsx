@@ -6,6 +6,7 @@ import {
   Color,
   FormSize,
   Note,
+  PersonalizationForm,
   ProductSku,
   Store,
   StoreProduct,
@@ -15,6 +16,7 @@ import {
   formatFromStripeToPrice,
   getCloudinarySignature,
 } from '../utils';
+import { formatDbAddonItemsForForm } from '../utils/storeProduct';
 
 const url = `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_NAME}/image/upload`;
 
@@ -26,6 +28,7 @@ type InitialValues = {
   description: string;
   tag: string;
   details: string[];
+  personalization: PersonalizationForm;
   sizes: FormSize[];
   colors: Color[];
   productSkus: ProductSku[];
@@ -39,8 +42,6 @@ type Props = {
 export function useUpdateStoreProduct({ storeQuery }: Props) {
   const router = useRouter();
   const [product, setProduct] = React.useState<StoreProduct>();
-  const [includeCustomName, setIncludeCustomName] = React.useState(false);
-  const [includeCustomNumber, setIncludeCustomNumber] = React.useState(false);
   const [primaryImages, setPrimaryImages] = React.useState<string[]>([]);
   const [secondaryImages, setSecondaryImages] = React.useState<string[][]>([]);
   const [primaryImageStatus, setPrimaryImageStatus] =
@@ -55,6 +56,11 @@ export function useUpdateStoreProduct({ storeQuery }: Props) {
     description: '',
     tag: '',
     details: [],
+    personalization: {
+      active: false,
+      maxLines: 0,
+      addons: [],
+    },
     sizes: [],
     colors: [],
     productSkus: [],
@@ -80,6 +86,10 @@ export function useUpdateStoreProduct({ storeQuery }: Props) {
         description: product.description,
         tag: product.tag,
         details: product.details,
+        personalization: {
+          ...product.personalization,
+          addons: formatDbAddonItemsForForm(product.personalization.addons),
+        },
         sizes: product.sizes.map(s => ({
           ...s,
           price: formatFromStripeToPrice(s.price),
@@ -97,8 +107,6 @@ export function useUpdateStoreProduct({ storeQuery }: Props) {
 
       setPrimaryImages(primaryImages);
       setSecondaryImages(secondaryImages);
-      setIncludeCustomName(product.includeCustomName);
-      setIncludeCustomNumber(product.includeCustomNumber);
     }
   }, [product]);
 
@@ -245,10 +253,6 @@ export function useUpdateStoreProduct({ storeQuery }: Props) {
 
   return {
     initialValues,
-    includeCustomName,
-    setIncludeCustomName,
-    includeCustomNumber,
-    setIncludeCustomNumber,
     primaryImages,
     secondaryImages,
     product,

@@ -129,8 +129,6 @@ const handler = nc<Request, NextApiResponse>()
               [header[5].id]: `${formatToMoney(item.price, true)}`,
               [header[6].id]: `${item.quantity}`,
               [header[7].id]: `${formatToMoney(item.itemTotal, true)}`,
-              [header[8].id]: `${item.customName ? item.customName : '-'}`,
-              [header[9].id]: `${item.customNumber ? item.customNumber : '-'}`,
             };
             rows = [...rows, itemRow];
           });
@@ -148,8 +146,6 @@ const handler = nc<Request, NextApiResponse>()
         [header[5].id]: 'ITEM PRICE',
         [header[6].id]: 'QUANTITY',
         [header[7].id]: 'ITEM TOTAL',
-        [header[8].id]: 'CUSTOM NAME',
-        [header[9].id]: 'CUSTOM NUMBER',
       };
 
       const blankRow = header.map(h => ({ [h.id]: '' }));

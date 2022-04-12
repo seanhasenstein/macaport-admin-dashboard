@@ -5,6 +5,10 @@ import * as Yup from 'yup';
 import styled from 'styled-components';
 import { Size, FormSize } from '../../../../interfaces';
 import { removeNonAlphanumeric, updateProductSkus } from '../../../../utils';
+import {
+  createBlankPersonalizedItem,
+  formatPersonalizationValues,
+} from '../../../../utils/storeProduct';
 import { useSession } from '../../../../hooks/useSession';
 import { useUpdateStoreProduct } from '../../../../hooks/useUpdateStoreProduct';
 import { useStoreQuery } from '../../../../hooks/useStoreQuery';
@@ -14,15 +18,39 @@ import LoadingSpinner from '../../../../components/LoadingSpinner';
 
 const validationSchema = Yup.object().shape({
   name: Yup.string().required('Product name is required'),
+  personalization: Yup.object().shape({
+    maxLines: Yup.string().required('Max lines is required.'),
+    addons: Yup.array().of(
+      Yup.object().shape({
+        name: Yup.string().required('A name is required'),
+        location: Yup.string().required('A location is required'),
+        lines: Yup.string().required('Lines is required'),
+        list: Yup.string().when('type', {
+          is: 'list',
+          then: Yup.string().required('A list is required'),
+        }),
+        price: Yup.string().required('A price is required'),
+        limit: Yup.string().required('A limit is required'),
+        subItems: Yup.array().of(
+          Yup.object().shape({
+            name: Yup.string().required('A name is required'),
+            location: Yup.string().required('A location is required'),
+            lines: Yup.string().required('Lines is required'),
+            list: Yup.string().when('type', {
+              is: 'list',
+              then: Yup.string().required('A list is required.'),
+            }),
+            price: Yup.string().required('A price is required'),
+            limit: Yup.string().required('A limit is required'),
+          })
+        ),
+      })
+    ),
+  }),
   sizes: Yup.array().of(
     Yup.object().shape({
       label: Yup.string().required('A label is required'),
-      price: Yup.string()
-        // .matches(
-        //   /^([0-9]{1,})(\.)([0-9]{2})$/,
-        //   'Must be a valid price (i.e. 10.00)'
-        // )
-        .required('A price is required'),
+      price: Yup.string().required('A price is required'),
     })
   ),
   colors: Yup.array().of(
@@ -48,10 +76,6 @@ export default function UpdateProduct() {
   });
   const {
     initialValues,
-    includeCustomName,
-    setIncludeCustomName,
-    includeCustomNumber,
-    setIncludeCustomNumber,
     primaryImages,
     secondaryImages,
     product,
@@ -92,11 +116,14 @@ export default function UpdateProduct() {
                   };
                 });
 
+                const updatedPersonalization = formatPersonalizationValues(
+                  values.personalization
+                );
+
                 const updatedFormValues = {
                   ...values,
+                  personalization: updatedPersonalization,
                   sizes: updatedSizes,
-                  includeCustomName,
-                  includeCustomNumber,
                 };
 
                 const updatedSkus = updateProductSkus(
@@ -106,10 +133,9 @@ export default function UpdateProduct() {
 
                 const updatedProduct = {
                   ...values,
+                  personalization: updatedPersonalization,
                   sizes: updatedSizes,
                   productSkus: updatedSkus,
-                  includeCustomName,
-                  includeCustomNumber,
                 };
 
                 updateProduct.mutate(updatedProduct);
@@ -182,50 +208,494 @@ export default function UpdateProduct() {
                   </div>
 
                   <div className="section">
-                    <h3>Custom options</h3>
-                    <div className="option">
-                      <button
-                        type="button"
-                        onClick={() => setIncludeCustomName(!includeCustomName)}
-                        role="switch"
-                        aria-checked={includeCustomName}
-                        className={`toggle-button ${
-                          includeCustomName ? 'on' : 'off'
-                        }`}
-                      >
-                        <span aria-hidden="true" className="switch" />
-                        <span className="sr-only">
-                          Turn {includeCustomName ? 'off' : 'on'} include custom
-                          name
-                        </span>
-                      </button>
-                      <span className="toggle-description">
-                        Allow custom names <span>(+$5.00)</span>
-                      </span>
-                    </div>
-
-                    <div className="option">
+                    <div className="toggle-header-row">
+                      <h3>Personalization addons</h3>
                       <button
                         type="button"
                         onClick={() =>
-                          setIncludeCustomNumber(!includeCustomNumber)
+                          setFieldValue(
+                            'personalization.active',
+                            !values.personalization.active
+                          )
                         }
                         role="switch"
-                        aria-checked={includeCustomNumber}
+                        aria-checked={values.personalization.active}
                         className={`toggle-button ${
-                          includeCustomNumber ? 'on' : 'off'
+                          values.personalization.active ? 'on' : 'off'
                         }`}
                       >
                         <span aria-hidden="true" className="switch" />
                         <span className="sr-only">
-                          Turn {includeCustomNumber ? 'off' : 'on'} include
-                          custom name
+                          Toggle personalization{' '}
+                          {values.personalization.active
+                            ? 'active'
+                            : 'inactive'}
                         </span>
                       </button>
-                      <div className="toggle-description">
-                        Allow custom numbers <span>(+$5.00)</span>
-                      </div>
                     </div>
+
+                    {values.personalization.active ? (
+                      <>
+                        <div className="item">
+                          <label htmlFor="personalization.maxLines">
+                            Maximum lines allowed for this product
+                          </label>
+                          <Field
+                            name="personalization.maxLines"
+                            id="personalization.maxLines"
+                          />
+                          <ErrorMessage
+                            name="personalization.maxLines"
+                            component="div"
+                            className="validation-error"
+                          />
+                        </div>
+
+                        <FieldArray
+                          name="personalization.addons"
+                          render={arrayHelpers => (
+                            <>
+                              {values.personalization.addons.length > 0 &&
+                                values.personalization.addons.map(
+                                  (item, index) => (
+                                    <div
+                                      key={item.id}
+                                      className="personalization-item"
+                                    >
+                                      <h3>Addon {index + 1}</h3>
+
+                                      <div className="item">
+                                        <label
+                                          htmlFor={`personalization.addons.${index}.name`}
+                                        >
+                                          Name (Name, Number, Event, etc.)
+                                        </label>
+                                        <Field
+                                          name={`personalization.addons.${index}.name`}
+                                          id={`personalization.addons.${index}.name`}
+                                        />
+                                        <ErrorMessage
+                                          name={`personalization.addons.${index}.name`}
+                                          component="div"
+                                          className="validation-error"
+                                        />
+                                      </div>
+
+                                      <div className="item">
+                                        <label
+                                          htmlFor={`personalization.addons.${index}.location`}
+                                        >
+                                          Location (Back, Front, Shoulder, etc.)
+                                        </label>
+                                        <Field
+                                          name={`personalization.addons.${index}.location`}
+                                          id={`personalization.addons.${index}.location`}
+                                        />
+                                        <ErrorMessage
+                                          name={`personalization.addons.${index}.location`}
+                                          component="div"
+                                          className="validation-error"
+                                        />
+                                      </div>
+
+                                      <div className="item">
+                                        <label
+                                          htmlFor={`personalization.addons.${index}.lines`}
+                                        >
+                                          Lines (How many lines does this addon
+                                          take up?)
+                                        </label>
+                                        <Field
+                                          name={`personalization.addons.${index}.lines`}
+                                          id={`personalization.addons.${index}.lines`}
+                                        />
+                                        <ErrorMessage
+                                          name={`personalization.addons.${index}.lines`}
+                                          component="div"
+                                          className="validation-error"
+                                        />
+                                      </div>
+
+                                      <div className="item radio-group">
+                                        <div className="radio-group-label">
+                                          Type
+                                        </div>
+                                        <div>
+                                          <label
+                                            htmlFor={`personalization.addons.${index}.string`}
+                                            className="radio-item"
+                                          >
+                                            <Field
+                                              type="radio"
+                                              name={`personalization.addons.${index}.type`}
+                                              id={`personalization.addons.${index}.string`}
+                                              value="string"
+                                            />
+                                            Alphanumeric characters (A-Z and
+                                            0-9)
+                                          </label>
+                                        </div>
+                                        <div>
+                                          <label
+                                            htmlFor={`personalization.addons.${index}.number`}
+                                            className="radio-item"
+                                          >
+                                            <Field
+                                              type="radio"
+                                              name={`personalization.addons.${index}.type`}
+                                              id={`personalization.addons.${index}.number`}
+                                              value="number"
+                                            />
+                                            Numbers only
+                                          </label>
+                                        </div>
+                                        <div>
+                                          <label
+                                            htmlFor={`personalization.addons.${index}.type-list`}
+                                            className="radio-item"
+                                          >
+                                            <Field
+                                              type="radio"
+                                              name={`personalization.addons.${index}.type`}
+                                              id={`personalization.addons.${index}.type-list`}
+                                              value="list"
+                                            />
+                                            A list that customers must choose
+                                            from
+                                          </label>
+                                        </div>
+                                      </div>
+
+                                      {values.personalization.addons[index]
+                                        .type === 'list' ? (
+                                        <div className="item">
+                                          <label
+                                            htmlFor={`personalization.addons.${index}.list`}
+                                          >
+                                            List (separated by commas)
+                                          </label>
+                                          <Field
+                                            as="textarea"
+                                            name={`personalization.addons.${index}.list`}
+                                            id={`personalization.addons.${index}.list`}
+                                          />
+                                          <ErrorMessage
+                                            name={`personalization.addons.${index}.list`}
+                                            component="div"
+                                            className="validation-error"
+                                          />
+                                        </div>
+                                      ) : null}
+
+                                      <div className="item">
+                                        <label
+                                          htmlFor={`personalization.addons.${index}.price`}
+                                        >
+                                          Price
+                                        </label>
+                                        <Field
+                                          name={`personalization.addons.${index}.price`}
+                                          id={`personalization.addons.${index}.price`}
+                                        />
+                                        <ErrorMessage
+                                          name={`personalization.addons.${index}.price`}
+                                          component="div"
+                                          className="validation-error"
+                                        />
+                                      </div>
+
+                                      <div className="item">
+                                        <label
+                                          htmlFor={`personalization.addons.${index}.limit`}
+                                        >
+                                          Limit
+                                        </label>
+                                        <Field
+                                          name={`personalization.addons.${index}.limit`}
+                                          id={`personalization.addons.${index}.limit`}
+                                        />
+                                        <ErrorMessage
+                                          name={`personalization.addons.${index}.limit`}
+                                          component="div"
+                                          className="validation-error"
+                                        />
+                                      </div>
+
+                                      <FieldArray
+                                        name={`personalization.addons.${index}.subItems`}
+                                        render={subtItemArrayHelpers => (
+                                          <>
+                                            {values.personalization.addons[
+                                              index
+                                            ].subItems.map(
+                                              (subItem, subItemIndex) => (
+                                                <div
+                                                  key={subItem.id}
+                                                  className="subitem"
+                                                >
+                                                  <h3>
+                                                    Subitem {subItemIndex + 1}
+                                                  </h3>
+
+                                                  <div className="item">
+                                                    <label
+                                                      htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.name`}
+                                                    >
+                                                      Name (Name, Number, Event,
+                                                      etc.)
+                                                    </label>
+                                                    <Field
+                                                      name={`personalization.addons.${index}.subItems.${subItemIndex}.name`}
+                                                      id={`personalization.addons.${index}.subItems.${subItemIndex}.name`}
+                                                    />
+                                                    <ErrorMessage
+                                                      name={`personalization.addons.${index}.subItems.${subItemIndex}.name`}
+                                                      component="div"
+                                                      className="validation-error"
+                                                    />
+                                                  </div>
+
+                                                  <div className="item">
+                                                    <label
+                                                      htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.location`}
+                                                    >
+                                                      Location (Back, Front,
+                                                      Shoulder, etc.)
+                                                    </label>
+                                                    <Field
+                                                      name={`personalization.addons.${index}.subItems.${subItemIndex}.location`}
+                                                      id={`personalization.addons.${index}.subItems.${subItemIndex}.location`}
+                                                    />
+                                                    <ErrorMessage
+                                                      name={`personalization.addons.${index}.subItems.${subItemIndex}.location`}
+                                                      component="div"
+                                                      className="validation-error"
+                                                    />
+                                                  </div>
+
+                                                  <div className="item">
+                                                    <label
+                                                      htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.lines`}
+                                                    >
+                                                      Lines (How many lines does
+                                                      this addon take up?)
+                                                    </label>
+                                                    <Field
+                                                      name={`personalization.addons.${index}.subItems.${subItemIndex}.lines`}
+                                                      id={`personalization.addons.${index}.subItems.${subItemIndex}.lines`}
+                                                    />
+                                                    <ErrorMessage
+                                                      name={`personalization.addons.${index}.subItems.${subItemIndex}.lines`}
+                                                      component="div"
+                                                      className="validation-error"
+                                                    />
+                                                  </div>
+
+                                                  <div className="item radio-group">
+                                                    <div className="radio-group-label">
+                                                      Type
+                                                    </div>
+                                                    <div>
+                                                      <label
+                                                        htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.string`}
+                                                        className="radio-item"
+                                                      >
+                                                        <Field
+                                                          type="radio"
+                                                          name={`personalization.addons.${index}.subItems.${subItemIndex}.type`}
+                                                          id={`personalization.addons.${index}.subItems.${subItemIndex}.string`}
+                                                          value="string"
+                                                        />
+                                                        Alphanumeric characters
+                                                        (A-Z and 0-9)
+                                                      </label>
+                                                    </div>
+                                                    <div>
+                                                      <label
+                                                        htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.number`}
+                                                        className="radio-item"
+                                                      >
+                                                        <Field
+                                                          type="radio"
+                                                          name={`personalization.addons.${index}.subItems.${subItemIndex}.type`}
+                                                          id={`personalization.addons.${index}.subItems.${subItemIndex}.number`}
+                                                          value="number"
+                                                        />
+                                                        Numbers only
+                                                      </label>
+                                                    </div>
+                                                    <div>
+                                                      <label
+                                                        htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.type-list`}
+                                                        className="radio-item"
+                                                      >
+                                                        <Field
+                                                          type="radio"
+                                                          name={`personalization.addons.${index}.subItems.${subItemIndex}.type`}
+                                                          id={`personalization.addons.${index}.subItems.${subItemIndex}.type-list`}
+                                                          value="list"
+                                                        />
+                                                        A list that customers
+                                                        must choose from
+                                                      </label>
+                                                    </div>
+                                                  </div>
+
+                                                  {subItem.type === 'list' ? (
+                                                    <div className="item">
+                                                      <label
+                                                        htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.list`}
+                                                      >
+                                                        List (separated by
+                                                        commas)
+                                                      </label>
+                                                      <Field
+                                                        as="textarea"
+                                                        name={`personalization.addons.${index}.subItems.${subItemIndex}.list`}
+                                                        id={`personalization.addons.${index}.subItems.${subItemIndex}.list`}
+                                                      />
+                                                      <ErrorMessage
+                                                        name={`personalization.addons.${index}.subItems.${subItemIndex}.list`}
+                                                        component="div"
+                                                        className="validation-error"
+                                                      />
+                                                    </div>
+                                                  ) : null}
+
+                                                  <div className="item">
+                                                    <label
+                                                      htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.price`}
+                                                    >
+                                                      Price
+                                                    </label>
+                                                    <Field
+                                                      name={`personalization.addons.${index}.subItems.${subItemIndex}.price`}
+                                                      id={`personalization.addons.${index}.subItems.${subItemIndex}.price`}
+                                                    />
+                                                    <ErrorMessage
+                                                      name={`personalization.addons.${index}.subItems.${subItemIndex}.price`}
+                                                      component="div"
+                                                      className="validation-error"
+                                                    />
+                                                  </div>
+
+                                                  <div className="item">
+                                                    <label
+                                                      htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.limit`}
+                                                    >
+                                                      Limit
+                                                    </label>
+                                                    <Field
+                                                      name={`personalization.addons.${index}.subItems.${subItemIndex}.limit`}
+                                                      id={`personalization.addons.${index}.subItems.${subItemIndex}.limit`}
+                                                    />
+                                                    <ErrorMessage
+                                                      name={`personalization.addons.${index}.subItems.${subItemIndex}.limit`}
+                                                      component="div"
+                                                      className="validation-error"
+                                                    />
+                                                  </div>
+
+                                                  <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                      subtItemArrayHelpers.remove(
+                                                        subItemIndex
+                                                      )
+                                                    }
+                                                    className="remove-addon-button"
+                                                  >
+                                                    <svg
+                                                      xmlns="http://www.w3.org/2000/svg"
+                                                      viewBox="0 0 20 20"
+                                                      fill="currentColor"
+                                                    >
+                                                      <path
+                                                        fillRule="evenodd"
+                                                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                                        clipRule="evenodd"
+                                                      />
+                                                    </svg>
+                                                    <span className="sr-only">
+                                                      Remove subitem{' '}
+                                                      {subItemIndex + 1}
+                                                    </span>
+                                                  </button>
+                                                </div>
+                                              )
+                                            )}
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                subtItemArrayHelpers.push(
+                                                  createBlankPersonalizedItem(
+                                                    'si'
+                                                  )
+                                                )
+                                              }
+                                              className="secondary-button"
+                                            >
+                                              Add{' '}
+                                              {values.personalization.addons[
+                                                index
+                                              ].subItems.length > 0
+                                                ? 'another'
+                                                : 'a'}{' '}
+                                              subitem to{' '}
+                                              {values.personalization.addons[
+                                                index
+                                              ].name.toLowerCase()}
+                                            </button>
+                                          </>
+                                        )}
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          arrayHelpers.remove(index)
+                                        }
+                                        className="remove-addon-button"
+                                      >
+                                        <svg
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          viewBox="0 0 20 20"
+                                          fill="currentColor"
+                                        >
+                                          <path
+                                            fillRule="evenodd"
+                                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                            clipRule="evenodd"
+                                          />
+                                        </svg>
+                                        <span className="sr-only">
+                                          Remove addon {index + 1}
+                                        </span>
+                                      </button>
+                                    </div>
+                                  )
+                                )}
+                              <div>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    arrayHelpers.push(
+                                      createBlankPersonalizedItem('pi')
+                                    )
+                                  }
+                                  className="secondary-button"
+                                >
+                                  Add{' '}
+                                  {values.personalization.addons.length > 0
+                                    ? 'another'
+                                    : 'a'}{' '}
+                                  personalization item
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        />
+                      </>
+                    ) : null}
                   </div>
 
                   <div className="section">
@@ -637,6 +1107,7 @@ const UpdateProductStyles = styled.div`
   .secondary-button,
   .primary-button {
     padding: 0.5rem 1.125rem;
+    width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -657,30 +1128,11 @@ const UpdateProductStyles = styled.div`
     }
   }
 
-  .secondary-button {
-    background-color: transparent;
-    color: #1f2937;
-    border: 1px solid #d1d5db;
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-
-    &:hover {
-      color: #000;
-      border-color: #c6cbd2;
-      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.1);
-
-      svg {
-        color: #6b7280;
-      }
-    }
-
-    svg {
-      height: 1rem;
-      width: 1rem;
-      color: #9ca3af;
-    }
-  }
-
   .primary-button {
+    min-width: 7.25rem;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
     background-color: #1f2937;
     color: #f9fafb;
     border: 1px solid transparent;
@@ -694,6 +1146,29 @@ const UpdateProductStyles = styled.div`
 
     &:hover {
       background-color: #263244;
+    }
+  }
+
+  .secondary-button {
+    background-color: #1f2937;
+    color: #f3f4f6;
+    border: 1px solid #000;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+
+    &:hover {
+      color: #fff;
+      background-color: #111827;
+      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.1);
+
+      svg {
+        color: #6b7280;
+      }
+    }
+
+    svg {
+      height: 0.875rem;
+      width: 0.875rem;
+      color: #9ca3af;
     }
   }
 
@@ -773,6 +1248,162 @@ const UpdateProductStyles = styled.div`
     grid-template-columns: 1fr 2rem;
     gap: 0.5rem;
     align-items: center;
+  }
+
+  .toggle-header-row {
+    margin: 0 0 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+
+    h3 {
+      margin: 0;
+    }
+  }
+
+  .toggle-button {
+    padding: 0;
+    position: relative;
+    flex-shrink: 0;
+    display: inline-flex;
+    height: 1.5rem;
+    width: 2.75rem;
+    border: 2px solid transparent;
+    border-radius: 9999px;
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-duration: 0.2s;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+
+    &:focus {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+
+    &:focus-visible {
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
+        rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+    }
+
+    &.on {
+      background-color: #1955a8;
+
+      & .switch {
+        transform: translateX(1.25rem);
+      }
+    }
+
+    &.off {
+      background-color: #e5e7eb;
+
+      & .switch {
+        transform: translateX(0rem);
+      }
+    }
+  }
+
+  .switch {
+    display: inline-block;
+    width: 1.25rem;
+    height: 1.25rem;
+    background-color: #fff;
+    border-radius: 9999px;
+    box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
+      rgba(59, 130, 246, 0.5) 0px 0px 0px 0px,
+      rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.06) 0px 1px 2px 0px;
+    pointer-events: none;
+    transition-duration: 0.2s;
+    transition-property: background-color, border-color, color, fill, stroke,
+      opacity, box-shadow, transform, filter, backdrop-filter,
+      -webkit-backdrop-filter;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .toggle-description {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #111827;
+    line-height: 1;
+
+    span {
+      color: #6b7280;
+    }
+  }
+
+  .personalization-item,
+  .subitem {
+    position: relative;
+    margin: 2rem 0;
+    padding: 1.5rem 1.5rem 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.25rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  }
+
+  .personalization-item {
+    background-color: #fff;
+  }
+
+  .subitem {
+    background-color: #f9fafb;
+  }
+
+  .remove-addon-button {
+    position: absolute;
+    top: 1.25rem;
+    right: 1rem;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    color: #6b7280;
+
+    &:hover {
+      color: #111827;
+    }
+
+    svg {
+      height: 1.125rem;
+      width: 1.125rem;
+    }
+  }
+
+  .radio-group {
+    margin: 2rem 0;
+  }
+
+  .radio-group-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6e788c;
+  }
+
+  .radio-item {
+    margin: 0.75rem 0 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .remove-button {
+    padding: 0.125rem 0.375rem;
+    height: 1.875rem;
+    width: 1.875rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: transparent;
+    border: none;
+    color: #6b7280;
+    border-radius: 9999px;
+    cursor: pointer;
+    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
+      rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 1px 3px 0px,
+      rgba(0, 0, 0, 0) 0px 1px 2px 0px;
+
+    &:hover {
+      color: #111827;
+    }
   }
 
   .size-item,
@@ -966,75 +1597,6 @@ const UpdateProductStyles = styled.div`
     &:last-of-type {
       margin: 0;
       border-bottom: 1px solid #e5e7eb;
-    }
-  }
-
-  .toggle-button {
-    padding: 0;
-    position: relative;
-    flex-shrink: 0;
-    display: inline-flex;
-    height: 1.5rem;
-    width: 2.75rem;
-    border: 2px solid transparent;
-    border-radius: 9999px;
-    transition-property: background-color, border-color, color, fill, stroke;
-    transition-duration: 0.2s;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: pointer;
-
-    &:focus {
-      outline: 2px solid transparent;
-      outline-offset: 2px;
-    }
-
-    &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px;
-    }
-
-    &.on {
-      background-color: #1955a8;
-
-      & .switch {
-        transform: translateX(1.25rem);
-      }
-    }
-
-    &.off {
-      background-color: #e5e7eb;
-
-      & .switch {
-        transform: translateX(0rem);
-      }
-    }
-  }
-
-  .switch {
-    display: inline-block;
-    width: 1.25rem;
-    height: 1.25rem;
-    background-color: #fff;
-    border-radius: 9999px;
-    box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
-      rgba(59, 130, 246, 0.5) 0px 0px 0px 0px,
-      rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.06) 0px 1px 2px 0px;
-    pointer-events: none;
-    transition-duration: 0.2s;
-    transition-property: background-color, border-color, color, fill, stroke,
-      opacity, box-shadow, transform, filter, backdrop-filter,
-      -webkit-backdrop-filter;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .toggle-description {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #111827;
-    line-height: 1;
-
-    span {
-      color: #6b7280;
     }
   }
 `;

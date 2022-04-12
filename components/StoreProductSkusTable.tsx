@@ -173,7 +173,7 @@ export default function StoreProductSkusTable({
 }
 
 const StoreProductSkusTableStyles = styled.div`
-  margin: 3.5rem 0 0;
+  margin: 4rem 0 0;
 
   .skus {
     background-color: #fff;

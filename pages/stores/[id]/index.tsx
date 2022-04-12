@@ -299,10 +299,13 @@ export default function Store() {
                                   <br />
                                 </>
                               )}
-                              {storeQuery.data.primaryShippingLocation.city}
+                              {storeQuery.data.primaryShippingLocation.city &&
+                                `${storeQuery.data.primaryShippingLocation.city}, `}
                               {storeQuery.data.primaryShippingLocation.state &&
-                                `, ${storeQuery.data.primaryShippingLocation.state}`}{' '}
-                              {storeQuery.data.primaryShippingLocation.zipcode}
+                                storeQuery.data.primaryShippingLocation.state}
+                              {storeQuery.data.primaryShippingLocation
+                                .zipcode &&
+                                storeQuery.data.primaryShippingLocation.zipcode}
                             </>
                           ) : (
                             'None'
@@ -474,16 +477,11 @@ export default function Store() {
       <div className="printable-orders" aria-hidden="true">
         {storeQuery?.data?.orders?.map(o => {
           if (o.orderStatus === 'Unfulfilled') {
-            const options = {
-              includesName: o.items.some(i => i.customName),
-              includesNumber: o.items.some(i => i.customNumber),
-            };
             return (
               <PrintableOrder
                 key={o.orderId}
                 order={o}
                 store={storeQuery.data}
-                options={options}
               />
             );
           }

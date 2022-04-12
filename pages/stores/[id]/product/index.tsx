@@ -8,6 +8,7 @@ import { useStoreProductQuery } from '../../../../hooks/useStoreProductQuery';
 import { useStoreProductMutations } from '../../../../hooks/useStoreProductMutations';
 import useOutsideClick from '../../../../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../../../../hooks/useEscapeKeydownClose';
+import AddonItem from '../../../../components/StoreProduct/Addon';
 import Layout from '../../../../components/Layout';
 import Colors from '../../../../components/Product/Colors';
 import StoreProductSkusTable from '../../../../components/StoreProductSkusTable';
@@ -161,62 +162,69 @@ export default function Product() {
               <div className="main-content">
                 <FetchingSpinner isLoading={isFetching} />
 
-                <div>
+                <div className="section">
                   <h3 className="section-title">Store product details</h3>
-                  <div className="details-grid">
-                    <div>
-                      <div className="detail-item">
-                        <div className="label">Merchandise code</div>
-                        <div className="value">
-                          {storeProduct.merchandiseCode}
-                        </div>
-                      </div>
+                  <div className="detail-item">
+                    <div className="label">Merchandise code</div>
+                    <div className="value">{storeProduct.merchandiseCode}</div>
+                  </div>
 
-                      {storeProduct.description && (
-                        <div className="detail-item">
-                          <div className="label">Product description</div>
-                          <div className="value">
-                            {storeProduct.description}
-                          </div>
-                        </div>
-                      )}
-
-                      {storeProduct.tag && (
-                        <div className="detail-item">
-                          <div className="label">Tag</div>
-                          <div className="value">{storeProduct.tag}</div>
-                        </div>
-                      )}
-
-                      {storeProduct.details && storeProduct.details.length > 0 && (
-                        <div className="detail-item">
-                          <div className="label">Details</div>
-                          <div className="value">
-                            <ul>
-                              {storeProduct.details.map((d, i) => (
-                                <li key={i}>{d}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-                      )}
+                  {storeProduct.description && (
+                    <div className="detail-item">
+                      <div className="label">Product description</div>
+                      <div className="value">{storeProduct.description}</div>
                     </div>
-                    <div>
-                      <div className="detail-item">
-                        <div className="label">Custom names</div>
-                        <div className="value">
-                          {storeProduct.includeCustomName ? 'Yes' : 'No'}
-                        </div>
-                      </div>
+                  )}
 
-                      <div className="detail-item">
-                        <div className="label">Custom numbers</div>
-                        <div className="value">
-                          {storeProduct.includeCustomNumber ? 'Yes' : 'No'}
-                        </div>
+                  {storeProduct.tag && (
+                    <div className="detail-item">
+                      <div className="label">Tag</div>
+                      <div className="value">{storeProduct.tag}</div>
+                    </div>
+                  )}
+
+                  {storeProduct.details && storeProduct.details.length > 0 && (
+                    <div className="detail-item">
+                      <div className="label">Details</div>
+                      <div className="value">
+                        <ul>
+                          {storeProduct.details.map((d, i) => (
+                            <li key={i}>{d}</li>
+                          ))}
+                        </ul>
                       </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="section">
+                  <h3 className="section-title">Personalization Addons</h3>
+                  <div className="detail-item">
+                    <div className="label">Status</div>
+                    <div className="value">
+                      {storeProduct.personalization.active
+                        ? 'Active'
+                        : 'Inactive'}
                     </div>
                   </div>
+
+                  {storeProduct.personalization.active ? (
+                    <>
+                      <div className="detail-item">
+                        <div className="label">Max lines</div>
+                        <div className="value">
+                          {storeProduct.personalization.maxLines}
+                        </div>
+                      </div>
+
+                      <div className="addon-items">
+                        <h4>Addon items</h4>
+                        {storeProduct.personalization.addons.map(item => (
+                          <AddonItem key={item.id} item={item} />
+                        ))}
+                      </div>
+                    </>
+                  ) : null}
                 </div>
 
                 <StoreProductSkusTable
@@ -459,9 +467,7 @@ const ProductStyles = styled.div`
   }
 
   .product-header {
-    padding: 1.375rem 0 1.5rem;
-    border-top: 1px solid #dcdfe4;
-    border-bottom: 1px solid #dcdfe4;
+    padding: 0.5rem 0 1.5rem;
 
     p {
       margin: 0.25rem 0 0;
@@ -473,7 +479,11 @@ const ProductStyles = styled.div`
 
   .main-content {
     position: relative;
-    padding: 3.5rem 0;
+    margin: 0 0 3.5rem;
+  }
+
+  .section {
+    margin: 3.5rem 0 0;
   }
 
   .section-title {
@@ -493,7 +503,7 @@ const ProductStyles = styled.div`
   .detail-item {
     margin: 0 0 0.75rem;
     display: grid;
-    grid-template-columns: 10rem 1fr;
+    grid-template-columns: 11rem 1fr;
   }
 
   .label {
@@ -523,6 +533,10 @@ const ProductStyles = styled.div`
     li {
       margin: 0 0 0.25rem;
     }
+  }
+
+  .addon-items {
+    margin: 1.5rem 0 0;
   }
 
   .edit-product-link {

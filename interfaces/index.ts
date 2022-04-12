@@ -75,6 +75,36 @@ export interface ProductSku {
   inventorySkuActive?: boolean; // added dynamically in serverless fn
 }
 
+// storeProduct personalization addons
+export interface PersonalizationItem {
+  id: string;
+  name: string;
+  location: string;
+  type: 'list' | 'string' | 'number';
+  list: string[];
+  price: number;
+  lines: number;
+  limit: number;
+  subItems: PersonalizationItem[];
+}
+
+export interface Personalization {
+  active: boolean;
+  maxLines: number;
+  addons: PersonalizationItem[];
+}
+
+export interface PersonalizationFormItem
+  extends Omit<PersonalizationItem, 'list' | 'price' | 'subItems'> {
+  list: string;
+  price: string;
+  subItems: PersonalizationFormItem[];
+}
+
+export interface PersonalizationForm extends Omit<Personalization, 'addons'> {
+  addons: PersonalizationFormItem[];
+}
+
 export interface StoreProduct {
   id: string;
   inventoryProductId: string;
@@ -86,8 +116,7 @@ export interface StoreProduct {
   productSkus: ProductSku[];
   sizes: Size[];
   colors: Color[];
-  includeCustomName: boolean;
-  includeCustomNumber: boolean;
+  personalization: Personalization;
   notes: Note[];
 }
 
@@ -153,6 +182,17 @@ export interface Store {
   updatedAt: string;
 }
 
+export interface PersonalizationAddon {
+  id: string;
+  itemId: string;
+  addon: string;
+  value: string;
+  location: string;
+  lines: number;
+  price: number;
+  subItems: PersonalizationAddon[];
+}
+
 export interface OrderItem {
   sku: ProductSku;
   merchandiseCode: string;
@@ -161,8 +201,7 @@ export interface OrderItem {
   price: number;
   quantity: number;
   itemTotal: number;
-  customName: string;
-  customNumber: string;
+  personalizationAddons: PersonalizationAddon[];
 }
 
 export type OrderStatus =

@@ -1,3 +1,4 @@
+import React from 'react';
 import Link from 'next/link';
 import styled from 'styled-components';
 import { format } from 'date-fns';
@@ -7,13 +8,19 @@ import { formatPhoneNumber, formatToMoney } from '../utils';
 type Props = {
   order: Order;
   store: Store;
-  options: {
-    includesName: boolean;
-    includesNumber: boolean;
-  };
 };
 
-export default function PrintableOrder({ order, store, options }: Props) {
+export default function PrintableOrder({ order, store }: Props) {
+  const [includePersonalization, setIncludePersonalization] =
+    React.useState(false);
+
+  React.useEffect(() => {
+    const hasPersonalizationProducts = store.products.some(
+      product => product.personalization.active
+    );
+    setIncludePersonalization(hasPersonalizationProducts);
+  }, [store.products]);
+
   return (
     <PrintableOrderStyles aria-hidden="true">
       <div className="header">
@@ -125,30 +132,32 @@ export default function PrintableOrder({ order, store, options }: Props) {
                   <th>Name</th>
                   <th>Color</th>
                   <th className="text-center">Size</th>
-                  {options.includesName && <th>Name</th>}
-                  {options.includesNumber && (
-                    <th className="text-center">Number</th>
-                  )}
+                  {includePersonalization && <th>Addons</th>}
                   <th className="text-center">Price</th>
                   <th className="text-center">Qty.</th>
                   <th className="text-right">Item Total</th>
                 </tr>
               </thead>
               <tbody>
-                {order.items.map(item => (
-                  <tr key={item.sku.id + item.customName + item.customNumber}>
+                {order.items.map((item, index) => (
+                  <tr key={`${item.sku.id}-${index}`}>
                     <td>
                       <div className="order-item-name">{item.name}</div>
                       <div className="order-item-id">{item.sku.id}</div>
                     </td>
                     <td>{item.sku.color.label}</td>
                     <td className="text-center">{item.sku.size.label}</td>
-                    {options.includesName && (
-                      <td>{item.customName ? item.customName : '-'}</td>
-                    )}
-                    {options.includesNumber && (
-                      <td className="text-center">
-                        {item.customNumber ? item.customNumber : '-'}
+                    {includePersonalization && (
+                      <td>
+                        {item.personalizationAddons.map(addon => (
+                          <div key={addon.id} className="addon-item">
+                            <span>{addon.addon}:</span>
+                            {addon.value}{' '}
+                            <span className="location">
+                              ({addon.location.toLowerCase()})
+                            </span>
+                          </div>
+                        ))}
                       </td>
                     )}
                     <td className="text-center">{formatToMoney(item.price)}</td>
@@ -355,6 +364,25 @@ const PrintableOrderStyles = styled.div`
 
   .text-right {
     text-align: right;
+  }
+
+  .addon-item {
+    margin: 2px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+
+    &:first-of-type {
+      margin: 0;
+    }
+
+    span {
+      color: #82828e;
+
+      &.location {
+        font-size: 7px;
+      }
+    }
   }
 
   .order-summary-row {

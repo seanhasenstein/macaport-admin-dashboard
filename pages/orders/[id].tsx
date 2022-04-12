@@ -19,10 +19,7 @@ import PrintableOrder from '../../components/PrintableOrder';
 export default function Order() {
   const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
-  const [options, setOptions] = React.useState({
-    includesName: false,
-    includesNumber: false,
-  });
+  const [hasAddons, setHasAddons] = React.useState(false);
   const [showOrderMenu, setShowOrderMenu] = React.useState(false);
   const [showCancelOrderModal, setShowCancelOrderModal] = React.useState(false);
   const orderMenuRef = React.useRef<HTMLDivElement>(null);
@@ -42,10 +39,11 @@ export default function Order() {
   });
 
   React.useEffect(() => {
-    if (data?.order) {
-      const includesName = data.order.items.some(i => i.customName);
-      const includesNumber = data.order.items.some(i => i.customNumber);
-      setOptions({ includesName, includesNumber });
+    if (
+      data?.order &&
+      data.order.items.some(item => item.personalizationAddons.length > 0)
+    ) {
+      setHasAddons(true);
     }
   }, [data?.order]);
 
@@ -290,45 +288,54 @@ export default function Order() {
                             <th>Name</th>
                             <th>Color</th>
                             <th>Size</th>
-                            {options.includesName && <th>Name</th>}
-                            {options.includesNumber && (
-                              <th className="text-center">Number</th>
-                            )}
+                            {hasAddons && <th>Personalization</th>}
                             <th>Price</th>
                             <th className="text-center">Qty.</th>
                             <th className="text-right">Item Total</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {data.order.items.map(i => (
+                          {data.order.items.map((item, index) => (
                             <tr
-                              key={`${i.sku.id}-${i.customName}-${i.customNumber}`}
+                              key={`${item.sku.id}-${index}`}
                               className="order-item"
                             >
                               <td>
                                 <div className="product-name">
                                   <Link
-                                    href={`/stores/${router.query.sid}/product?pid=${i.sku.storeProductId}`}
+                                    href={`/stores/${router.query.sid}/product?pid=${item.sku.storeProductId}`}
                                   >
-                                    {i.name}
+                                    {item.name}
                                   </Link>
                                 </div>
-                                <div className="product-id">{i.sku.id}</div>
+                                <div className="product-id">{item.sku.id}</div>
                               </td>
-                              <td>{i.sku.color.label}</td>
-                              <td>{i.sku.size.label}</td>
-                              {options.includesName && (
-                                <td>{i.customName ? i.customName : '-'}</td>
-                              )}
-                              {options.includesNumber && (
-                                <td className="text-center">
-                                  {i.customNumber ? i.customNumber : '-'}
+                              <td>{item.sku.color.label}</td>
+                              <td>{item.sku.size.label}</td>
+                              {hasAddons && (
+                                <td>
+                                  {item.personalizationAddons.map(addonItem => (
+                                    <div
+                                      key={addonItem.id}
+                                      className="addon-item"
+                                    >
+                                      <span className="addon-label">
+                                        {addonItem.addon}:
+                                      </span>
+                                      <span className="addon-value">
+                                        {addonItem.value}
+                                      </span>
+                                      <span className="addon-location">
+                                        ({addonItem.location.toLowerCase()})
+                                      </span>
+                                    </div>
+                                  ))}
                                 </td>
                               )}
-                              <td>{formatToMoney(i.price)}</td>
-                              <td className="text-center">{i.quantity}</td>
+                              <td>{formatToMoney(item.price)}</td>
+                              <td className="text-center">{item.quantity}</td>
                               <td className="text-right">
-                                {formatToMoney(i.itemTotal, true)}
+                                {formatToMoney(item.itemTotal, true)}
                               </td>
                             </tr>
                           ))}
@@ -411,11 +418,7 @@ export default function Order() {
         </OrderStyles>
 
         {data?.order && data.store && (
-          <PrintableOrder
-            order={data.order}
-            store={data.store}
-            options={options}
-          />
+          <PrintableOrder order={data.order} store={data.store} />
         )}
 
         {showCancelOrderModal && (
@@ -877,6 +880,29 @@ const OrderStyles = styled.div`
         color: #1c44b9;
       }
     }
+  }
+
+  .addon-item {
+    margin: 0.25rem 0 0;
+    display: flex;
+    align-items: center;
+    color: #374151;
+
+    &:first-of-type {
+      margin: 0;
+    }
+  }
+
+  .addon-label {
+    margin: 0 0.25rem 0 0;
+    display: inline-flex;
+    color: #89909d;
+  }
+
+  .addon-location {
+    margin: 0 0 0 0.25rem;
+    font-size: 0.6875rem;
+    color: #89909d;
   }
 
   @media print {
