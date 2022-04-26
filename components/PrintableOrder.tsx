@@ -11,16 +11,6 @@ type Props = {
 };
 
 export default function PrintableOrder({ order, store }: Props) {
-  const [includePersonalization, setIncludePersonalization] =
-    React.useState(false);
-
-  React.useEffect(() => {
-    const hasPersonalizationProducts = store.products.some(
-      product => product.personalization.active
-    );
-    setIncludePersonalization(hasPersonalizationProducts);
-  }, [store.products]);
-
   return (
     <PrintableOrderStyles aria-hidden="true">
       <div className="header">
@@ -132,7 +122,6 @@ export default function PrintableOrder({ order, store }: Props) {
                   <th>Name</th>
                   <th>Color</th>
                   <th className="text-center">Size</th>
-                  {includePersonalization && <th>Addons</th>}
                   <th className="text-center">Price</th>
                   <th className="text-center">Qty.</th>
                   <th className="text-right">Item Total</th>
@@ -143,23 +132,44 @@ export default function PrintableOrder({ order, store }: Props) {
                   <tr key={`${item.sku.id}-${index}`}>
                     <td>
                       <div className="order-item-name">{item.name}</div>
-                      <div className="order-item-id">{item.sku.id}</div>
+                      {item.personalizationAddons.length > 0 && (
+                        <div className="addon-items">
+                          {item.personalizationAddons.map(addon => (
+                            <div key={addon.id} className="addon-item">
+                              <div className="flex-row-center">
+                                <span className="addon-label">
+                                  {addon.addon}:
+                                </span>
+                                {addon.value}{' '}
+                                <span className="location">
+                                  [{addon.location.toLowerCase()}]
+                                </span>
+                              </div>
+                              {addon.subItems.length > 0 && (
+                                <>
+                                  {addon.subItems.map(subitem => (
+                                    <div
+                                      key={subitem.id}
+                                      className="addon-item flex-row-center"
+                                    >
+                                      <span className="addon-label">
+                                        {subitem.addon}:
+                                      </span>
+                                      {subitem.value}{' '}
+                                      <span className="location">
+                                        [{subitem.location.toLowerCase()}]
+                                      </span>
+                                    </div>
+                                  ))}
+                                </>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </td>
                     <td>{item.sku.color.label}</td>
                     <td className="text-center">{item.sku.size.label}</td>
-                    {includePersonalization && (
-                      <td>
-                        {item.personalizationAddons.map(addon => (
-                          <div key={addon.id} className="addon-item">
-                            <span>{addon.addon}:</span>
-                            {addon.value}{' '}
-                            <span className="location">
-                              ({addon.location.toLowerCase()})
-                            </span>
-                          </div>
-                        ))}
-                      </td>
-                    )}
                     <td className="text-center">{formatToMoney(item.price)}</td>
                     <td className="text-center">{item.quantity}</td>
                     <td className="text-right">
@@ -366,23 +376,31 @@ const PrintableOrderStyles = styled.div`
     text-align: right;
   }
 
+  .addon-items {
+    margin: 0.1875rem 0 0;
+  }
+
   .addon-item {
     margin: 2px 0 0;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-
-    &:first-of-type {
-      margin: 0;
-    }
+    font-size: 10px;
 
     span {
-      color: #82828e;
+      color: #9ca3af;
+
+      &.addon-label {
+        margin: 0 0.25rem 0 0;
+      }
 
       &.location {
+        margin: 0 0 0 0.25rem;
         font-size: 7px;
       }
     }
+  }
+
+  .flex-row-center {
+    display: flex;
+    align-items: center;
   }
 
   .order-summary-row {

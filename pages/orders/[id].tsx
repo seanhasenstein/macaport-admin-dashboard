@@ -19,7 +19,6 @@ import PrintableOrder from '../../components/PrintableOrder';
 export default function Order() {
   const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
-  const [hasAddons, setHasAddons] = React.useState(false);
   const [showOrderMenu, setShowOrderMenu] = React.useState(false);
   const [showCancelOrderModal, setShowCancelOrderModal] = React.useState(false);
   const orderMenuRef = React.useRef<HTMLDivElement>(null);
@@ -37,15 +36,6 @@ export default function Order() {
     order: data?.order,
     store: data?.store,
   });
-
-  React.useEffect(() => {
-    if (
-      data?.order &&
-      data.order.items.some(item => item.personalizationAddons.length > 0)
-    ) {
-      setHasAddons(true);
-    }
-  }, [data?.order]);
 
   const handleCancelOrderClick = () => {
     cancelOrder.mutate();
@@ -288,7 +278,6 @@ export default function Order() {
                             <th>Name</th>
                             <th>Color</th>
                             <th>Size</th>
-                            {hasAddons && <th>Personalization</th>}
                             <th>Price</th>
                             <th className="text-center">Qty.</th>
                             <th className="text-right">Item Total</th>
@@ -308,30 +297,53 @@ export default function Order() {
                                     {item.name}
                                   </Link>
                                 </div>
-                                <div className="product-id">{item.sku.id}</div>
+                                {item.personalizationAddons.length > 0 && (
+                                  <div className="addon-items">
+                                    {item.personalizationAddons.map(
+                                      addonItem => (
+                                        <div
+                                          key={addonItem.id}
+                                          className="addon-item"
+                                        >
+                                          <div className="flex-row-center">
+                                            <span className="addon-label">
+                                              {addonItem.addon}:
+                                            </span>
+                                            <span className="addon-value">
+                                              {addonItem.value}
+                                            </span>
+                                            <span className="addon-location">
+                                              [
+                                              {addonItem.location.toLowerCase()}
+                                              ]
+                                            </span>
+                                          </div>
+                                          {addonItem.subItems.map(subitem => (
+                                            <div
+                                              key={subitem.id}
+                                              className="addon-item flex-row-center"
+                                            >
+                                              <span className="addon-label">
+                                                {subitem.addon}:
+                                              </span>
+                                              <span className="addon-value">
+                                                {subitem.value}
+                                              </span>
+                                              <span className="addon-location">
+                                                [
+                                                {subitem.location.toLowerCase()}
+                                                ]
+                                              </span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )
+                                    )}
+                                  </div>
+                                )}
                               </td>
                               <td>{item.sku.color.label}</td>
                               <td>{item.sku.size.label}</td>
-                              {hasAddons && (
-                                <td>
-                                  {item.personalizationAddons.map(addonItem => (
-                                    <div
-                                      key={addonItem.id}
-                                      className="addon-item"
-                                    >
-                                      <span className="addon-label">
-                                        {addonItem.addon}:
-                                      </span>
-                                      <span className="addon-value">
-                                        {addonItem.value}
-                                      </span>
-                                      <span className="addon-location">
-                                        ({addonItem.location.toLowerCase()})
-                                      </span>
-                                    </div>
-                                  ))}
-                                </td>
-                              )}
                               <td>{formatToMoney(item.price)}</td>
                               <td className="text-center">{item.quantity}</td>
                               <td className="text-right">
@@ -882,27 +894,31 @@ const OrderStyles = styled.div`
     }
   }
 
+  .addon-items {
+    margin: 0.3125rem 0 0 0;
+  }
+
   .addon-item {
     margin: 0.25rem 0 0;
+    font-size: 0.8125rem;
+    color: #374151;
+  }
+
+  .flex-row-center {
     display: flex;
     align-items: center;
-    color: #374151;
-
-    &:first-of-type {
-      margin: 0;
-    }
   }
 
   .addon-label {
     margin: 0 0.25rem 0 0;
     display: inline-flex;
-    color: #89909d;
+    color: #6b7280;
   }
 
   .addon-location {
     margin: 0 0 0 0.25rem;
-    font-size: 0.6875rem;
-    color: #89909d;
+    font-size: 0.625rem;
+    color: #6b7280;
   }
 
   @media print {

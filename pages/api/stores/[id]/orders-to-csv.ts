@@ -130,7 +130,34 @@ const handler = nc<Request, NextApiResponse>()
               [header[6].id]: `${item.quantity}`,
               [header[7].id]: `${formatToMoney(item.itemTotal, true)}`,
             };
-            rows = [...rows, itemRow];
+
+            let addonRows: Record<string, any>[] = [];
+            if (item.personalizationAddons.length > 0) {
+              addonRows = item.personalizationAddons.reduce(
+                (accumulator: Record<string, any>[], currentAddon) => {
+                  const baseAddonRow = {
+                    [header[0].id]: '',
+                    [header[1].id]: `${currentAddon.addon}: ${
+                      currentAddon.value
+                    } [${currentAddon.location.toLowerCase()}]`,
+                  };
+
+                  const subItemRows = currentAddon.subItems.map(subitem => {
+                    return {
+                      [header[0].id]: '',
+                      [header[1].id]: `${subitem.addon}: ${
+                        subitem.value
+                      } [${subitem.location.toLowerCase()}]`,
+                    };
+                  });
+
+                  return [...accumulator, baseAddonRow, ...subItemRows];
+                },
+                []
+              );
+            }
+
+            rows = [...rows, itemRow, ...addonRows];
           });
           return [...orderItemsRowsAcc, rows];
         },
