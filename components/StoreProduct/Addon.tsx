@@ -78,7 +78,7 @@ export default function AddonItem({ item }: ItemProps) {
           {item.subItems.length > 0 ? (
             <>
               <div className="subitems">
-                <h4>Subitems</h4>
+                <h4>{item.name} Subitems</h4>
 
                 {item.subItems.map(subitem => (
                   <SubItem key={subitem.id} item={subitem} />
@@ -99,14 +99,9 @@ export default function AddonItem({ item }: ItemProps) {
 
 const AddonItemStyles = styled.div<{ isOpen: boolean }>`
   margin-top: -1px;
-  padding: ${props => (props.isOpen ? '0 1rem' : '0 0.5rem')};
   max-width: 40rem;
   width: 100%;
-  background-color: ${props => (props.isOpen ? '#fff' : 'transparent')};
-  border-top: ${props => (props.isOpen ? '1px solid #e5e7eb;' : 'none')};
   border-bottom: 1px solid #e5e7eb;
-  border-right: ${props => (props.isOpen ? '1px solid #e5e7eb' : 'none')};
-  border-left: ${props => (props.isOpen ? '1px solid #e5e7eb' : 'none')};
 
   &:first-of-type {
     margin-top: 0;
@@ -114,7 +109,6 @@ const AddonItemStyles = styled.div<{ isOpen: boolean }>`
   }
 
   .addon-button {
-    margin: ${props => (props.isOpen ? '0 0 0.25rem' : '0')};
     padding: 0.875rem 0;
     display: flex;
     width: 100%;

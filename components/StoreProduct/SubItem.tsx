@@ -35,10 +35,6 @@ export default function SubItem({ item }: ItemProps) {
       {isSubItemOpen ? (
         <div className="subitem">
           <div className="detail-item">
-            <div className="label">Name</div>
-            <div className="value">{item.name}</div>
-          </div>
-          <div className="detail-item">
             <div className="label">Type</div>
             <div className="value">
               {item.type === 'list'
