@@ -1,5 +1,6 @@
+import React from 'react';
 import styled from 'styled-components';
-import { StoreProduct } from '../../interfaces';
+import { Color, StoreProduct } from '../../interfaces';
 import { useStoreProductMutations } from '../../hooks/useStoreProductMutations';
 import useDragNDrop from '../../hooks/useDragNDrop';
 import SecondaryImages from './SecondaryImages';
@@ -9,14 +10,39 @@ type Props = {
 };
 
 export default function Colors({ product }: Props) {
+  const [activeColors, setActiveColors] = React.useState<Color[]>([]);
   const { updateColorsOrder } = useStoreProductMutations({
     storeProduct: product,
   });
   const dnd = useDragNDrop(
-    product?.colors,
+    activeColors,
     'prod-color',
     updateColorsOrder.mutate
   );
+
+  React.useEffect(() => {
+    const includedColorsArray = product.productSkus.reduce(
+      (accumulator: string[], currentSku) => {
+        if (accumulator.includes(currentSku.color.id)) {
+          return accumulator;
+        } else if (
+          currentSku.active === true &&
+          currentSku.inventorySkuActive === true
+        ) {
+          return [...accumulator, currentSku.color.id];
+        } else {
+          return accumulator;
+        }
+      },
+      []
+    );
+
+    const updatedActiveColors = product.colors.filter(color =>
+      includedColorsArray.includes(color.id)
+    );
+
+    setActiveColors(updatedActiveColors);
+  }, [product.colors, product.productSkus]);
 
   return (
     <ColorsStyles>
