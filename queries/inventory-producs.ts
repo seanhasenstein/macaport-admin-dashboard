@@ -20,7 +20,7 @@ function sortByName(
 }
 
 export async function fetchInventoryProducts() {
-  const response = await fetch('/api/inventory-products/');
+  const response = await fetch('/api/inventory-products');
 
   if (!response.ok) {
     throw new Error('Failed to fetch the inventory products.');

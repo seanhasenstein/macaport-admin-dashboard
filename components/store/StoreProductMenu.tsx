@@ -1,7 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
-import useOutsideClick from '../hooks/useOutsideClick';
-import useEscapeKeydownClose from '../hooks/useEscapeKeydownClose';
+import styled from 'styled-components';
+import useOutsideClick from '../../hooks/useOutsideClick';
+import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
 
 type Props = {
   storeId: string;
@@ -20,7 +21,7 @@ export default function StoreProductMenu({
   useEscapeKeydownClose(showMenu, setShowMenu);
 
   return (
-    <div className="product-menu-container">
+    <StoreProductMenuStyles>
       <button
         type="button"
         className="menu-button"
@@ -96,6 +97,85 @@ export default function StoreProductMenu({
           </a>
         </Link>
       </div>
-    </div>
+    </StoreProductMenuStyles>
   );
 }
+
+const StoreProductMenuStyles = styled.div`
+  .menu-button {
+    padding: 0 0.5rem;
+    margin-left: auto;
+    height: 1.5rem;
+    width: 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: transparent;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+
+    &:hover {
+      color: #111827;
+    }
+
+    svg {
+      flex-shrink: 0;
+      height: 1rem;
+      width: 1rem;
+    }
+  }
+
+  .menu {
+    margin: 0.25rem 0 0;
+    padding: 0 1rem;
+    position: absolute;
+    top: 2.25rem;
+    right: 0.875rem;
+    display: none;
+    flex-direction: column;
+    align-items: flex-start;
+    white-space: nowrap;
+    background-color: #fff;
+    border-radius: 0.5rem;
+    box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
+      rgba(17, 24, 39, 0.05) 0px 0px 0px 1px,
+      rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
+
+    &.show {
+      display: flex;
+      z-index: 100;
+    }
+  }
+
+  .menu-link {
+    padding: 0.75rem 1.5rem 0.75rem 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: transparent;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: #1f2937;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      color: #000;
+
+      svg {
+        color: #6b7280;
+      }
+    }
+
+    svg {
+      flex-shrink: 0;
+      height: 1rem;
+      width: 1rem;
+      color: #9ca3af;
+    }
+  }
+`;

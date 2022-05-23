@@ -1,6 +1,6 @@
 import { createGlobalStyle } from 'styled-components';
 
-export const GlobalStyles = createGlobalStyle`
+const GlobalStyles = createGlobalStyle`
 @font-face {
   font-family: 'Inter';
   font-style:  normal;
@@ -102,6 +102,38 @@ a {
   height: 1px;
   width: 1px;
   overflow: hidden;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+th {
+  text-align: left;
+
+  &.text-left {
+    text-align: left;
+  }
+
+  &.text-center {
+    text-align: center;
+  }
+
+  &.text-right {
+    text-align: right;
+  }
+}
+
+.capitalize {
+  text-transform: capitalize;
 }
 
 label {

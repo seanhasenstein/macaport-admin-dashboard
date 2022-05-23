@@ -1,8 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
-import { InventoryProduct } from '../interfaces';
-import { useInventoryProductMutations } from '../hooks/useInventoryProductMutations';
-import useDragNDrop from '../hooks/useDragNDrop';
+import { InventoryProduct } from '../../interfaces';
+import { useInventoryProductMutations } from '../../hooks/useInventoryProductMutations';
+import useDragNDrop from '../../hooks/useDragNDrop';
 
 type Props = {
   productName: string;
@@ -46,7 +46,7 @@ export default function InventoryProductSkus({
         </button>
       </div>
       <div className="skus">
-        <div className="sku header">
+        <div className="sku-row skus-header">
           <div />
           <div>ID</div>
           <div>Size</div>
@@ -64,7 +64,7 @@ export default function InventoryProductSkus({
             }
             onDragOver={e => e.preventDefault()}
             onDrop={dnd.handleDrop}
-            className={dnd.dragging ? dnd.getStyles(i) : 'sku'}
+            className={dnd.dragging ? dnd.getStyles(i) : 'sku-row'}
           >
             <button
               type="button"
@@ -210,7 +210,7 @@ const InventoryProductSkusStyles = styled.div`
       rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
   }
 
-  .sku {
+  .sku-row {
     padding: 0.75rem 2rem 0.75rem 1.5rem;
     display: grid;
     grid-template-columns: 4rem 1.25fr 0.75fr 0.75fr 12rem 5rem;
@@ -220,8 +220,7 @@ const InventoryProductSkusStyles = styled.div`
     color: #374151;
     border-bottom: 1px solid #e5e7eb;
 
-    &.header {
-      padding: 0.875rem 2rem;
+    &.skus-header {
       background-color: #f3f4f6;
       font-size: 0.75rem;
       font-weight: 600;

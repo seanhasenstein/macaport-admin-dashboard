@@ -1,10 +1,10 @@
 import React from 'react';
 import styled from 'styled-components';
-import { ProductSku, StoreProduct } from '../interfaces';
-import { useStoreProductMutations } from '../hooks/useStoreProductMutations';
-import useDragNDrop from '../hooks/useDragNDrop';
+import { ProductSku, StoreProduct } from '../../interfaces';
+import { useStoreProductMutations } from '../../hooks/useStoreProductMutations';
+import useDragNDrop from '../../hooks/useDragNDrop';
 import StoreProductSkusTableMenu from './StoreProductSkusTableMenu';
-import { formatToMoney } from '../utils';
+import { formatToMoney } from '../../utils';
 
 type Props = {
   storeId: string | undefined;
@@ -355,14 +355,6 @@ const StoreProductSkusTableStyles = styled.div`
         transform: translateX(0rem);
       }
     }
-  }
-
-  .text-center {
-    text-align: center;
-  }
-
-  .text-right {
-    text-align: right;
   }
 `;
 

@@ -105,10 +105,6 @@ const InventoryProductsTableStyles = styled.div`
     &:last-of-type {
       padding-right: 1.75rem;
     }
-
-    &.text-center {
-      text-align: center;
-    }
   }
 
   tr:last-of-type td {
@@ -123,7 +119,6 @@ const InventoryProductsTableStyles = styled.div`
     text-transform: uppercase;
     letter-spacing: 0.0375em;
     color: #4b5563;
-    text-align: left;
   }
 
   tr {

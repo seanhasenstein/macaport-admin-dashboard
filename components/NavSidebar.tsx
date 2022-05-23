@@ -193,9 +193,6 @@ const NavSidebarStyles = styled.div`
 
   .close-sidebar-button {
     padding: 0.125rem;
-    /* position: absolute;
-    top: 1rem;
-    right: 1rem; */
     display: flex;
     justify-content: center;
     align-items: center;

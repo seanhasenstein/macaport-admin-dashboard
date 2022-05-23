@@ -8,7 +8,7 @@ type Props = {
   product: StoreProduct;
 };
 
-export default function SecondaryImages({ color, product }: Props) {
+export default function StoreProductSecondaryImages({ color, product }: Props) {
   const { updateSecondaryImgOrder } = useStoreProductMutations({
     color,
     storeProduct: product,
@@ -30,7 +30,7 @@ export default function SecondaryImages({ color, product }: Props) {
   );
 
   return (
-    <SecondaryImagesStyles>
+    <StoreProductSecondaryImagesStyles>
       {list.map((secImg, index) => (
         <div
           key={index}
@@ -50,11 +50,11 @@ export default function SecondaryImages({ color, product }: Props) {
           </button>
         </div>
       ))}
-    </SecondaryImagesStyles>
+    </StoreProductSecondaryImagesStyles>
   );
 }
 
-const SecondaryImagesStyles = styled.div`
+const StoreProductSecondaryImagesStyles = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;

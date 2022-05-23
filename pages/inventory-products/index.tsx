@@ -8,7 +8,7 @@ import InventoryProductsTable from '../../components/InventoryProductsTable';
 import TableLoadingSpinner from '../../components/TableLoadingSpinner';
 
 export default function InventoryProducts() {
-  const query = useQuery<InventoryProduct[]>(
+  const { data, isLoading } = useQuery<InventoryProduct[]>(
     ['inventory-products'],
     fetchInventoryProducts,
     { staleTime: 1000 * 60 * 10 }
@@ -17,8 +17,8 @@ export default function InventoryProducts() {
   return (
     <Layout title="Inventory Products | Macaport Dashboard">
       <InventoryProductsStyles>
-        {query.isLoading && <TableLoadingSpinner />}
-        {query.data && (
+        {isLoading && <TableLoadingSpinner />}
+        {data && (
           <div className="container">
             <div className="header">
               <h2>Inventory Products</h2>
@@ -39,7 +39,7 @@ export default function InventoryProducts() {
                 </a>
               </Link>
             </div>
-            <InventoryProductsTable inventoryProducts={query.data} />
+            <InventoryProductsTable inventoryProducts={data} />
           </div>
         )}
       </InventoryProductsStyles>

@@ -45,7 +45,7 @@ const IndexStyles = styled.div`
 
   .container {
     margin: 0 auto;
-    padding: 2.5rem 0 5rem;
+    padding: 3rem 0 6rem;
     max-width: 74rem;
     width: 100%;
   }

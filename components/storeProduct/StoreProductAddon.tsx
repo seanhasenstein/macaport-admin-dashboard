@@ -2,20 +2,21 @@ import React from 'react';
 import styled from 'styled-components';
 import { PersonalizationItem } from '../../interfaces';
 import { formatToMoney } from '../../utils';
+import StoreProductSubItem from './StoreProductSubItem';
 
 type ItemProps = {
   item: PersonalizationItem;
 };
 
-export default function SubItem({ item }: ItemProps) {
-  const [isSubItemOpen, setIsSubItemOpen] = React.useState(false);
+export default function StoreProductAddon({ item }: ItemProps) {
+  const [isOpen, setIsOpen] = React.useState(false);
 
   return (
-    <SubItemStyles isSubItemOpen={isSubItemOpen}>
+    <StoreProductAddonStyles isOpen={isOpen}>
       <button
         type="button"
-        onClick={() => setIsSubItemOpen(!isSubItemOpen)}
-        className="subitem-button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="addon-button"
       >
         <span>{item.name}</span>
         <svg
@@ -32,8 +33,8 @@ export default function SubItem({ item }: ItemProps) {
           />
         </svg>
       </button>
-      {isSubItemOpen ? (
-        <div className="subitem">
+      {isOpen ? (
+        <div>
           <div className="detail-item">
             <div className="label">Type</div>
             <div className="value">
@@ -74,25 +75,40 @@ export default function SubItem({ item }: ItemProps) {
             <div className="label">Limit</div>
             <div className="value">{item.limit}</div>
           </div>
+          {item.subItems.length > 0 ? (
+            <>
+              <div className="subitems">
+                <h4>{item.name} Subitems</h4>
+
+                {item.subItems.map(subitem => (
+                  <StoreProductSubItem key={subitem.id} item={subitem} />
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="detail-item">
+              <div className="label">Subitems</div>
+              <div className="value">None</div>
+            </div>
+          )}
         </div>
       ) : null}
-    </SubItemStyles>
+    </StoreProductAddonStyles>
   );
 }
 
-const SubItemStyles = styled.div<{ isSubItemOpen: boolean }>`
-  margin: -1px 0 0;
-  padding: 0 0.5rem;
+const StoreProductAddonStyles = styled.div<{ isOpen: boolean }>`
+  margin-top: -1px;
   max-width: 40rem;
-  border-top: 1px solid #e5e7eb;
+  width: 100%;
   border-bottom: 1px solid #e5e7eb;
 
-  &:last-of-type {
-    border-bottom: none;
+  &:first-of-type {
+    margin-top: 0;
+    border-top: 1px solid #e5e7eb;
   }
 
-  .subitem-button {
-    margin: ${props => (props.isSubItemOpen ? '0 0 0.25rem' : '0')};
+  .addon-button {
     padding: 0.875rem 0;
     display: flex;
     width: 100%;
@@ -103,14 +119,14 @@ const SubItemStyles = styled.div<{ isSubItemOpen: boolean }>`
     cursor: pointer;
     font-size: 0.9375rem;
     font-weight: 500;
-    color: ${props => (props.isSubItemOpen ? '#111827' : '#4b5563')};
+    color: ${props => (props.isOpen ? '#111827' : '#4b5563')};
 
     svg {
       height: 1rem;
       width: 1rem;
       color: #6b7280;
       transform: ${props =>
-        props.isSubItemOpen ? 'rotate(0.5turn)' : 'rotate(0turn)'};
+        props.isOpen ? 'rotate(0.5turn)' : 'rotate(0turn)'};
     }
 
     &:hover {
@@ -119,6 +135,21 @@ const SubItemStyles = styled.div<{ isSubItemOpen: boolean }>`
       svg {
         color: #111827;
       }
+    }
+  }
+
+  .detail-item {
+    margin: 0 0 0.25rem;
+  }
+
+  .subitems {
+    margin: 1rem 0 0;
+
+    h4 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.075em;
     }
   }
 `;

@@ -6,184 +6,190 @@ import { Order, Store } from '../interfaces';
 import { formatPhoneNumber, formatToMoney } from '../utils';
 
 type Props = {
-  order: Order;
-  store: Store;
+  order?: Order;
+  store?: Store;
 };
 
 export default function PrintableOrder({ order, store }: Props) {
-  return (
-    <PrintableOrderStyles aria-hidden="true">
-      <div className="header">
-        <Link href="/">
-          <a className="logo">
-            <img
-              src="/images/logo.png"
-              alt="Macaport logo in front of mountains"
-            />
-          </a>
-        </Link>
-        <div className="support-links">
-          <a href="mailto:support@macaport.com">support@macaport.com</a>
-          <a href="https://macaport.com/">www.macaport.com</a>
+  if (store && order) {
+    return (
+      <PrintableOrderStyles aria-hidden="true">
+        <div className="header">
+          <Link href="/">
+            <a className="logo">
+              <img
+                src="/images/logo.png"
+                alt="Macaport logo in front of mountains"
+              />
+            </a>
+          </Link>
+          <div className="support-links">
+            <a href="mailto:support@macaport.com">support@macaport.com</a>
+            <a href="https://macaport.com/">www.macaport.com</a>
+          </div>
         </div>
-      </div>
 
-      <div className="body">
-        <div className="top-row">
-          <div className="customer">
-            <div className="name bold-item">
-              {order.customer.firstName} {order.customer.lastName}
-            </div>
-            <div className="email normal-item">{order.customer.email}</div>
-            <div className="phone normal-item">
-              {formatPhoneNumber(order.customer.phone)}
-            </div>
-          </div>
-          <div className="id-date">
-            <div className="item id bold-item">
-              <span>Order #</span>
-              {order.orderId}
-            </div>
-            <div className="item normal-item stripe-id">{order.stripeId}</div>
-            <div className="item normal-item">
-              {format(new Date(order.createdAt), "MMM. dd, yyyy 'at' h:mmaa")}
-            </div>
-          </div>
-        </div>
-        <div className="details-row section">
-          <div>
-            <h3>Shipping Details</h3>
-            <div className="item">
-              <div className="label">Store</div>
-              <div className="value">{order.store.name}</div>
-            </div>
-            {store.requireGroupSelection && (
-              <div className="item">
-                <div className="label">{store.groupTerm}</div>
-                <div className="value">{order.group}</div>
+        <div className="body">
+          <div className="top-row">
+            <div className="customer">
+              <div className="name bold-item">
+                {order.customer.firstName} {order.customer.lastName}
               </div>
-            )}
-            <div className="item">
-              <div className="label">Method</div>
-              <div className="value">{order.shippingMethod}</div>
+              <div className="email normal-item">{order.customer.email}</div>
+              <div className="phone normal-item">
+                {formatPhoneNumber(order.customer.phone)}
+              </div>
             </div>
-            {order.shippingMethod === 'Direct' && (
-              <div className="item">
-                <div className="label">Address</div>
-                <div className="value">
-                  {order.shippingAddress.street} <br />
-                  {order.shippingAddress.street2 && (
-                    <>
-                      {order.shippingAddress.street2} <br />
-                    </>
-                  )}
-                  {order.shippingAddress.city}, {order.shippingAddress.state}{' '}
-                  {order.shippingAddress.zipcode}
-                </div>
+            <div className="id-date">
+              <div className="item id bold-item">
+                <span>Order #</span>
+                {order.orderId}
               </div>
-            )}
-          </div>
-          <div className="order-summary-row">
-            <div className="order-summary">
-              <h3>Order Summary</h3>
-              <div className="item">
-                <div className="label">Subtotal</div>
-                <div className="value">
-                  {formatToMoney(order.summary.subtotal, true)}
-                </div>
-              </div>
-              <div className="item">
-                <div className="label">Sales Tax</div>
-                <div className="value">
-                  {formatToMoney(order.summary.salesTax, true)}
-                </div>
-              </div>
-              <div className="item">
-                <div className="label">Shipping</div>
-                <div className="value">
-                  {formatToMoney(order.summary.shipping, true)}
-                </div>
-              </div>
-              <div className="item total">
-                <div className="label">Total</div>
-                <div className="value">
-                  {formatToMoney(order.summary.total, true)}
-                </div>
+              <div className="item normal-item stripe-id">{order.stripeId}</div>
+              <div className="item normal-item">
+                {format(new Date(order.createdAt), "MMM. dd, yyyy 'at' h:mmaa")}
               </div>
             </div>
           </div>
-        </div>
-        <div className="order-items section">
-          <h3>Order Items</h3>
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Color</th>
-                  <th className="text-center">Size</th>
-                  <th className="text-center">Price</th>
-                  <th className="text-center">Qty.</th>
-                  <th className="text-right">Item Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {order.items.map((item, index) => (
-                  <tr key={`${item.sku.id}-${index}`}>
-                    <td>
-                      <div className="order-item-name">{item.name}</div>
-                      {item.personalizationAddons.length > 0 && (
-                        <div className="addon-items">
-                          {item.personalizationAddons.map(addon => (
-                            <div key={addon.id} className="addon-item">
-                              <div className="flex-row-center">
-                                <span className="addon-label">
-                                  {addon.addon}:
-                                </span>
-                                {addon.value}{' '}
-                                <span className="location">
-                                  [{addon.location.toLowerCase()}]
-                                </span>
-                              </div>
-                              {addon.subItems.length > 0 && (
-                                <>
-                                  {addon.subItems.map(subitem => (
-                                    <div
-                                      key={subitem.id}
-                                      className="addon-item flex-row-center"
-                                    >
-                                      <span className="addon-label">
-                                        {subitem.addon}:
-                                      </span>
-                                      {subitem.value}{' '}
-                                      <span className="location">
-                                        [{subitem.location.toLowerCase()}]
-                                      </span>
-                                    </div>
-                                  ))}
-                                </>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </td>
-                    <td>{item.sku.color.label}</td>
-                    <td className="text-center">{item.sku.size.label}</td>
-                    <td className="text-center">{formatToMoney(item.price)}</td>
-                    <td className="text-center">{item.quantity}</td>
-                    <td className="text-right">
-                      {formatToMoney(item.itemTotal, true)}
-                    </td>
+          <div className="details-row section">
+            <div>
+              <h3>Shipping Details</h3>
+              <div className="item">
+                <div className="label">Store</div>
+                <div className="value">{order.store.name}</div>
+              </div>
+              {store.requireGroupSelection && (
+                <div className="item">
+                  <div className="label">{store.groupTerm}</div>
+                  <div className="value">{order.group}</div>
+                </div>
+              )}
+              <div className="item">
+                <div className="label">Method</div>
+                <div className="value">{order.shippingMethod}</div>
+              </div>
+              {order.shippingMethod === 'Direct' && (
+                <div className="item">
+                  <div className="label">Address</div>
+                  <div className="value">
+                    {order.shippingAddress.street} <br />
+                    {order.shippingAddress.street2 && (
+                      <>
+                        {order.shippingAddress.street2} <br />
+                      </>
+                    )}
+                    {order.shippingAddress.city}, {order.shippingAddress.state}{' '}
+                    {order.shippingAddress.zipcode}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="order-summary-row">
+              <div className="order-summary">
+                <h3>Order Summary</h3>
+                <div className="item">
+                  <div className="label">Subtotal</div>
+                  <div className="value">
+                    {formatToMoney(order.summary.subtotal, true)}
+                  </div>
+                </div>
+                <div className="item">
+                  <div className="label">Sales Tax</div>
+                  <div className="value">
+                    {formatToMoney(order.summary.salesTax, true)}
+                  </div>
+                </div>
+                <div className="item">
+                  <div className="label">Shipping</div>
+                  <div className="value">
+                    {formatToMoney(order.summary.shipping, true)}
+                  </div>
+                </div>
+                <div className="item total">
+                  <div className="label">Total</div>
+                  <div className="value">
+                    {formatToMoney(order.summary.total, true)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="order-items section">
+            <h3>Order Items</h3>
+            <div className="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Color</th>
+                    <th className="text-center">Size</th>
+                    <th className="text-center">Price</th>
+                    <th className="text-center">Qty.</th>
+                    <th className="text-right">Item Total</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {order.items.map((item, index) => (
+                    <tr key={`${item.sku.id}-${index}`}>
+                      <td>
+                        <div className="order-item-name">{item.name}</div>
+                        {item.personalizationAddons.length > 0 && (
+                          <div className="addon-items">
+                            {item.personalizationAddons.map(addon => (
+                              <div key={addon.id} className="addon-item">
+                                <div className="flex-row-center">
+                                  <span className="addon-label">
+                                    {addon.addon}:
+                                  </span>
+                                  {addon.value}{' '}
+                                  <span className="location">
+                                    [{addon.location.toLowerCase()}]
+                                  </span>
+                                </div>
+                                {addon.subItems.length > 0 && (
+                                  <>
+                                    {addon.subItems.map(subitem => (
+                                      <div
+                                        key={subitem.id}
+                                        className="addon-item flex-row-center"
+                                      >
+                                        <span className="addon-label">
+                                          {subitem.addon}:
+                                        </span>
+                                        {subitem.value}{' '}
+                                        <span className="location">
+                                          [{subitem.location.toLowerCase()}]
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td>{item.sku.color.label}</td>
+                      <td className="text-center">{item.sku.size.label}</td>
+                      <td className="text-center">
+                        {formatToMoney(item.price)}
+                      </td>
+                      <td className="text-center">{item.quantity}</td>
+                      <td className="text-right">
+                        {formatToMoney(item.itemTotal, true)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </div>
-    </PrintableOrderStyles>
-  );
+      </PrintableOrderStyles>
+    );
+  } else {
+    return null;
+  }
 }
 
 const PrintableOrderStyles = styled.div`
@@ -339,7 +345,6 @@ const PrintableOrderStyles = styled.div`
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: #18181b;
-    text-align: left;
     border-bottom: 1px solid #a1a1aa;
   }
 
@@ -366,14 +371,6 @@ const PrintableOrderStyles = styled.div`
   .order-item-id {
     font-size: 11px;
     color: #a1a1aa;
-  }
-
-  .text-center {
-    text-align: center;
-  }
-
-  .text-right {
-    text-align: right;
   }
 
   .addon-items {

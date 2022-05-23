@@ -142,10 +142,6 @@ const StoresTableStyles = styled.div`
     &:last-of-type {
       padding-right: 2rem;
     }
-
-    &.text-center {
-      text-align: center;
-    }
   }
 
   tr:last-of-type td {
@@ -160,7 +156,6 @@ const StoresTableStyles = styled.div`
     text-transform: uppercase;
     letter-spacing: 0.0375em;
     color: #4b5563;
-    text-align: left;
 
     &.status svg {
       height: 1.25rem;

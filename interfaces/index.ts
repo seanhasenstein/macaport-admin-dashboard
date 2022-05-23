@@ -210,6 +210,14 @@ export type OrderStatus =
   | 'Completed'
   | 'Canceled';
 
+export interface OrderSummary {
+  subtotal: number;
+  shipping: number;
+  salesTax: number;
+  total: number;
+  stripeFee: number;
+}
+
 export interface Order {
   orderId: string;
   store: {
@@ -235,13 +243,7 @@ export interface Order {
     state: string;
     zipcode: string;
   };
-  summary: {
-    subtotal: number;
-    shipping: number;
-    salesTax: number;
-    total: number;
-    stripeFee: number;
-  };
+  summary: OrderSummary;
   refund: {
     status: 'None' | 'Partial' | 'Full';
     amount: number;
