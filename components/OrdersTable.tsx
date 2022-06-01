@@ -3,21 +3,30 @@ import Link from 'next/link';
 import styled from 'styled-components';
 import { format } from 'date-fns';
 import { calculateTotalItems, formatToMoney } from '../utils';
-import { Order, Store } from '../interfaces';
+import { Order, OrderStatus, Store } from '../interfaces';
 import OrdersTableMenu from './OrdersTableMenu';
 import OrderStatusButton from './OrderStatusButton';
 
-type OrderViewOptions =
-  | 'All'
-  | 'Unfulfilled'
-  | 'Fulfilled'
-  | 'Completed'
-  | 'Canceled';
+type OrderViewOptions = OrderStatus | 'All';
 
 type Props = {
   store: Store;
   orders: Order[];
 };
+
+interface OrderFilterItem {
+  id: number;
+  option: OrderViewOptions;
+}
+
+const orderFilterItems: OrderFilterItem[] = [
+  { id: 1, option: 'All' },
+  { id: 2, option: 'Unfulfilled' },
+  { id: 3, option: 'Printed' },
+  { id: 4, option: 'Fulfilled' },
+  { id: 5, option: 'Completed' },
+  { id: 6, option: 'Canceled' },
+];
 
 export default function OrdersTable({ store, orders }: Props) {
   const [orderViewOption, setOrderViewOption] =
@@ -41,41 +50,16 @@ export default function OrdersTable({ store, orders }: Props) {
         <div>
           <div className="buttons">
             <div className="container">
-              <button
-                type="button"
-                className={orderViewOption === 'All' ? 'active' : ''}
-                onClick={() => setOrderViewOption('All')}
-              >
-                All Orders
-              </button>
-              <button
-                type="button"
-                className={orderViewOption === 'Unfulfilled' ? 'active' : ''}
-                onClick={() => setOrderViewOption('Unfulfilled')}
-              >
-                Unfulfilled Orders
-              </button>
-              <button
-                type="button"
-                className={orderViewOption === 'Fulfilled' ? 'active' : ''}
-                onClick={() => setOrderViewOption('Fulfilled')}
-              >
-                Fulfilled Orders
-              </button>
-              <button
-                type="button"
-                className={orderViewOption === 'Completed' ? 'active' : ''}
-                onClick={() => setOrderViewOption('Completed')}
-              >
-                Completed Orders
-              </button>
-              <button
-                type="button"
-                className={orderViewOption === 'Canceled' ? 'active' : ''}
-                onClick={() => setOrderViewOption('Canceled')}
-              >
-                Canceled Orders
-              </button>
+              {orderFilterItems.map(item => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={orderViewOption === item.option ? 'active' : ''}
+                  onClick={() => setOrderViewOption(item.option)}
+                >
+                  {item.option}
+                </button>
+              ))}
             </div>
           </div>
           <div className="table-container">

@@ -14,6 +14,8 @@ export default function OrderStatusButton({ store, order }: Props) {
     if (orderStatus === 'Canceled') return;
     const updatedStatus =
       orderStatus === 'Unfulfilled'
+        ? 'Printed'
+        : orderStatus === 'Printed'
         ? 'Fulfilled'
         : orderStatus === 'Fulfilled'
         ? 'Completed'
@@ -28,17 +30,7 @@ export default function OrderStatusButton({ store, order }: Props) {
       type="button"
       onClick={() => handleStatusButtonClick(order.orderStatus)}
       disabled={order.orderStatus === 'Canceled'}
-      className={`status-button ${
-        order.orderStatus === 'Completed'
-          ? 'completed'
-          : order.orderStatus === 'Fulfilled'
-          ? 'fulfilled'
-          : order.orderStatus === 'Unfulfilled'
-          ? 'unfulfilled'
-          : order.orderStatus === 'Canceled'
-          ? 'canceled'
-          : ''
-      }`}
+      className={order.orderStatus.toLowerCase() || ''}
     >
       {order.orderStatus}
     </OrderStatusButtonStyles>
@@ -63,6 +55,11 @@ const OrderStatusButtonStyles = styled.button`
     color: #991b1b;
   }
 
+  &.printed {
+    background-color: #e0e7ff;
+    color: #3730a3;
+  }
+
   &.fulfilled {
     background-color: #fef3c7;
     color: #92400e;
@@ -74,8 +71,8 @@ const OrderStatusButtonStyles = styled.button`
   }
 
   &.canceled {
-    background-color: #e0e7ff;
-    color: #3730a3;
+    background: #e5e7eb;
+    color: #374151;
   }
 
   &:disabled {
