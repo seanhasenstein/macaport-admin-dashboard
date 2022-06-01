@@ -54,7 +54,13 @@ export default function Store() {
   if (loading || !session) return <div />;
 
   return (
-    <Layout title={`${storeQuery.data?.name} | Macaport Dashboard`}>
+    <Layout
+      title={
+        storeQuery.data?.name
+          ? `${storeQuery.data.name} | Macaport Dashboard`
+          : 'Macaport Dashboard'
+      }
+    >
       <StoreStyles>
         <div className="container">
           {storeQuery.isLoading && (

@@ -206,6 +206,7 @@ export interface OrderItem {
 
 export type OrderStatus =
   | 'Unfulfilled'
+  | 'Printed'
   | 'Fulfilled'
   | 'Completed'
   | 'Canceled';
