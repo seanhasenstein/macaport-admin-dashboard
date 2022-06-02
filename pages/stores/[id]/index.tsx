@@ -9,7 +9,7 @@ import useOutsideClick from '../../../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../../../hooks/useEscapeKeydownClose';
 import Layout from '../../../components/Layout';
 import Notes from '../../../components/Notes';
-import TablePageNavigation from '../../../components/TablePageNavigation';
+import PageNavigationButtons from '../../../components/PageNavigationButtons';
 import StoreMenu from '../../../components/store/StoreMenu';
 import StoreDetails from '../../../components/store/StoreDetails';
 import StoreProducts from '../../../components/store/StoreProducts';
@@ -73,7 +73,7 @@ export default function Store() {
 
           {storeQuery.data && (
             <>
-              <TablePageNavigation />
+              <PageNavigationButtons />
 
               <div className="header">
                 <div>

@@ -5,7 +5,7 @@ import { useInventoryProductQuery } from '../../../hooks/useInventoryProductQuer
 import { useInventoryProductMutations } from '../../../hooks/useInventoryProductMutations';
 import Layout from '../../../components/Layout';
 import InventoryProductSkus from '../../../components/inventoryProduct/InventoryProductSkus';
-import TablePageNavigation from '../../../components/TablePageNavigation';
+import PageNavigationButtons from '../../../components/PageNavigationButtons';
 import InventoryModal from '../../../components/inventoryProduct/InventoryModal';
 import InventoryProductMenu from '../../../components/inventoryProduct/InventoryProductMenu';
 import InventoryProductDetails from '../../../components/inventoryProduct/InventoryProductDetails';
@@ -34,7 +34,7 @@ export default function InventoryProduct() {
           )}
           {invProdQuery.data && (
             <>
-              <TablePageNavigation />
+              <PageNavigationButtons />
               <div className="header">
                 <div>
                   <div className="category">

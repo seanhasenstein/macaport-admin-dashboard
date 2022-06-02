@@ -47,16 +47,18 @@ export default function NavSidebar({ sidebarOpen, setSidebarOpen }: Props) {
         </div>
         <div className="main-nav">
           <Link href="/">Home</Link>
-          <Link href="/stores">Stores</Link>
+          <Link href="/stores">All Stores</Link>
           <Link href="/inventory-products">Inventory products</Link>
           <Link href="stores/create">Create a store</Link>
-          <Link href="inventory-products/create">Create inventory product</Link>
+          <Link href="inventory-products/create">
+            Create an inventory product
+          </Link>
           <a
             href="https://dashboard.stripe.com/dashboard"
             target="_blank"
             rel="noreferrer"
           >
-            Stripe dashboard
+            Go to the stripe dashboard
           </a>
         </div>
       </div>

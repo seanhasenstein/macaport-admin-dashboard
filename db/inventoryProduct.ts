@@ -12,17 +12,23 @@ export async function getInventoryProductById(db: Db, id: string) {
 
 export async function getInventoryProducts(
   db: Db,
-  filter: Record<string, unknown> = {}
+  page: string,
+  pageSize: string
 ) {
+  const limit = Number(pageSize);
+  const skip = (Number(page) - 1) * limit;
   const result = await db
     .collection('inventoryProducts')
     .aggregate([
-      {
-        $match: { ...filter },
-      },
+      { $sort: { updatedAt: -1 } },
+      { $skip: skip },
+      { $limit: limit },
     ])
     .toArray();
-  return await result;
+
+  const count = await db.collection('inventoryProducts').count();
+
+  return { inventoryProducts: result, count };
 }
 
 export async function getInventoryProductSku(

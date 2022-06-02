@@ -1,18 +1,18 @@
 import Link from 'next/link';
 import styled from 'styled-components';
 
-export default function TablePageNavigation() {
+export default function PageNavigationButtons() {
   return (
-    <TablePageNavigationStyles>
-      <Link href="/stores">Stores</Link>
+    <PageNavigationButtonStyles>
+      <Link href="/stores">All stores</Link>
       <Link href="/inventory-products">Inventory products</Link>
       <Link href="/stores/create">Create a store</Link>
       <Link href="/inventory-products/create">Create an inventory product</Link>
-    </TablePageNavigationStyles>
+    </PageNavigationButtonStyles>
   );
 }
 
-const TablePageNavigationStyles = styled.div`
+const PageNavigationButtonStyles = styled.div`
   margin: 0 auto 3.5rem;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr;

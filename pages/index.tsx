@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import { fetchHomepageStores } from '../queries/stores';
 import Layout from '../components/Layout';
-import TablePageNavigation from '../components/TablePageNavigation';
+import PageNavigationButtons from '../components/PageNavigationButtons';
 import StoresTable from '../components/StoresTable';
 import TableLoadingSpinner from '../components/TableLoadingSpinner';
 
@@ -28,7 +28,7 @@ export default function Index() {
         {query.isLoading && <TableLoadingSpinner />}
         {query.data && (
           <div className="container">
-            <TablePageNavigation />
+            <PageNavigationButtons />
             <div className="header">
               <h2>Dashboard home</h2>
             </div>

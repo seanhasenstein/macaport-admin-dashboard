@@ -267,5 +267,7 @@ export interface Request extends NextApiRequest {
     cid: string;
     spid: string;
     ipid: string;
+    page: string;
+    pageSize: string;
   };
 }
