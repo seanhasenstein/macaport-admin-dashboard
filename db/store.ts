@@ -11,16 +11,33 @@ export async function getStoreById(db: Db, id: string) {
   return result;
 }
 
-export async function getStores(db: Db, filter: Record<string, unknown> = {}) {
+export async function getStores(db: Db) {
+  const result = await db.collection<Store>('stores').find().toArray();
+  return result;
+}
+
+export async function getPaginatedStores(
+  db: Db,
+  currentPage: string,
+  pageSize: string
+) {
+  const limit = Number(pageSize);
+  const skip = (Number(currentPage) - 1) * limit;
   const result = await db
     .collection<Store>('stores')
     .aggregate([
-      {
-        $match: { ...filter },
-      },
+      { $sort: { openDate: -1, name: 1 } },
+      { $skip: skip },
+      { $limit: limit },
     ])
     .toArray();
-  return await result;
+
+  const count = await db.collection('stores').count();
+
+  return {
+    stores: result,
+    count,
+  };
 }
 
 export async function createStore(db: Db, store: Store) {

@@ -12,11 +12,11 @@ export async function getInventoryProductById(db: Db, id: string) {
 
 export async function getInventoryProducts(
   db: Db,
-  page: string,
+  currentPage: string,
   pageSize: string
 ) {
   const limit = Number(pageSize);
-  const skip = (Number(page) - 1) * limit;
+  const skip = (Number(currentPage) - 1) * limit;
   const result = await db
     .collection('inventoryProducts')
     .aggregate([

@@ -47,15 +47,15 @@ function sortStoresByCloseDate(stores: Store[], isDescending: boolean) {
 }
 
 export async function fetchHomepageStores() {
-  const response = await fetch('/api/stores');
+  const response = await fetch('/api/stores/get-all-stores');
 
   if (!response.ok) {
     throw new Error('Failed to fetch the stores.');
   }
 
-  const data: { stores: Store[] } = await response.json();
+  const data: Store[] = await response.json();
 
-  const storeReducer = data.stores.reduce(
+  const storeReducer = data.reduce(
     (accumulator: StoreAccumulator, currentStore) => {
       const storeStatus = getStoreStatus(
         currentStore.openDate,
@@ -104,54 +104,19 @@ export async function fetchHomepageStores() {
   return stores;
 }
 
-export async function fetchAllStores() {
-  const response = await fetch('/api/stores');
+export async function fetchPaginatedStores(
+  currentPage: number | undefined,
+  pageSize: number
+) {
+  const response = await fetch(
+    `/api/stores/get-paginated-stores?page=${currentPage}&pageSize=${pageSize}`
+  );
 
   if (!response.ok) {
     throw new Error('Failed to fetch the stores.');
   }
 
-  const data: { stores: Store[] } = await response.json();
+  const data: { stores: Store[]; count: number } = await response.json();
 
-  const storesReducer = data.stores.reduce(
-    (accumulator: StoreAccumulator, currentStore) => {
-      const storeStatus = getStoreStatus(
-        currentStore.openDate,
-        currentStore.closeDate
-      );
-
-      if (storeStatus === 'open') {
-        const sortedOpenStores = sortStoresByCloseDate(
-          [...accumulator.openStores, currentStore],
-          false
-        );
-        return { ...accumulator, openStores: sortedOpenStores };
-      }
-
-      if (storeStatus === 'upcoming') {
-        const sortedUpcomingStores = sortStoresByOpenDate(
-          [...accumulator.upcomingStores, currentStore],
-          false
-        );
-        return { ...accumulator, upcomingStores: sortedUpcomingStores };
-      }
-
-      if (storeStatus === 'closed') {
-        const sortedClosedStores = sortStoresByCloseDate(
-          [...accumulator.closedStores, currentStore],
-          true
-        );
-        return { ...accumulator, closedStores: sortedClosedStores };
-      }
-
-      return accumulator;
-    },
-    { openStores: [], upcomingStores: [], closedStores: [] }
-  );
-
-  return [
-    ...storesReducer.upcomingStores,
-    ...storesReducer.openStores,
-    ...storesReducer.closedStores,
-  ];
+  return data;
 }

@@ -4,10 +4,9 @@ import styled from 'styled-components';
 export default function PageNavigationButtons() {
   return (
     <PageNavigationButtonStyles>
+      <Link href="/">Dashboard home</Link>
       <Link href="/stores">All stores</Link>
       <Link href="/inventory-products">Inventory products</Link>
-      <Link href="/stores/create">Create a store</Link>
-      <Link href="/inventory-products/create">Create an inventory product</Link>
     </PageNavigationButtonStyles>
   );
 }
@@ -15,7 +14,7 @@ export default function PageNavigationButtons() {
 const PageNavigationButtonStyles = styled.div`
   margin: 0 auto 3.5rem;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   background-color: #fff;
   border-radius: 0.375rem;
   box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
