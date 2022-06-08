@@ -1,7 +1,14 @@
 import { Db, ObjectID } from 'mongodb';
 import { formatISO } from 'date-fns';
-import { Store, StoreProduct, Color, ProductSku } from '../interfaces';
+import {
+  Store,
+  StoreProduct,
+  Color,
+  ProductSku,
+  StoreStatusFilter,
+} from '../interfaces';
 import { createId } from '../utils';
+import { paginatedStoresReducer } from '../utils/store';
 
 export async function getStoreById(db: Db, id: string) {
   const result = await db
@@ -19,23 +26,29 @@ export async function getStores(db: Db) {
 export async function getPaginatedStores(
   db: Db,
   currentPage: string,
-  pageSize: string
+  pageSize: string,
+  statusFilter: StoreStatusFilter,
+  onlyUnfulfilled: string
 ) {
   const limit = Number(pageSize);
   const skip = (Number(currentPage) - 1) * limit;
   const result = await db
     .collection<Store>('stores')
-    .aggregate([
-      { $sort: { openDate: -1, name: 1 } },
-      { $skip: skip },
-      { $limit: limit },
-    ])
+    .aggregate([{ $sort: { openDate: -1, name: 1 } }])
     .toArray();
-
-  const count = await db.collection('stores').count();
+  const filteredResults = paginatedStoresReducer(
+    result,
+    statusFilter,
+    onlyUnfulfilled === 'true'
+  );
+  const count = filteredResults.length;
+  const skippedLimitedFilteredResults = filteredResults.slice(
+    skip,
+    skip + limit
+  );
 
   return {
-    stores: result,
+    stores: skippedLimitedFilteredResults,
     count,
   };
 }

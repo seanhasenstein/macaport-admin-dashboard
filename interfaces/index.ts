@@ -120,6 +120,8 @@ export interface StoreProduct {
   notes: Note[];
 }
 
+export type StoreStatusFilter = 'all' | 'upcoming' | 'open' | 'closed';
+
 export interface StoreForm {
   name: string;
   openDate: string;
@@ -269,5 +271,7 @@ export interface Request extends NextApiRequest {
     ipid: string;
     page: string;
     pageSize: string;
+    statusFilter: StoreStatusFilter;
+    onlyUnfulfilled: string;
   };
 }

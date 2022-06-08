@@ -1,4 +1,4 @@
-import { Store } from '../interfaces';
+import { Store, StoreStatusFilter } from '../interfaces';
 import { getStoreStatus } from '../utils';
 
 interface StoreAccumulator {
@@ -106,10 +106,12 @@ export async function fetchHomepageStores() {
 
 export async function fetchPaginatedStores(
   currentPage: number | undefined,
-  pageSize: number
+  pageSize: number,
+  statusFilter: StoreStatusFilter,
+  onlyUnfulfilled: boolean
 ) {
   const response = await fetch(
-    `/api/stores/get-paginated-stores?page=${currentPage}&pageSize=${pageSize}`
+    `/api/stores/get-paginated-stores?page=${currentPage}&pageSize=${pageSize}&statusFilter=${statusFilter}&onlyUnfulfilled=${onlyUnfulfilled}`
   );
 
   if (!response.ok) {

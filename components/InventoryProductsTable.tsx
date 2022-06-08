@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { InventoryProduct, InventorySku } from '../interfaces';
 import { fetchInventoryProducts } from '../queries/inventory-producs';
 import TableLoadingSpinner from './TableLoadingSpinner';
+import LoadingSpinner from './LoadingSpinner';
 import Pagination from './Pagination';
 import PageNavigationButtons from './PageNavigationButtons';
 
@@ -26,7 +27,7 @@ export default function InventoryProductsTable() {
   const router = useRouter();
   const [currentPage, setCurrentPage] = React.useState<number>();
   const [pageSize] = React.useState(10);
-  const { data, isLoading } = useQuery<InventoryProductsQuery>(
+  const { data, isLoading, isFetching } = useQuery<InventoryProductsQuery>(
     ['inventory-products', currentPage, pageSize],
     () => fetchInventoryProducts(currentPage, pageSize),
     {
@@ -58,6 +59,7 @@ export default function InventoryProductsTable() {
           <PageNavigationButtons />
           <div className="header">
             <h2>Inventory Products</h2>
+            <LoadingSpinner isLoading={isFetching} />
           </div>
           <div className="table-container" id="inventory-products">
             <table>
@@ -124,6 +126,7 @@ export default function InventoryProductsTable() {
               setCurrentPage={setCurrentPage}
               pageSize={pageSize}
               count={data.count}
+              isFetching={isFetching}
             />
           )}
         </div>
@@ -150,8 +153,8 @@ const InventoryProductsTableStyles = styled.div`
   .header {
     margin: 0 0 1.5rem;
     display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
+    align-items: center;
+    gap: 0 1rem;
   }
 
   .create-link {

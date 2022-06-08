@@ -7,6 +7,7 @@ type Props = {
   setCurrentPage: React.Dispatch<React.SetStateAction<number | undefined>>;
   pageSize: number;
   count: number;
+  isFetching?: boolean;
 };
 
 export default function Pagination({
@@ -14,6 +15,7 @@ export default function Pagination({
   setCurrentPage,
   pageSize,
   count,
+  isFetching = false,
 }: Props) {
   const totalPageCount = Math.ceil(count / pageSize);
   const paginationRange = usePagination({ count, pageSize, currentPage });
@@ -25,85 +27,90 @@ export default function Pagination({
     setCurrentPage(clickedPage);
   };
 
-  if (currentPage === 0 || paginationRange.length < 2) {
-    return null;
-  }
-
   return (
     <PaginationStyles>
-      <p>
-        Showing{' '}
-        <span className="bold">{currentPage * pageSize - pageSize + 1}</span> to{' '}
-        <span className="bold">
-          {count < currentPage * pageSize ? count : currentPage * pageSize}
-        </span>{' '}
-        of <span className="bold">{count}</span> results
-      </p>
-      <div className="buttons">
-        <button
-          type="button"
-          disabled={currentPage === 1}
-          onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
-          className="previous-button"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={3}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-          <span className="sr-only">First page</span>
-        </button>
-
-        {paginationRange.map((rangeItem, index) => {
-          if (typeof rangeItem === 'number') {
-            return (
-              <button
-                key={index}
-                onClick={() => handleClick(rangeItem)}
-                className={currentPage === rangeItem ? 'active' : ''}
+      {!isFetching && (
+        <p>
+          Showing{' '}
+          <span className="bold">
+            {currentPage * pageSize - pageSize + (count > 0 ? 1 : 0)}
+          </span>{' '}
+          to{' '}
+          <span className="bold">
+            {count < currentPage * pageSize ? count : currentPage * pageSize}
+          </span>{' '}
+          of <span className="bold">{count}</span> result
+          {count < 1 || count > 1 ? 's' : ''}
+        </p>
+      )}
+      {currentPage === 0 ||
+        (paginationRange.length < 2 ? null : (
+          <div className="buttons">
+            <button
+              type="button"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
+              className="previous-button"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={3}
               >
-                {rangeItem}
-              </button>
-            );
-          } else {
-            return (
-              <div key={index} className="ellipses">
-                {rangeItem}
-              </div>
-            );
-          }
-        })}
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+              <span className="sr-only">First page</span>
+            </button>
 
-        <button
-          type="button"
-          disabled={currentPage === totalPageCount}
-          onClick={() => setCurrentPage(currentPage + 1)}
-          className="next-button"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={3}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-          <span className="sr-only">Next page</span>
-        </button>
-      </div>
+            {paginationRange.map((rangeItem, index) => {
+              if (typeof rangeItem === 'number') {
+                return (
+                  <button
+                    key={index}
+                    onClick={() => handleClick(rangeItem)}
+                    className={currentPage === rangeItem ? 'active' : ''}
+                  >
+                    {rangeItem}
+                  </button>
+                );
+              } else {
+                return (
+                  <div key={index} className="ellipses">
+                    {rangeItem}
+                  </div>
+                );
+              }
+            })}
+
+            <button
+              type="button"
+              disabled={currentPage === totalPageCount}
+              onClick={() => setCurrentPage(currentPage + 1)}
+              className="next-button"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={3}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+              <span className="sr-only">Next page</span>
+            </button>
+          </div>
+        ))}
     </PaginationStyles>
   );
 }

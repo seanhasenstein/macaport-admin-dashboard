@@ -16,7 +16,9 @@ const handler = nc<Request, NextApiResponse>()
     const result: Result = await store.getPaginatedStores(
       req.db,
       req.query.page,
-      req.query.pageSize
+      req.query.pageSize,
+      req.query.statusFilter,
+      req.query.onlyUnfulfilled
     );
     res.json(result);
   });
