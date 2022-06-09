@@ -25,8 +25,8 @@ function getTotalAvailableSkus(skus: InventorySku[]) {
 
 export default function InventoryProductsTable() {
   const router = useRouter();
+  const pageSize = 10;
   const [currentPage, setCurrentPage] = React.useState<number>();
-  const [pageSize] = React.useState(10);
   const { data, isLoading, isFetching } = useQuery<InventoryProductsQuery>(
     ['inventory-products', currentPage, pageSize],
     () => fetchInventoryProducts(currentPage, pageSize),
