@@ -4,10 +4,6 @@ if (!process.env.DATABASE_URL) {
   throw new Error('Please add your Mongo URI to env variables');
 }
 
-if (!process.env.DATABASE_NAME) {
-  throw new Error('Please add your Mongo Db Name to env variables');
-}
-
 const uri: string = process.env.DATABASE_URL;
 const options = {
   useUnifiedTopology: true,
