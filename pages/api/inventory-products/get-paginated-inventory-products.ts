@@ -13,7 +13,7 @@ type Data = {
 const handler = nc<Request, NextApiResponse>()
   .use(database)
   .get(async (req, res) => {
-    const data: Data = await inventoryProduct.getInventoryProducts(
+    const data: Data = await inventoryProduct.getPaginatedInventoryProducts(
       req.db,
       req.query.page,
       req.query.pageSize

@@ -5,7 +5,7 @@ import { useQuery } from 'react-query';
 import styled from 'styled-components';
 import { format } from 'date-fns';
 import { InventoryProduct, InventorySku } from '../interfaces';
-import { fetchInventoryProducts } from '../queries/inventory-producs';
+import { fetchPaginatedInventoryProducts } from '../queries/inventory-products';
 import TableLoadingSpinner from './TableLoadingSpinner';
 import LoadingSpinner from './LoadingSpinner';
 import Pagination from './Pagination';
@@ -29,7 +29,7 @@ export default function InventoryProductsTable() {
   const [currentPage, setCurrentPage] = React.useState<number>();
   const { data, isLoading, isFetching } = useQuery<InventoryProductsQuery>(
     ['inventory-products', currentPage, pageSize],
-    () => fetchInventoryProducts(currentPage, pageSize),
+    () => fetchPaginatedInventoryProducts(currentPage, pageSize),
     {
       staleTime: 1000 * 60 * 10,
       enabled: currentPage ? true : false,
@@ -58,8 +58,26 @@ export default function InventoryProductsTable() {
         <div className="container">
           <PageNavigationButtons />
           <div className="header">
-            <h2>Inventory Products</h2>
-            <LoadingSpinner isLoading={isFetching} />
+            <div className="row">
+              <h2>Inventory Products</h2>
+              <LoadingSpinner isLoading={isFetching} />
+            </div>
+            <Link href="/inventory-products/create">
+              <a className="link-button">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                Create inventory product
+              </a>
+            </Link>
           </div>
           <div className="table-container" id="inventory-products">
             <table>
@@ -137,7 +155,7 @@ export default function InventoryProductsTable() {
 
 const InventoryProductsTableStyles = styled.div`
   h2 {
-    margin: 0;
+    margin: 0 0.75rem 0 0;
     font-size: 1.25rem;
     font-weight: 600;
     color: #111827;
@@ -153,45 +171,36 @@ const InventoryProductsTableStyles = styled.div`
   .header {
     margin: 0 0 1.5rem;
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 0 1rem;
   }
 
-  .create-link {
-    padding: 0.6875rem 1rem;
+  .row {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
+  }
+
+  .link-button {
+    padding: 0.5rem 1rem;
+    display: inline-flex;
     align-items: center;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #1f2937;
-    line-height: 1;
-    border: 1px solid #d1d5db;
-    border-radius: 0.3125rem;
+    color: #111827;
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
     box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    cursor: pointer;
-
-    svg {
-      margin: 0 0.5rem 0 0;
-      height: 0.875rem;
-      width: 0.875rem;
-      color: #4b5563;
-    }
 
     &:hover {
       color: #000;
-      border-color: #c6cbd2;
-      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.1);
+      border-color: #d1d5db;
     }
 
-    &:focus {
-      outline: 2px solid transparent;
-      outline-offset: 2px;
-    }
-
-    &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+    svg {
+      margin: 0 0.375rem 0 0;
+      height: 0.875rem;
+      width: 0.875rem;
     }
   }
 

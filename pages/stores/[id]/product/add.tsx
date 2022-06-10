@@ -1,5 +1,6 @@
 import React from 'react';
 import { useRouter } from 'next/router';
+import { useQuery, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
@@ -21,9 +22,9 @@ import {
   formatPersonalizationValues,
 } from '../../../../utils/storeProduct';
 import { useSession } from '../../../../hooks/useSession';
-import { useInventoryProductsQuery } from '../../../../hooks/useInventoryProductsQuery';
 import { useStoreQuery } from '../../../../hooks/useStoreQuery';
 import { useStoreProductMutations } from '../../../../hooks/useStoreProductMutations';
+import { fetchAllInventoryProducts } from '../../../../queries/inventory-products';
 import BasicLayout from '../../../../components/BasicLayout';
 import Notification from '../../../../components/Notification';
 import LoadingSpinner from '../../../../components/LoadingSpinner';
@@ -70,6 +71,7 @@ const validationSchema = Yup.object().shape({
 export default function AddProduct() {
   const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [primaryImageStatus, setPrimaryImageStatus] =
     React.useState<CloudinaryStatus>('idle');
   const [secondaryImageStatus, setSecondaryImageStatus] =
@@ -78,7 +80,19 @@ export default function AddProduct() {
   const [secondaryImages, setSecondaryImages] = React.useState<string[][]>([]);
   const [inventoryProduct, setInventoryProduct] =
     React.useState<InventoryProduct>();
-  const inventoryProductsQuery = useInventoryProductsQuery();
+  const inventoryProductsQuery = useQuery<InventoryProduct[]>(
+    ['inventory-products'],
+    fetchAllInventoryProducts,
+    {
+      initialData: () => {
+        return queryClient.getQueryData(['inventory-products']);
+      },
+      initialDataUpdatedAt: () => {
+        return queryClient.getQueryState(['inventory-products'])?.dataUpdatedAt;
+      },
+      staleTime: 1000 * 60 * 10,
+    }
+  );
   const storeQuery = useStoreQuery();
   const { addProduct } = useStoreProductMutations({ store: storeQuery.data });
 

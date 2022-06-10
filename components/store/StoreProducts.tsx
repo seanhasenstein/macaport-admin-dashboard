@@ -109,7 +109,7 @@ export default function StoreProducts({ store }: Props) {
         ) : (
           <div className="empty">
             This store has no products.{' '}
-            <Link href="">
+            <Link href={`/stores/${store._id}/product/add`}>
               <a>Add a product</a>
             </Link>
             .

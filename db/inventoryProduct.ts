@@ -10,7 +10,15 @@ export async function getInventoryProductById(db: Db, id: string) {
   return result;
 }
 
-export async function getInventoryProducts(
+export async function getAllInventoryProducts(db: Db) {
+  const result = await db
+    .collection('inventoryProducts')
+    .aggregate([{ $sort: { updatedAt: -1 } }])
+    .toArray();
+  return result;
+}
+
+export async function getPaginatedInventoryProducts(
   db: Db,
   currentPage: string,
   pageSize: string
