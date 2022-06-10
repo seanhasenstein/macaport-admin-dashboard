@@ -25,7 +25,7 @@ export default function StoreProducts({ store }: Props) {
       <div className="products-container">
         <div className="products-header">
           <h3>Store products</h3>
-          {store.products.length > 0 && (
+          {store.products?.length > 0 && (
             <Link href={`/stores/${router.query.id}/product/add`}>
               <a className="add-product-link">
                 <svg
@@ -45,7 +45,7 @@ export default function StoreProducts({ store }: Props) {
           )}
         </div>
 
-        {store.products.length > 0 ? (
+        {store.products?.length > 0 ? (
           <div className="products">
             {dnd.list.map((product, index) => (
               <div

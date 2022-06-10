@@ -60,6 +60,7 @@ export async function createStore(db: Db, store: Store) {
     ...store,
     storeId,
     orders: [],
+    products: [],
     createdAt: now,
     updatedAt: now,
   });
