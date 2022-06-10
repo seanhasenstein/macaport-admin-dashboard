@@ -1,6 +1,6 @@
 import styled from 'styled-components';
-import { Order, OrderStatus, Store } from '../interfaces';
-import { useUpdateOrderStatus } from '../hooks/useUpdateOrderStatus';
+import { Order, OrderStatus, Store } from '../../interfaces';
+import { useUpdateOrderStatus } from '../../hooks/useUpdateOrderStatus';
 
 type Props = {
   store: Store;
@@ -38,8 +38,8 @@ export default function OrderStatusButton({ store, order }: Props) {
 }
 
 const OrderStatusButtonStyles = styled.button`
-  padding: 0.25rem 0.5rem;
-  min-width: 7rem;
+  padding: 0.25rem 0;
+  min-width: 6.25rem;
   font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -71,7 +71,7 @@ const OrderStatusButtonStyles = styled.button`
   }
 
   &.canceled {
-    background: #e5e7eb;
+    background-color: #e5e7eb;
     color: #374151;
   }
 

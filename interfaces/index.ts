@@ -75,6 +75,36 @@ export interface ProductSku {
   inventorySkuActive?: boolean; // added dynamically in serverless fn
 }
 
+// storeProduct personalization addons
+export interface PersonalizationItem {
+  id: string;
+  name: string;
+  location: string;
+  type: 'list' | 'string' | 'number';
+  list: string[];
+  price: number;
+  lines: number;
+  limit: number;
+  subItems: PersonalizationItem[];
+}
+
+export interface Personalization {
+  active: boolean;
+  maxLines: number;
+  addons: PersonalizationItem[];
+}
+
+export interface PersonalizationFormItem
+  extends Omit<PersonalizationItem, 'list' | 'price' | 'subItems'> {
+  list: string;
+  price: string;
+  subItems: PersonalizationFormItem[];
+}
+
+export interface PersonalizationForm extends Omit<Personalization, 'addons'> {
+  addons: PersonalizationFormItem[];
+}
+
 export interface StoreProduct {
   id: string;
   inventoryProductId: string;
@@ -86,10 +116,11 @@ export interface StoreProduct {
   productSkus: ProductSku[];
   sizes: Size[];
   colors: Color[];
-  includeCustomName: boolean;
-  includeCustomNumber: boolean;
+  personalization: Personalization;
   notes: Note[];
 }
+
+export type StoreStatusFilter = 'all' | 'upcoming' | 'open' | 'closed';
 
 export interface StoreForm {
   name: string;
@@ -153,6 +184,17 @@ export interface Store {
   updatedAt: string;
 }
 
+export interface PersonalizationAddon {
+  id: string;
+  itemId: string;
+  addon: string;
+  value: string;
+  location: string;
+  lines: number;
+  price: number;
+  subItems: PersonalizationAddon[];
+}
+
 export interface OrderItem {
   sku: ProductSku;
   merchandiseCode: string;
@@ -161,8 +203,7 @@ export interface OrderItem {
   price: number;
   quantity: number;
   itemTotal: number;
-  customName: string;
-  customNumber: string;
+  personalizationAddons: PersonalizationAddon[];
 }
 
 export type OrderStatus =
@@ -171,6 +212,14 @@ export type OrderStatus =
   | 'Fulfilled'
   | 'Completed'
   | 'Canceled';
+
+export interface OrderSummary {
+  subtotal: number;
+  shipping: number;
+  salesTax: number;
+  total: number;
+  stripeFee: number;
+}
 
 export interface Order {
   orderId: string;
@@ -197,13 +246,7 @@ export interface Order {
     state: string;
     zipcode: string;
   };
-  summary: {
-    subtotal: number;
-    shipping: number;
-    salesTax: number;
-    total: number;
-    stripeFee: number;
-  };
+  summary: OrderSummary;
   refund: {
     status: 'None' | 'Partial' | 'Full';
     amount: number;
@@ -226,5 +269,9 @@ export interface Request extends NextApiRequest {
     cid: string;
     spid: string;
     ipid: string;
+    page: string;
+    pageSize: string;
+    statusFilter: StoreStatusFilter;
+    onlyUnfulfilled: string;
   };
 }

@@ -1,10 +1,20 @@
 import React from 'react';
+import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useQuery } from 'react-query';
 import styled from 'styled-components';
 import { format } from 'date-fns';
 import { InventoryProduct, InventorySku } from '../interfaces';
+import { fetchInventoryProducts } from '../queries/inventory-producs';
+import TableLoadingSpinner from './TableLoadingSpinner';
 import LoadingSpinner from './LoadingSpinner';
+import Pagination from './Pagination';
+import PageNavigationButtons from './PageNavigationButtons';
+
+interface InventoryProductsQuery {
+  inventoryProducts: InventoryProduct[];
+  count: number;
+}
 
 function getTotalAvailableSkus(skus: InventorySku[]) {
   return skus.reduce(
@@ -14,53 +24,42 @@ function getTotalAvailableSkus(skus: InventorySku[]) {
 }
 
 export default function InventoryProductsTable() {
-  const {
-    isLoading,
-    isFetching,
-    isError,
-    error,
-    data: inventoryProducts,
-  } = useQuery<InventoryProduct[]>(
-    ['inventory-products'],
-    async () => {
-      const response = await fetch('/api/inventory-products/');
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch the inventory products.');
-      }
-
-      const data = await response.json();
-      return data.inventoryProducts;
-    },
-    { staleTime: 1000 * 60 * 10 }
+  const router = useRouter();
+  const pageSize = 10;
+  const [currentPage, setCurrentPage] = React.useState<number>();
+  const { data, isLoading, isFetching } = useQuery<InventoryProductsQuery>(
+    ['inventory-products', currentPage, pageSize],
+    () => fetchInventoryProducts(currentPage, pageSize),
+    {
+      staleTime: 1000 * 60 * 10,
+      enabled: currentPage ? true : false,
+      keepPreviousData: true,
+    }
   );
 
+  React.useEffect(() => {
+    if (
+      router.isReady &&
+      (!router.query.page || isNaN(Number(router.query.page)))
+    ) {
+      router.push('/inventory-products?page=1');
+      setCurrentPage(1);
+    } else if (!currentPage) {
+      setCurrentPage(Number(router.query.page));
+    } else if (currentPage && currentPage !== Number(router.query.page)) {
+      router.push(`/inventory-products?page=${currentPage}`);
+    }
+  }, [router.query.page, currentPage]);
+
   return (
-    <InventoryProductStyles>
-      {isLoading && (
-        <InventoryProductLoadingSpinner isLoading={isLoading || isFetching} />
-      )}
-      {isError && error instanceof Error && <div>Error: {error.message}</div>}
-      {inventoryProducts && (
+    <InventoryProductsTableStyles>
+      {isLoading && <TableLoadingSpinner />}
+      {data?.inventoryProducts && (
         <div className="container">
-          <div className="header-row">
+          <PageNavigationButtons />
+          <div className="header">
             <h2>Inventory Products</h2>
-            <Link href={`/inventory-products/create`}>
-              <a className="create-product-link">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Create an inventory product
-              </a>
-            </Link>
+            <LoadingSpinner isLoading={isFetching} />
           </div>
           <div className="table-container" id="inventory-products">
             <table>
@@ -76,20 +75,25 @@ export default function InventoryProductsTable() {
                 </tr>
               </thead>
               <tbody>
-                {inventoryProducts.length < 1 ? (
+                {data.inventoryProducts.length < 1 ? (
                   <tr>
-                    <td>There are currently no inventory products</td>
+                    <td>There are currently 0 inventory products</td>
                   </tr>
                 ) : (
                   <>
-                    {inventoryProducts.map(product => (
+                    {data.inventoryProducts.map(product => (
                       <tr key={product._id}>
                         <td>
                           <Link
                             href={`/inventory-products/${product.inventoryProductId}`}
                           >
                             <a>
-                              <div className="product-name">{product.name}</div>
+                              <div
+                                className="product-name"
+                                title={product.name}
+                              >
+                                {product.name}
+                              </div>
                               <div className="product-id">
                                 {product.inventoryProductId}
                               </div>
@@ -116,36 +120,44 @@ export default function InventoryProductsTable() {
               </tbody>
             </table>
           </div>
+          {currentPage && (
+            <Pagination
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+              pageSize={pageSize}
+              count={data.count}
+              isFetching={isFetching}
+            />
+          )}
         </div>
       )}
-    </InventoryProductStyles>
+    </InventoryProductsTableStyles>
   );
 }
 
-const InventoryProductStyles = styled.div`
-  position: relative;
-
+const InventoryProductsTableStyles = styled.div`
   h2 {
     margin: 0;
-    font-size: 1.375rem;
+    font-size: 1.25rem;
     font-weight: 600;
     color: #111827;
   }
 
   .container {
     margin: 0 auto;
-    padding: 5rem 2rem;
-    max-width: 75rem;
+    padding: 3rem 0 6rem;
+    max-width: 74rem;
     width: 100%;
   }
 
-  .header-row {
+  .header {
+    margin: 0 0 1.5rem;
     display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
+    align-items: center;
+    gap: 0 1rem;
   }
 
-  .create-product-link {
+  .create-link {
     padding: 0.6875rem 1rem;
     display: flex;
     justify-content: center;
@@ -184,7 +196,6 @@ const InventoryProductStyles = styled.div`
   }
 
   .table-container {
-    margin: 2rem 0 0;
     width: 100%;
     background-color: #fff;
     border-width: 1px 1px 0 1px;
@@ -210,10 +221,6 @@ const InventoryProductStyles = styled.div`
     &:last-of-type {
       padding-right: 1.75rem;
     }
-
-    &.text-center {
-      text-align: center;
-    }
   }
 
   tr:last-of-type td {
@@ -228,7 +235,6 @@ const InventoryProductStyles = styled.div`
     text-transform: uppercase;
     letter-spacing: 0.0375em;
     color: #4b5563;
-    text-align: left;
   }
 
   tr {
@@ -266,9 +272,14 @@ const InventoryProductStyles = styled.div`
 
     .product-name {
       margin: 0 0 0.1875rem;
-      font-size: 0.9375rem;
+      max-width: 22rem;
+      width: 100%;
+      font-size: 0.875rem;
       font-weight: 500;
       color: #000;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .product-id {
@@ -278,10 +289,4 @@ const InventoryProductStyles = styled.div`
       color: #6b7280;
     }
   }
-`;
-
-const InventoryProductLoadingSpinner = styled(LoadingSpinner)`
-  position: absolute;
-  top: 2rem;
-  right: 2rem;
 `;

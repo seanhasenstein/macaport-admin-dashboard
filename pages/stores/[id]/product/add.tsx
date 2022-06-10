@@ -7,6 +7,7 @@ import {
   CloudinaryStatus,
   Color,
   InventoryProduct,
+  PersonalizationForm,
   Size,
 } from '../../../../interfaces';
 import {
@@ -15,6 +16,10 @@ import {
   removeNonAlphanumeric,
   createStoreProductSkus,
 } from '../../../../utils';
+import {
+  createBlankPersonalizedItem,
+  formatPersonalizationValues,
+} from '../../../../utils/storeProduct';
 import { useSession } from '../../../../hooks/useSession';
 import { useInventoryProductsQuery } from '../../../../hooks/useInventoryProductsQuery';
 import { useStoreQuery } from '../../../../hooks/useStoreQuery';
@@ -30,6 +35,7 @@ type InitialValues = {
   description: string;
   tag: string;
   details: string[];
+  personalization: PersonalizationForm;
   sizes: Size[];
   colors: Color[];
 };
@@ -70,11 +76,8 @@ export default function AddProduct() {
     React.useState<CloudinaryStatus>('idle');
   const [primaryImages, setPrimaryImages] = React.useState<string[]>([]);
   const [secondaryImages, setSecondaryImages] = React.useState<string[][]>([]);
-  const [includeCustomName, setIncludeCustomName] = React.useState(false);
-  const [includeCustomNumber, setIncludeCustomNumber] = React.useState(false);
   const [inventoryProduct, setInventoryProduct] =
     React.useState<InventoryProduct>();
-
   const inventoryProductsQuery = useInventoryProductsQuery();
   const storeQuery = useStoreQuery();
   const { addProduct } = useStoreProductMutations({ store: storeQuery.data });
@@ -236,6 +239,11 @@ export default function AddProduct() {
       description: inventoryProduct?.description || '',
       tag: inventoryProduct?.tag || '',
       details: inventoryProduct?.details || [],
+      personalization: {
+        active: false,
+        maxLines: 0,
+        addons: [],
+      },
       sizes: inventoryProduct?.sizes.map(s => ({ ...s, price: 0 })) || [],
       colors:
         inventoryProduct?.colors.map(c => ({
@@ -265,6 +273,7 @@ export default function AddProduct() {
               const price = Number(size.price) * 100;
               return { ...size, price };
             });
+
             const colors = values.colors.map(color => {
               const hex = `#${color.hex
                 .replace(/[^0-9A-Fa-f]/g, '')
@@ -282,13 +291,22 @@ export default function AddProduct() {
               values.id,
               inventoryProduct.skus
             );
-            const product = { ...values, colors, sizes, productSkus: skus };
+
+            const personalization = formatPersonalizationValues(
+              values.personalization
+            );
+
+            const product = {
+              ...values,
+              colors,
+              sizes,
+              productSkus: skus,
+              personalization,
+            };
 
             addProduct.mutate({
               ...product,
               merchandiseCode: inventoryProduct.merchandiseCode,
-              includeCustomName,
-              includeCustomNumber,
               notes: [],
             });
           }}
@@ -370,6 +388,7 @@ export default function AddProduct() {
                             className="validation-error"
                           />
                         </div>
+
                         <div className="item">
                           <label htmlFor="description">
                             Product description
@@ -380,6 +399,7 @@ export default function AddProduct() {
                             id="description"
                           />
                         </div>
+
                         <div className="item">
                           <label htmlFor="tag">Product tag</label>
                           <Field
@@ -392,6 +412,7 @@ export default function AddProduct() {
 
                       <div className="section">
                         <h3>Product details</h3>
+
                         <FieldArray
                           name="details"
                           render={arrayHelpers => (
@@ -449,17 +470,6 @@ export default function AddProduct() {
                                   )
                                 }
                               >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 20 20"
-                                  fill="currentColor"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
                                 Add a{values.details.length > 0 ? 'nother' : ''}{' '}
                                 detail
                               </button>
@@ -469,52 +479,435 @@ export default function AddProduct() {
                       </div>
 
                       <div className="section">
-                        <h3>Customize options</h3>
-                        <div className="option">
+                        <div className="toggle-header-row">
+                          <h3>Personalization addons</h3>
                           <button
                             type="button"
                             onClick={() =>
-                              setIncludeCustomName(!includeCustomName)
+                              setFieldValue(
+                                'personalization.active',
+                                !values.personalization.active
+                              )
                             }
                             role="switch"
-                            aria-checked={includeCustomName}
+                            aria-checked={values.personalization.active}
                             className={`toggle-button ${
-                              includeCustomName ? 'on' : 'off'
+                              values.personalization.active ? 'on' : 'off'
                             }`}
                           >
                             <span aria-hidden="true" className="switch" />
                             <span className="sr-only">
-                              Turn {includeCustomName ? 'off' : 'on'} include
-                              custom name
+                              Toggle personalization{' '}
+                              {values.personalization.active
+                                ? 'active'
+                                : 'inactive'}
                             </span>
                           </button>
-                          <span className="toggle-description">
-                            Allow custom names <span>(+$5.00)</span>
-                          </span>
                         </div>
 
-                        <div className="option">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setIncludeCustomNumber(!includeCustomNumber)
-                            }
-                            role="switch"
-                            aria-checked={includeCustomNumber}
-                            className={`toggle-button ${
-                              includeCustomNumber ? 'on' : 'off'
-                            }`}
-                          >
-                            <span aria-hidden="true" className="switch" />
-                            <span className="sr-only">
-                              Turn {includeCustomNumber ? 'off' : 'on'} include
-                              custom name
-                            </span>
-                          </button>
-                          <div className="toggle-description">
-                            Allow custom numbers <span>(+$5.00)</span>
-                          </div>
-                        </div>
+                        {values.personalization.active ? (
+                          <>
+                            <div className="item">
+                              <label htmlFor="personalization.maxLines">
+                                Maximum lines allowed for this product
+                              </label>
+                              <Field
+                                name="personalization.maxLines"
+                                id="personalization.maxLines"
+                              />
+                            </div>
+
+                            <FieldArray
+                              name="personalization.addons"
+                              render={arrayHelpers => (
+                                <>
+                                  {values.personalization.addons.length > 0 &&
+                                    values.personalization.addons.map(
+                                      (item, index) => (
+                                        <div
+                                          key={item.id}
+                                          className="personalization-item"
+                                        >
+                                          <h3>Addon {index + 1}</h3>
+
+                                          <div className="item">
+                                            <label
+                                              htmlFor={`personalization.addons.${index}.name`}
+                                            >
+                                              Name (Name, Number, Event, etc.)
+                                            </label>
+                                            <Field
+                                              name={`personalization.addons.${index}.name`}
+                                              id={`personalization.addons.${index}.name`}
+                                            />
+                                          </div>
+
+                                          <div className="item">
+                                            <label
+                                              htmlFor={`personalization.addons.${index}.location`}
+                                            >
+                                              Location (Back, Front, Shoulder,
+                                              etc.)
+                                            </label>
+                                            <Field
+                                              name={`personalization.addons.${index}.location`}
+                                              id={`personalization.addons.${index}.location`}
+                                            />
+                                          </div>
+
+                                          <div className="item">
+                                            <label
+                                              htmlFor={`personalization.addons.${index}.lines`}
+                                            >
+                                              Lines (How many lines does this
+                                              addon take up?)
+                                            </label>
+                                            <Field
+                                              name={`personalization.addons.${index}.lines`}
+                                              id={`personalization.addons.${index}.lines`}
+                                            />
+                                          </div>
+
+                                          <div className="item radio-group">
+                                            <div className="radio-group-label">
+                                              Type
+                                            </div>
+                                            <div>
+                                              <label
+                                                htmlFor={`personalization.addons.${index}.string`}
+                                                className="radio-item"
+                                              >
+                                                <Field
+                                                  type="radio"
+                                                  name={`personalization.addons.${index}.type`}
+                                                  id={`personalization.addons.${index}.string`}
+                                                  value="string"
+                                                />
+                                                Alphanumeric characters (A-Z and
+                                                0-9)
+                                              </label>
+                                            </div>
+                                            <div>
+                                              <label
+                                                htmlFor={`personalization.addons.${index}.number`}
+                                                className="radio-item"
+                                              >
+                                                <Field
+                                                  type="radio"
+                                                  name={`personalization.addons.${index}.type`}
+                                                  id={`personalization.addons.${index}.number`}
+                                                  value="number"
+                                                />
+                                                Numbers only
+                                              </label>
+                                            </div>
+                                            <div>
+                                              <label
+                                                htmlFor={`personalization.addons.${index}.type-list`}
+                                                className="radio-item"
+                                              >
+                                                <Field
+                                                  type="radio"
+                                                  name={`personalization.addons.${index}.type`}
+                                                  id={`personalization.addons.${index}.type-list`}
+                                                  value="list"
+                                                />
+                                                A list that customers must
+                                                choose from
+                                              </label>
+                                            </div>
+                                          </div>
+
+                                          {values.personalization.addons[index]
+                                            .type === 'list' ? (
+                                            <div className="item">
+                                              <label
+                                                htmlFor={`personalization.addons.${index}.list`}
+                                              >
+                                                List (separated by commas)
+                                              </label>
+                                              <Field
+                                                as="textarea"
+                                                name={`personalization.addons.${index}.list`}
+                                                id={`personalization.addons.${index}.list`}
+                                              />
+                                            </div>
+                                          ) : null}
+
+                                          <div className="item">
+                                            <label
+                                              htmlFor={`personalization.addons.${index}.price`}
+                                            >
+                                              Price
+                                            </label>
+                                            <Field
+                                              name={`personalization.addons.${index}.price`}
+                                              id={`personalization.addons.${index}.price`}
+                                            />
+                                          </div>
+
+                                          <div className="item">
+                                            <label
+                                              htmlFor={`personalization.addons.${index}.limit`}
+                                            >
+                                              Limit
+                                            </label>
+                                            <Field
+                                              name={`personalization.addons.${index}.limit`}
+                                              id={`personalization.addons.${index}.limit`}
+                                            />
+                                          </div>
+
+                                          <FieldArray
+                                            name={`personalization.addons.${index}.subItems`}
+                                            render={subtItemArrayHelpers => (
+                                              <>
+                                                {values.personalization.addons[
+                                                  index
+                                                ].subItems.map(
+                                                  (subItem, subItemIndex) => (
+                                                    <div
+                                                      key={subItem.id}
+                                                      className="subitem"
+                                                    >
+                                                      <h3>
+                                                        Subitem{' '}
+                                                        {subItemIndex + 1}
+                                                      </h3>
+
+                                                      <div className="item">
+                                                        <label
+                                                          htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.name`}
+                                                        >
+                                                          Name (Name, Number,
+                                                          Event, etc.)
+                                                        </label>
+                                                        <Field
+                                                          name={`personalization.addons.${index}.subItems.${subItemIndex}.name`}
+                                                          id={`personalization.addons.${index}.subItems.${subItemIndex}.name`}
+                                                        />
+                                                      </div>
+
+                                                      <div className="item">
+                                                        <label
+                                                          htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.location`}
+                                                        >
+                                                          Location (Back, Front,
+                                                          Shoulder, etc.)
+                                                        </label>
+                                                        <Field
+                                                          name={`personalization.addons.${index}.subItems.${subItemIndex}.location`}
+                                                          id={`personalization.addons.${index}.subItems.${subItemIndex}.location`}
+                                                        />
+                                                      </div>
+
+                                                      <div className="item">
+                                                        <label
+                                                          htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.lines`}
+                                                        >
+                                                          Lines (How many lines
+                                                          does this addon take
+                                                          up?)
+                                                        </label>
+                                                        <Field
+                                                          name={`personalization.addons.${index}.subItems.${subItemIndex}.lines`}
+                                                          id={`personalization.addons.${index}.subItems.${subItemIndex}.lines`}
+                                                        />
+                                                      </div>
+
+                                                      <div className="item radio-group">
+                                                        <div className="radio-group-label">
+                                                          Type
+                                                        </div>
+                                                        <div>
+                                                          <label
+                                                            htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.string`}
+                                                            className="radio-item"
+                                                          >
+                                                            <Field
+                                                              type="radio"
+                                                              name={`personalization.addons.${index}.subItems.${subItemIndex}.type`}
+                                                              id={`personalization.addons.${index}.subItems.${subItemIndex}.string`}
+                                                              value="string"
+                                                            />
+                                                            Alphanumeric
+                                                            characters (A-Z and
+                                                            0-9)
+                                                          </label>
+                                                        </div>
+                                                        <div>
+                                                          <label
+                                                            htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.number`}
+                                                            className="radio-item"
+                                                          >
+                                                            <Field
+                                                              type="radio"
+                                                              name={`personalization.addons.${index}.subItems.${subItemIndex}.type`}
+                                                              id={`personalization.addons.${index}.subItems.${subItemIndex}.number`}
+                                                              value="number"
+                                                            />
+                                                            Numbers only
+                                                          </label>
+                                                        </div>
+                                                        <div>
+                                                          <label
+                                                            htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.type-list`}
+                                                            className="radio-item"
+                                                          >
+                                                            <Field
+                                                              type="radio"
+                                                              name={`personalization.addons.${index}.subItems.${subItemIndex}.type`}
+                                                              id={`personalization.addons.${index}.subItems.${subItemIndex}.type-list`}
+                                                              value="list"
+                                                            />
+                                                            A list that
+                                                            customers must
+                                                            choose from
+                                                          </label>
+                                                        </div>
+                                                      </div>
+
+                                                      {subItem.type ===
+                                                      'list' ? (
+                                                        <div className="item">
+                                                          <label
+                                                            htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.list`}
+                                                          >
+                                                            List (separated by
+                                                            commas)
+                                                          </label>
+                                                          <Field
+                                                            as="textarea"
+                                                            name={`personalization.addons.${index}.subItems.${subItemIndex}.list`}
+                                                            id={`personalization.addons.${index}.subItems.${subItemIndex}.list`}
+                                                          />
+                                                        </div>
+                                                      ) : null}
+
+                                                      <div className="item">
+                                                        <label
+                                                          htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.price`}
+                                                        >
+                                                          Price
+                                                        </label>
+                                                        <Field
+                                                          name={`personalization.addons.${index}.subItems.${subItemIndex}.price`}
+                                                          id={`personalization.addons.${index}.subItems.${subItemIndex}.price`}
+                                                        />
+                                                      </div>
+
+                                                      <div className="item">
+                                                        <label
+                                                          htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.limit`}
+                                                        >
+                                                          Limit
+                                                        </label>
+                                                        <Field
+                                                          name={`personalization.addons.${index}.subItems.${subItemIndex}.limit`}
+                                                          id={`personalization.addons.${index}.subItems.${subItemIndex}.limit`}
+                                                        />
+                                                      </div>
+
+                                                      <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                          subtItemArrayHelpers.remove(
+                                                            subItemIndex
+                                                          )
+                                                        }
+                                                        className="remove-addon-button"
+                                                      >
+                                                        <svg
+                                                          xmlns="http://www.w3.org/2000/svg"
+                                                          viewBox="0 0 20 20"
+                                                          fill="currentColor"
+                                                        >
+                                                          <path
+                                                            fillRule="evenodd"
+                                                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                                            clipRule="evenodd"
+                                                          />
+                                                        </svg>
+                                                        <span className="sr-only">
+                                                          Remove subitem{' '}
+                                                          {subItemIndex + 1}
+                                                        </span>
+                                                      </button>
+                                                    </div>
+                                                  )
+                                                )}
+                                                <button
+                                                  type="button"
+                                                  onClick={() =>
+                                                    subtItemArrayHelpers.push(
+                                                      createBlankPersonalizedItem(
+                                                        'si'
+                                                      )
+                                                    )
+                                                  }
+                                                  className="secondary-button"
+                                                >
+                                                  Add{' '}
+                                                  {values.personalization
+                                                    .addons[index].subItems
+                                                    .length > 0
+                                                    ? 'another'
+                                                    : 'a'}{' '}
+                                                  subitem to{' '}
+                                                  {values.personalization.addons[
+                                                    index
+                                                  ].name.toLowerCase()}
+                                                </button>
+                                              </>
+                                            )}
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              arrayHelpers.remove(index)
+                                            }
+                                            className="remove-addon-button"
+                                          >
+                                            <svg
+                                              xmlns="http://www.w3.org/2000/svg"
+                                              viewBox="0 0 20 20"
+                                              fill="currentColor"
+                                            >
+                                              <path
+                                                fillRule="evenodd"
+                                                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                                clipRule="evenodd"
+                                              />
+                                            </svg>
+                                            <span className="sr-only">
+                                              Remove addon {index + 1}
+                                            </span>
+                                          </button>
+                                        </div>
+                                      )
+                                    )}
+                                  <div>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        arrayHelpers.push(
+                                          createBlankPersonalizedItem('pi')
+                                        )
+                                      }
+                                      className="secondary-button"
+                                    >
+                                      Add{' '}
+                                      {values.personalization.addons.length > 0
+                                        ? 'another'
+                                        : 'a'}{' '}
+                                      personalization item
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            />
+                          </>
+                        ) : null}
                       </div>
 
                       <div className="section">
@@ -565,6 +958,7 @@ export default function AddProduct() {
                           )}
                         />
                       </div>
+
                       <div className="section">
                         <h3>Product colors</h3>
                         <FieldArray
@@ -857,6 +1251,7 @@ const AddProductStyles = styled.div`
   .secondary-button,
   .primary-button {
     padding: 0.5rem 1.125rem;
+    width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -874,29 +1269,6 @@ const AddProductStyles = styled.div`
     &:focus-visible {
       box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
         rgba(0, 0, 0, 0) 0px 0px 0px 0px;
-    }
-  }
-
-  .secondary-button {
-    background-color: transparent;
-    color: #1f2937;
-    border: 1px solid #d1d5db;
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-
-    &:hover {
-      color: #000;
-      border-color: #c6cbd2;
-      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.1);
-
-      svg {
-        color: #6b7280;
-      }
-    }
-
-    svg {
-      height: 1rem;
-      width: 1rem;
-      color: #9ca3af;
     }
   }
 
@@ -918,6 +1290,29 @@ const AddProductStyles = styled.div`
 
     &:hover {
       background-color: #263244;
+    }
+  }
+
+  .secondary-button {
+    background-color: #1f2937;
+    color: #f3f4f6;
+    border: 1px solid #000;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+
+    &:hover {
+      color: #fff;
+      background-color: #111827;
+      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.1);
+
+      svg {
+        color: #6b7280;
+      }
+    }
+
+    svg {
+      height: 0.875rem;
+      width: 0.875rem;
+      color: #9ca3af;
     }
   }
 
@@ -1014,6 +1409,141 @@ const AddProductStyles = styled.div`
     &:last-of-type {
       border-bottom: none;
     }
+  }
+
+  .toggle-header-row {
+    margin: 0 0 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+
+    h3 {
+      margin: 0;
+    }
+  }
+
+  .toggle-button {
+    padding: 0;
+    position: relative;
+    flex-shrink: 0;
+    display: inline-flex;
+    height: 1.5rem;
+    width: 2.75rem;
+    border: 2px solid transparent;
+    border-radius: 9999px;
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-duration: 0.2s;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+
+    &:focus {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+
+    &:focus-visible {
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
+        rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+    }
+
+    &.on {
+      background-color: #1955a8;
+
+      & .switch {
+        transform: translateX(1.25rem);
+      }
+    }
+
+    &.off {
+      background-color: #e5e7eb;
+
+      & .switch {
+        transform: translateX(0rem);
+      }
+    }
+  }
+
+  .switch {
+    display: inline-block;
+    width: 1.25rem;
+    height: 1.25rem;
+    background-color: #fff;
+    border-radius: 9999px;
+    box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
+      rgba(59, 130, 246, 0.5) 0px 0px 0px 0px,
+      rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.06) 0px 1px 2px 0px;
+    pointer-events: none;
+    transition-duration: 0.2s;
+    transition-property: background-color, border-color, color, fill, stroke,
+      opacity, box-shadow, transform, filter, backdrop-filter,
+      -webkit-backdrop-filter;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .toggle-description {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #111827;
+    line-height: 1;
+
+    span {
+      color: #6b7280;
+    }
+  }
+
+  .personalization-item,
+  .subitem {
+    position: relative;
+    margin: 2rem 0;
+    padding: 1.5rem 1.5rem 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.25rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  }
+
+  .personalization-item {
+    background-color: #fff;
+  }
+
+  .subitem {
+    background-color: #f9fafb;
+  }
+
+  .remove-addon-button {
+    position: absolute;
+    top: 1.25rem;
+    right: 1rem;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    color: #6b7280;
+
+    &:hover {
+      color: #111827;
+    }
+
+    svg {
+      height: 1.125rem;
+      width: 1.125rem;
+    }
+  }
+
+  .radio-group {
+    margin: 2rem 0;
+  }
+
+  .radio-group-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6e788c;
+  }
+
+  .radio-item {
+    margin: 0.75rem 0 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .remove-button {
@@ -1176,88 +1706,5 @@ const AddProductStyles = styled.div`
     font-size: 0.75rem;
     font-weight: 500;
     color: #b91c1c;
-  }
-
-  .option {
-    padding: 0.75rem 0;
-    max-width: 20rem;
-    display: flex;
-    align-items: center;
-    gap: 0.875rem;
-    border-top: 1px solid #e5e7eb;
-
-    &:last-of-type {
-      margin: 0;
-      border-bottom: 1px solid #e5e7eb;
-    }
-  }
-
-  .toggle-button {
-    padding: 0;
-    position: relative;
-    flex-shrink: 0;
-    display: inline-flex;
-    height: 1.5rem;
-    width: 2.75rem;
-    border: 2px solid transparent;
-    border-radius: 9999px;
-    transition-property: background-color, border-color, color, fill, stroke;
-    transition-duration: 0.2s;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: pointer;
-
-    &:focus {
-      outline: 2px solid transparent;
-      outline-offset: 2px;
-    }
-
-    &:focus-visible {
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px, #1c44b9 0px 0px 0px 4px,
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px;
-    }
-
-    &.on {
-      background-color: #1955a8;
-
-      & .switch {
-        transform: translateX(1.25rem);
-      }
-    }
-
-    &.off {
-      background-color: #e5e7eb;
-
-      & .switch {
-        transform: translateX(0rem);
-      }
-    }
-  }
-
-  .switch {
-    display: inline-block;
-    width: 1.25rem;
-    height: 1.25rem;
-    background-color: #fff;
-    border-radius: 9999px;
-    box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
-      rgba(59, 130, 246, 0.5) 0px 0px 0px 0px,
-      rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.06) 0px 1px 2px 0px;
-    pointer-events: none;
-    transition-duration: 0.2s;
-    transition-property: background-color, border-color, color, fill, stroke,
-      opacity, box-shadow, transform, filter, backdrop-filter,
-      -webkit-backdrop-filter;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .toggle-description {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #111827;
-    line-height: 1;
-
-    span {
-      color: #6b7280;
-    }
   }
 `;

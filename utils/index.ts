@@ -201,7 +201,7 @@ export function createStoreProductSkus(
         inventorySkuId: inventoryProductSku?.id,
         size: s,
         color: c,
-        active: true,
+        active: false,
       };
     });
 

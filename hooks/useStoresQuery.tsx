@@ -7,7 +7,7 @@ export function useStoresQuery() {
   return useQuery<Store[]>(
     ['stores'],
     async () => {
-      const response = await fetch('/api/stores');
+      const response = await fetch('/api/stores/get-all-stores');
 
       if (!response.ok) {
         throw new Error('Failed to fetch the stores.');

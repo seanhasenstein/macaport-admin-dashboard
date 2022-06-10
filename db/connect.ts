@@ -1,22 +1,39 @@
-import { Db, MongoClient } from 'mongodb';
+import { MongoClient } from 'mongodb';
 
-global.mongo = global.mongo || {};
+if (!process.env.DATABASE_URL) {
+  throw new Error('Please add your Mongo URI to env variables');
+}
 
-export const connectToDb = async () => {
-  if (!global.mongo.client) {
-    global.mongo.client = new MongoClient(`${process.env.DATABASE_URL}`, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      bufferMaxEntries: 0,
-      connectTimeoutMS: 10000,
-    });
+if (!process.env.DATABASE_NAME) {
+  throw new Error('Please add your Mongo Db Name to env variables');
+}
 
-    console.log('connecting to DB');
-    await global.mongo.client.connect();
-    console.log('connected to DB');
-  }
-
-  const db: Db = global.mongo.client.db(`${process.env.DATABASE_NAME}`);
-
-  return { db, dbClient: global.mongo.client };
+const uri: string = process.env.DATABASE_URL;
+const options = {
+  useUnifiedTopology: true,
 };
+let client: MongoClient;
+let mongoClientPromise: Promise<MongoClient>;
+
+if (process.env.NODE_ENV === 'development') {
+  // In development mode, use a global variable so that the value
+  // is preserved across module reloads caused by HMR (Hot Module Replacement).
+
+  const globalClientPromise = global as unknown as typeof globalThis & {
+    _mongoClientPromise: Promise<MongoClient>;
+  };
+
+  if (!globalClientPromise._mongoClientPromise) {
+    client = new MongoClient(uri, options);
+    globalClientPromise._mongoClientPromise = client.connect();
+  }
+  mongoClientPromise = globalClientPromise._mongoClientPromise;
+} else {
+  // In production mode, it's best to not use a global variable.
+  client = new MongoClient(uri, options);
+  mongoClientPromise = client.connect();
+}
+
+// Export a module-scoped MongoClient promise. By doing this in a
+// separate module, the client can be shared across functions.
+export { mongoClientPromise };

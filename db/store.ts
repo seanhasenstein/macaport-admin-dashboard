@@ -1,7 +1,14 @@
 import { Db, ObjectID } from 'mongodb';
 import { formatISO } from 'date-fns';
-import { Store, StoreProduct, Color, ProductSku } from '../interfaces';
+import {
+  Store,
+  StoreProduct,
+  Color,
+  ProductSku,
+  StoreStatusFilter,
+} from '../interfaces';
 import { createId } from '../utils';
+import { paginatedStoresReducer } from '../utils/store';
 
 export async function getStoreById(db: Db, id: string) {
   const result = await db
@@ -11,16 +18,39 @@ export async function getStoreById(db: Db, id: string) {
   return result;
 }
 
-export async function getStores(db: Db, filter: Record<string, unknown> = {}) {
+export async function getStores(db: Db) {
+  const result = await db.collection<Store>('stores').find().toArray();
+  return result;
+}
+
+export async function getPaginatedStores(
+  db: Db,
+  currentPage: string,
+  pageSize: string,
+  statusFilter: StoreStatusFilter,
+  onlyUnfulfilled: string
+) {
+  const limit = Number(pageSize);
+  const skip = (Number(currentPage) - 1) * limit;
   const result = await db
     .collection<Store>('stores')
-    .aggregate([
-      {
-        $match: { ...filter },
-      },
-    ])
+    .aggregate([{ $sort: { openDate: -1, name: 1 } }])
     .toArray();
-  return await result;
+  const filteredResults = paginatedStoresReducer(
+    result,
+    statusFilter,
+    onlyUnfulfilled === 'true'
+  );
+  const count = filteredResults.length;
+  const skippedLimitedFilteredResults = filteredResults.slice(
+    skip,
+    skip + limit
+  );
+
+  return {
+    stores: skippedLimitedFilteredResults,
+    count,
+  };
 }
 
 export async function createStore(db: Db, store: Store) {
@@ -39,7 +69,7 @@ export async function createStore(db: Db, store: Store) {
 export async function updateStore(
   db: Db,
   id: string,
-  updates: Record<string, unknown>
+  updates: Record<string, any>
 ) {
   const result = await db
     .collection('stores')

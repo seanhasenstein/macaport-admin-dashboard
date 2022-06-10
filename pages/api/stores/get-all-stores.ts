@@ -9,7 +9,7 @@ const handler = nc<Request, NextApiResponse>()
   .use(database)
   .get(async (req, res) => {
     const result: Store[] = await store.getStores(req.db);
-    res.json({ stores: result });
+    res.json(result);
   });
 
 export default withAuth(handler);

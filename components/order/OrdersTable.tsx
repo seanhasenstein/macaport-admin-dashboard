@@ -2,8 +2,8 @@ import React from 'react';
 import Link from 'next/link';
 import styled from 'styled-components';
 import { format } from 'date-fns';
-import { calculateTotalItems, formatToMoney } from '../utils';
-import { Order, OrderStatus, Store } from '../interfaces';
+import { calculateTotalItems, formatToMoney } from '../../utils';
+import { OrderStatus, Store } from '../../interfaces';
 import OrdersTableMenu from './OrdersTableMenu';
 import OrderStatusButton from './OrderStatusButton';
 
@@ -11,7 +11,6 @@ type OrderViewOptions = OrderStatus | 'All';
 
 type Props = {
   store: Store;
-  orders: Order[];
 };
 
 interface OrderFilterItem {
@@ -28,25 +27,25 @@ const orderFilterItems: OrderFilterItem[] = [
   { id: 6, option: 'Canceled' },
 ];
 
-export default function OrdersTable({ store, orders }: Props) {
+export default function OrdersTable({ store }: Props) {
   const [orderViewOption, setOrderViewOption] =
     React.useState<OrderViewOptions>('All');
-  const [filteredOrders, setFilteredOrders] = React.useState(orders);
+  const [filteredOrders, setFilteredOrders] = React.useState(store.orders);
 
   React.useEffect(() => {
     if (orderViewOption === 'All') {
-      setFilteredOrders(orders);
+      setFilteredOrders(store.orders);
       return;
     }
-    const updatedFilteredOrders = orders.filter(
+    const updatedFilteredOrders = store.orders.filter(
       o => o.orderStatus === orderViewOption
     );
     setFilteredOrders(updatedFilteredOrders);
-  }, [orderViewOption, orders]);
+  }, [orderViewOption, store.orders]);
 
   return (
     <OrdersTableStyles>
-      {orders && (
+      {store.orders && (
         <div>
           <div className="buttons">
             <div className="container">
@@ -70,8 +69,7 @@ export default function OrdersTable({ store, orders }: Props) {
                   <th>Customer</th>
                   {store.requireGroupSelection && <th>{store.groupTerm}</th>}
                   <th>Shipping</th>
-                  <th className="text-center">Unique Items</th>
-                  <th className="text-center">Total Items</th>
+                  <th className="text-center">Unique / Total Items</th>
                   <th className="text-right">Total</th>
                   <th className="text-center">Order Status</th>
                   <th />
@@ -92,10 +90,7 @@ export default function OrdersTable({ store, orders }: Props) {
                     {filteredOrders.map(o => (
                       <tr key={o.orderId}>
                         <td>
-                          {format(
-                            new Date(o.createdAt),
-                            'MMM. dd, yyyy h:mmaa'
-                          )}
+                          {format(new Date(o.createdAt), 'MM/dd/yyyy h:mmaa')}
                         </td>
                         <td>
                           <div className="customer-name">
@@ -112,9 +107,7 @@ export default function OrdersTable({ store, orders }: Props) {
                         {store.requireGroupSelection && <td>{o.group}</td>}
                         <td>{o.shippingMethod}</td>
                         <td className="text-center total-items">
-                          {o.orderStatus === 'Canceled' ? 0 : o.items.length}
-                        </td>
-                        <td className="text-center">
+                          {o.orderStatus === 'Canceled' ? 0 : o.items.length} /{' '}
                           {o.orderStatus === 'Canceled'
                             ? 0
                             : calculateTotalItems(o.items)}
@@ -208,14 +201,6 @@ const OrdersTableStyles = styled.div`
     &:last-of-type {
       padding-right: 2rem;
     }
-
-    &.text-center {
-      text-align: center;
-    }
-
-    &.text-right {
-      text-align: right;
-    }
   }
 
   tr {
@@ -242,7 +227,6 @@ const OrdersTableStyles = styled.div`
     text-transform: uppercase;
     letter-spacing: 0.0375em;
     color: #4b5563;
-    text-align: left;
   }
 
   td {

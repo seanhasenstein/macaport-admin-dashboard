@@ -2,16 +2,16 @@ import React from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import { format } from 'date-fns';
-import { Store } from '../interfaces';
-import useCsvDownload from '../hooks/useCsvDownload';
-import useOutsideClick from '../hooks/useOutsideClick';
-import useEscapeKeydownClose from '../hooks/useEscapeKeydownClose';
-import { getQueryParameter, slugify } from '../utils';
-import LoadingSpinner from './LoadingSpinner';
+import { Store } from '../../interfaces';
+import useCsvDownload from '../../hooks/useCsvDownload';
+import useOutsideClick from '../../hooks/useOutsideClick';
+import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
+import { getQueryParameter, slugify } from '../../utils';
+import LoadingSpinner from '../LoadingSpinner';
 
 type Props = {
   containerRef: React.RefObject<HTMLDivElement>;
-  store: Store | undefined;
+  store: Store;
   showModal: boolean;
   setShowModal: React.Dispatch<React.SetStateAction<boolean>>;
 };
@@ -30,7 +30,7 @@ export default function CSVDownloadModal({
   const [fields, setFields] = React.useState(() => [
     { id: 1, field: 'orderId', checked: true },
     { id: 2, field: 'date', checked: true },
-    ...(store?.requireGroupSelection
+    ...(store.requireGroupSelection
       ? [{ id: 3, field: store.groupTerm, checked: true }]
       : []),
     { id: 4, field: 'customer.firstName', checked: true },
@@ -48,7 +48,7 @@ export default function CSVDownloadModal({
     { id: 16, field: 'summary.stripeFee', checked: true },
     { id: 17, field: 'summary.netTotal', checked: true },
     { id: 18, field: 'shippingMethod', checked: true },
-    ...(store?.hasPrimaryShippingLocation || store?.allowDirectShipping
+    ...(store.hasPrimaryShippingLocation || store.allowDirectShipping
       ? [
           { id: 19, field: 'shippingAddress.street', checked: true },
           { id: 20, field: 'shippingAddress.street2', checked: true },
@@ -70,7 +70,7 @@ export default function CSVDownloadModal({
         );
         csvLinkRef.current?.setAttribute(
           'download',
-          `${slugify(store?.name || '')}-orders-${format(
+          `${slugify(store.name || '')}-orders-${format(
             new Date(),
             'MMddyyHHmmss'
           )}.csv`
@@ -115,7 +115,7 @@ export default function CSVDownloadModal({
     <CSVDownloadModalStyles>
       <div ref={containerRef} className="modal">
         <div className="heading">
-          <h3>Download {store?.name} Orders CSV</h3>
+          <h3>Download {store.name} Orders CSV</h3>
 
           <button
             type="button"

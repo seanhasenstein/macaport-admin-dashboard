@@ -28,29 +28,29 @@ export default function Layout({
                 <img src="/images/logo.png" alt="Macaport" />
               </a>
             </Link>
-            <button
-              type="button"
-              onClick={() => setSidebarOpen(true)}
-              className="nav-button"
-            >
-              <span className="sr-only">
-                {sidebarOpen ? 'Close' : 'Open'} sidebar
-              </span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            </button>
           </div>
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="nav-button"
+          >
+            <span className="sr-only">
+              {sidebarOpen ? 'Close' : 'Open'} sidebar
+            </span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          </button>
           <NavSidebar
             sidebarOpen={sidebarOpen}
             setSidebarOpen={setSidebarOpen}
@@ -74,21 +74,25 @@ const LayoutStyles = styled.div`
 
   header {
     position: relative;
-    padding: 0.875rem 0;
     display: flex;
     justify-content: center;
+    align-items: center;
+    padding: 0.875rem 1.5rem;
     background-color: #fff;
     border: 1px solid #e5e7eb;
     box-shadow: rgb(0 0 0 / 0%) 0px 0px 0px 0px, rgb(0 0 0 / 0%) 0px 0px 0px 0px,
       rgb(0 0 0 / 5%) 0px 1px 2px 0px;
   }
 
+  .logo img {
+    width: 12rem;
+  }
+
   .nav-button {
     padding: 0.125rem;
     position: absolute;
     right: 2rem;
-    top: 1.875rem;
-    display: flex;
+    display: inline-flex;
     justify-content: center;
     align-items: center;
     background-color: transparent;
@@ -106,14 +110,10 @@ const LayoutStyles = styled.div`
     }
   }
 
-  .logo img {
-    width: 12rem;
-  }
-
   footer {
     margin: 0 auto;
     padding: 1.75rem 0;
-    max-width: 75rem;
+    max-width: 74rem;
     width: 100%;
     font-size: 0.9375rem;
     color: #6b7280;

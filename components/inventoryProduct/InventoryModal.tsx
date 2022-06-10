@@ -1,10 +1,10 @@
 import React from 'react';
 import styled from 'styled-components';
-import { InventoryProduct, InventorySku } from '../interfaces';
-import { useInventoryProductMutations } from '../hooks/useInventoryProductMutations';
-import useOutsideClick from '../hooks/useOutsideClick';
-import useEscapeKeydownClose from '../hooks/useEscapeKeydownClose';
-import LoadingSpinner from './LoadingSpinner';
+import { InventoryProduct, InventorySku } from '../../interfaces';
+import { useInventoryProductMutations } from '../../hooks/useInventoryProductMutations';
+import useOutsideClick from '../../hooks/useOutsideClick';
+import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
+import LoadingSpinner from '../LoadingSpinner';
 
 type Props = {
   product: InventoryProduct;
