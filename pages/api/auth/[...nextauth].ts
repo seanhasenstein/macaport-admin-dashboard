@@ -48,6 +48,7 @@ export default NextAuth({
       const allowedEmailAccounts = [
         'seanhasenstein@gmail.com',
         'nick@macaport.com',
+        'joe@macaport.com',
       ];
       if (user.email && allowedEmailAccounts.includes(user.email)) {
         return true;
