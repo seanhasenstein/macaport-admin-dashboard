@@ -177,7 +177,7 @@ const StoreProductSkusTableStyles = styled.div`
 
   .skus {
     background-color: #fff;
-    border-top: 1px solid #e5e7eb;
+    border: 1px solid #d1d5db;
     box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
     border-radius: 0.375rem;
   }
@@ -193,8 +193,9 @@ const StoreProductSkusTableStyles = styled.div`
     border-bottom: 1px solid #e5e7eb;
 
     &.header {
-      padding: 0.75rem 2rem 0.75rem 1.5rem;
-      background-color: #f3f4f6;
+      padding: 1.125rem 2rem;
+      background-color: #e8eaee;
+      border-bottom: 1px solid #d1d5db;
       font-size: 0.75rem;
       font-weight: 600;
       color: #4b5563;

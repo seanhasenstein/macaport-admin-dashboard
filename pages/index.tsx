@@ -1,38 +1,25 @@
-import { useSession } from '../hooks/useSession';
-import { useQuery, useQueryClient } from 'react-query';
 import styled from 'styled-components';
-import { fetchHomepageStores } from '../queries/stores';
+import useHomeStoresQuery from '../hooks/useHomeStoresQuery';
 import Layout from '../components/Layout';
-import PageNavigationButtons from '../components/PageNavigationButtons';
-import StoresTable from '../components/StoresTable';
+import PageNavButtons from '../components/PageNavButtons';
+import StoresTable from '../components/storesTable/StoresTable';
 import TableLoadingSpinner from '../components/TableLoadingSpinner';
 
 export default function Index() {
-  const queryClient = useQueryClient();
-  const [session, loading] = useSession({ required: true });
-  const query = useQuery(['stores', 'homepage'], fetchHomepageStores, {
-    onSuccess: data => {
-      data.forEach(store => {
-        queryClient.setQueryData(['stores', 'store', store._id], store);
-      });
-    },
-    staleTime: 1000 * 60 * 10,
-  });
-
-  if (loading || !session)
-    return <div className="sr-only">Verifying authentication</div>;
+  const query = useHomeStoresQuery();
 
   return (
-    <Layout title="Macaport Dashboard Home">
+    <Layout
+      loading={query.isLoading}
+      requiresAuth={true}
+      title="Dashboard home"
+    >
       <IndexStyles>
         {query.isLoading && <TableLoadingSpinner />}
         {query.data && (
           <div className="container">
-            <PageNavigationButtons />
-            <div className="header">
-              <h2>Dashboard home</h2>
-            </div>
-            <StoresTable stores={query.data} />
+            <PageNavButtons />
+            <StoresTable stores={query.data} tableLabel="Dashboard home" />
           </div>
         )}
       </IndexStyles>
@@ -48,16 +35,5 @@ const IndexStyles = styled.div`
     padding: 3rem 0 6rem;
     max-width: 74rem;
     width: 100%;
-  }
-
-  .header {
-    margin: 0 0 1.5rem;
-  }
-
-  h2 {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #111827;
   }
 `;

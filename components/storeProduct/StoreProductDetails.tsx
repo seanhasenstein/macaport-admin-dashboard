@@ -47,14 +47,6 @@ export default function StoreProductDetails({ storeProduct }: Props) {
 const StoreProductDetailsStyles = styled.div`
   margin: 3.5rem 0 0;
 
-  .details-grid {
-    margin: 1.5rem 0 0;
-    padding: 0 0 0.5rem;
-    display: flex;
-    gap: 8rem;
-    border-bottom: 1px solid #dcdfe4;
-  }
-
   .detail-item {
     margin: 0 0 0.75rem;
     display: grid;

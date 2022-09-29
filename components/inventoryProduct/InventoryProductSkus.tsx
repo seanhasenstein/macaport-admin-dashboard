@@ -163,7 +163,7 @@ const InventoryProductSkusStyles = styled.div`
   }
 
   .update-inventory-button {
-    padding: 0.6875rem 1rem;
+    padding: 0.6875rem 1.25rem;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -171,7 +171,7 @@ const InventoryProductSkusStyles = styled.div`
     font-weight: 500;
     color: #1f2937;
     line-height: 1;
-    background-color: transparent;
+    background-color: #fff;
     border: 1px solid #d1d5db;
     border-radius: 0.3125rem;
     box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -204,14 +204,14 @@ const InventoryProductSkusStyles = styled.div`
   .skus {
     margin: 2rem 0 0;
     background-color: #fff;
-    border: 1px solid #e5e7eb;
+    border: 1px solid #d1d5db;
     border-radius: 0.375rem;
     box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
       rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
   }
 
   .sku-row {
-    padding: 0.75rem 2rem 0.75rem 1.5rem;
+    padding: 1.125rem 2rem;
     display: grid;
     grid-template-columns: 4rem 1.25fr 0.75fr 0.75fr 12rem 5rem;
     align-items: center;
@@ -221,12 +221,14 @@ const InventoryProductSkusStyles = styled.div`
     border-bottom: 1px solid #e5e7eb;
 
     &.skus-header {
-      background-color: #f3f4f6;
+      background-color: #e8eaee;
       font-size: 0.75rem;
       font-weight: 600;
-      color: #4b5563;
+      color: #374151;
       text-transform: uppercase;
       letter-spacing: 0.05em;
+      border-bottom: 1px solid #d1d5db;
+      border-radius: 0.375rem 0.375rem 0 0;
     }
 
     &:last-of-type {

@@ -1,19 +1,23 @@
 import Head from 'next/head';
+import AuthorizedRoute from './AuthorizedRoute';
 
 type Props = {
   children: React.ReactNode;
   title: string;
+  requiresAuth: boolean;
 };
 
-export default function BasicLayout({ children, title }: Props) {
+export default function BasicLayout(props: Props) {
   return (
-    <>
-      <Head>
-        <title>{title}</title>
-      </Head>
-      <header />
-      <main>{children}</main>
-      <footer />
-    </>
+    <AuthorizedRoute required={props.requiresAuth}>
+      <>
+        <Head>
+          <title>{props.title}</title>
+        </Head>
+        <header />
+        <main>{props.children}</main>
+        <footer />
+      </>
+    </AuthorizedRoute>
   );
 }

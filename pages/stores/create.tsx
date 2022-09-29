@@ -5,15 +5,13 @@ import styled from 'styled-components';
 import { Formik, Form } from 'formik';
 import { Store } from '../../interfaces';
 import { createStoreInitialValues } from '../../utils/storeForm';
-import { useSession } from '../../hooks/useSession';
 import { useStoreMutations } from '../../hooks/useStoreMutations';
 import { fetchAllStores } from '../../queries/stores';
 import BasicLayout from '../../components/BasicLayout';
-import StoreForm from '../../components/StoreForm';
+import StoreForm from '../../components/store/StoreForm';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 export default function CreateStore() {
-  const [session, loading] = useSession({ required: true });
   const router = useRouter();
   const queryClient = useQueryClient();
   const storesQuery = useQuery<Store[]>(['stores'], fetchAllStores, {
@@ -29,10 +27,11 @@ export default function CreateStore() {
     stores: storesQuery.data,
   });
 
-  if (loading || !session) return <div />;
-
   return (
-    <BasicLayout title="Create a Store | Macaport Dashboard">
+    <BasicLayout
+      title="Create a Store | Macaport Dashboard"
+      requiresAuth={true}
+    >
       <CreateStoreStyles>
         <Formik
           initialValues={createStoreInitialValues}

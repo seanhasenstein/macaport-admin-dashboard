@@ -108,7 +108,7 @@ const OrderDetailsStyles = styled.div`
   .section-title {
     margin: 0 0 0.875rem;
     padding: 0 0 0.75rem;
-    border-bottom: 1px solid #dcdfe4;
+    border-bottom: 1px solid #d1d5db;
   }
 
   .detail-grid {
@@ -116,7 +116,7 @@ const OrderDetailsStyles = styled.div`
     padding: 0 0 0.5rem;
     display: flex;
     gap: 8rem;
-    border-bottom: 1px solid #dcdfe4;
+    border-bottom: 1px solid #d1d5db;
   }
 
   .detail-item {

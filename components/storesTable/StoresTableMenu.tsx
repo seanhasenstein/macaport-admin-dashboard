@@ -1,9 +1,9 @@
 import React from 'react';
 import Link from 'next/link';
 import styled from 'styled-components';
-import useOutsideClick from '../hooks/useOutsideClick';
-import useEscapeKeydownClose from '../hooks/useEscapeKeydownClose';
-import { getStoreStatus } from '../utils';
+import useOutsideClick from '../../hooks/useOutsideClick';
+import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
+import { getStoreStatus } from '../../utils';
 
 type Props = {
   storeId: string;

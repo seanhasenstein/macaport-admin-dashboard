@@ -146,6 +146,7 @@ const StoreProductsStyles = styled.div`
     font-weight: 500;
     color: #1f2937;
     line-height: 1;
+    background-color: #fff;
     border: 1px solid #d1d5db;
     border-radius: 0.3125rem;
     box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);

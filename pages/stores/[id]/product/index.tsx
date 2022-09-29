@@ -3,7 +3,6 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import styled from 'styled-components';
 import { getQueryParameter } from '../../../../utils';
-import { useSession } from '../../../../hooks/useSession';
 import { useStoreProductQuery } from '../../../../hooks/useStoreProductQuery';
 import { useStoreProductMutations } from '../../../../hooks/useStoreProductMutations';
 import Layout from '../../../../components/Layout';
@@ -18,7 +17,6 @@ import StoreProductPersonzalization from '../../../../components/storeProduct/St
 import DeleteStoreProductModal from '../../../../components/storeProduct/DeleteStoreProductModal';
 
 export default function Product() {
-  const [session, loading] = useSession({ required: true });
   const router = useRouter();
   const {
     isLoading,
@@ -32,10 +30,8 @@ export default function Product() {
   const [showDeleteProductModal, setShowDeleteProductModal] =
     React.useState(false);
 
-  if (loading || !session) return <div />;
-
   return (
-    <Layout title="Store Product | Macaport Dashboard">
+    <Layout title="Store Product | Macaport Dashboard" requiresAuth={true}>
       <ProductStyles>
         <div className="container">
           {isLoading && <LoadingSpinner isLoading={isLoading} />}
@@ -239,7 +235,7 @@ const ProductStyles = styled.div`
   .section-title {
     margin: 0 0 0.875rem;
     padding: 0 0 0.75rem;
-    border-bottom: 1px solid #dcdfe4;
+    border-bottom: 1px solid #d1d5db;
   }
 `;
 

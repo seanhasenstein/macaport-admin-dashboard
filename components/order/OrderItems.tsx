@@ -3,6 +3,7 @@ import Link from 'next/link';
 import styled from 'styled-components';
 import { formatToMoney } from '../../utils';
 import { Order } from '../../interfaces';
+import Table from '../common/Table';
 
 type Props = {
   order: Order;
@@ -14,7 +15,7 @@ export default function OrderItems({ order }: Props) {
   return (
     <OrderItemsStyles>
       <h4>Order items</h4>
-      <div className="table-container">
+      <Table>
         <table>
           <thead>
             <tr>
@@ -84,7 +85,7 @@ export default function OrderItems({ order }: Props) {
             ))}
           </tbody>
         </table>
-      </div>
+      </Table>
     </OrderItemsStyles>
   );
 }
@@ -92,92 +93,17 @@ export default function OrderItems({ order }: Props) {
 const OrderItemsStyles = styled.div`
   margin: 3.5rem 0 0;
 
-  .table-container {
-    width: 100%;
-    background-color: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.375rem;
-    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-      rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  td,
-  th {
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  th {
-    padding: 0.875rem 1rem;
-    background-color: #f3f4f6;
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.0375em;
-    color: #6b7280;
-
-    &:first-of-type {
-      border-top-left-radius: 0.375rem;
-    }
-
-    &:last-of-type {
-      border-top-right-radius: 0.375rem;
-    }
-  }
-
-  tr:last-of-type {
-    td {
-      border-bottom: none;
-
-      &:first-of-type {
-        border-bottom-left-radius: 0.375rem;
-      }
-
-      &:last-of-type {
-        border-bottom-right-radius: 0.375rem;
-      }
-    }
-  }
-
-  td {
-    padding: 0.875rem 1rem;
-    background-color: #fff;
-    font-size: 0.875rem;
+  .product-name {
+    margin: 0 0 1px;
     font-weight: 500;
-    color: #4b5563;
+    color: #000;
+  }
 
-    .product-name {
-      margin: 0 0 1px;
-      font-weight: 500;
-      color: #000;
-    }
-
-    .product-id {
-      font-family: 'Dank Mono', monospace;
-      font-size: 0.875rem;
-      font-weight: 700;
-      color: #6b7280;
-    }
-
-    a {
-      &:hover {
-        text-decoration: underline;
-      }
-
-      &:focus {
-        outline: 2px solid transparent;
-        outline-offset: 2px;
-      }
-
-      &:focus-visible {
-        text-decoration: underline;
-        color: #1c44b9;
-      }
-    }
+  .product-id {
+    font-family: 'Dank Mono', monospace;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #6b7280;
   }
 
   .addon-items {

@@ -4,7 +4,7 @@ import BasicLayout from '../components/BasicLayout';
 
 export default function Unauthorized() {
   return (
-    <BasicLayout title="Unauthorized | Macaport Dashboard">
+    <BasicLayout title="Unauthorized | Macaport Dashboard" requiresAuth={false}>
       <UnauthorizedStyles>
         <div className="container">
           <img

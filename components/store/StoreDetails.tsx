@@ -109,7 +109,7 @@ export default function StoreDetails({ store }: Props) {
 const StoreDetailsStyles = styled.div`
   margin: 1.5rem 0 0;
   padding: 0 0 0.5rem;
-  border-bottom: 1px solid #dcdfe4;
+  border-bottom: 1px solid #d1d5db;
 
   .grid {
     padding: 0.875rem 0 0;

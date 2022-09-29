@@ -8,14 +8,12 @@ import {
   updateInventoryProductSkus,
   UpdateFormValues,
 } from '../../../utils/inventoryProduct';
-import { useSession } from '../../../hooks/useSession';
 import { useInventoryProductQuery } from '../../../hooks/useInventoryProductQuery';
 import { useInventoryProductMutations } from '../../../hooks/useInventoryProductMutations';
 import BasicLayout from '../../../components/BasicLayout';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 
 export default function UpdateInventoryProduct() {
-  const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
   const inventoryProductQuery = useInventoryProductQuery();
   const { updateProductIncludingSkus } = useInventoryProductMutations(
@@ -60,14 +58,15 @@ export default function UpdateInventoryProduct() {
     document.querySelector<HTMLInputElement>(selector)?.focus();
   };
 
-  if (sessionLoading || !session) return <div />;
-
   if (!inventoryProductQuery.data) {
     return <div>Failed to get the inventory product.</div>;
   }
 
   return (
-    <BasicLayout title={`Update Inventory Product ${router.query.id}`}>
+    <BasicLayout
+      title={`Update Inventory Product ${router.query.id}`}
+      requiresAuth={true}
+    >
       <UpdateInventoryProductStyles>
         <Formik
           initialValues={initialValues}

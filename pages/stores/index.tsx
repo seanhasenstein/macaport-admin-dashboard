@@ -6,15 +6,15 @@ import { useQuery } from 'react-query';
 import { fetchPaginatedStores } from '../../queries/stores';
 import { StoreStatusFilter } from '../../interfaces';
 import Layout from '../../components/Layout';
-import StoresTable from '../../components/StoresTable';
+import StoresTable from '../../components/storesTable/StoresTable';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import TableLoadingSpinner from '../../components/TableLoadingSpinner';
-import PageNavigationButtons from '../../components/PageNavigationButtons';
+import PageNavButtons from '../../components/PageNavButtons';
 import Pagination from '../../components/Pagination';
 
 export default function Stores() {
   const router = useRouter();
-  const pageSize = 10;
+  const pageSize = 8;
   const [currentPage, setCurrentPage] = React.useState<number>();
   const [statusFilter, setStatusFilter] =
     React.useState<StoreStatusFilter>('all');
@@ -60,12 +60,16 @@ export default function Stores() {
   };
 
   return (
-    <Layout title="Stores | Macaport Dashboard">
+    <Layout
+      loading={query.isLoading}
+      requiresAuth={true}
+      title="All stores | Macaport Dashboard"
+    >
       <StoresStyles unfulfilledChecked={unfulfilledChecked}>
         {query.isLoading && <TableLoadingSpinner />}
         {query.data && (
           <div className="container">
-            <PageNavigationButtons />
+            <PageNavButtons />
             <div className="header">
               <div className="row">
                 <div className="row">
@@ -182,14 +186,14 @@ const StoresStyles = styled.div<{ unfulfilledChecked: boolean }>`
   }
 
   .link-button {
-    padding: 0.5rem 1rem;
+    padding: 0.625rem 1.25rem;
     display: inline-flex;
     align-items: center;
     font-size: 0.875rem;
     font-weight: 500;
     color: #111827;
     background-color: #fff;
-    border: 1px solid #e5e7eb;
+    border: 1px solid #dcdfe4;
     border-radius: 0.375rem;
     box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 
@@ -248,7 +252,7 @@ const StoresStyles = styled.div<{ unfulfilledChecked: boolean }>`
       border-radius: 0.3125rem;
       font-size: 0.8125rem;
       background-color: ${props =>
-        props.unfulfilledChecked ? '#ecf0fc' : 'transparent'};
+        props.unfulfilledChecked ? '#ecf0fc' : '#f9fafb'};
       color: ${props => (props.unfulfilledChecked ? '#173797' : '#374151')};
       cursor: pointer;
     }

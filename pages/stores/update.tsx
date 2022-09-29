@@ -3,23 +3,19 @@ import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import { Formik, Form } from 'formik';
 import { formatUpdateInitialValues } from '../../utils/storeForm';
-import { useSession } from '../../hooks/useSession';
 import { useStoreQuery } from '../../hooks/useStoreQuery';
 import { useStoreMutations } from '../../hooks/useStoreMutations';
 import BasicLayout from '../../components/BasicLayout';
-import StoreForm from '../../components/StoreForm';
+import StoreForm from '../../components/store/StoreForm';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 export default function UpdateStore() {
-  const [session, loading] = useSession({ required: true });
   const router = useRouter();
   const { isLoading, isError, error, data: store } = useStoreQuery();
   const { updateStoreForm } = useStoreMutations({ store });
 
-  if (loading || !session) return <div />;
-
   return (
-    <BasicLayout title="Update Store | Macaport Dashboard">
+    <BasicLayout title="Update Store | Macaport Dashboard" requiresAuth={true}>
       <UpdateStoreStyles>
         {isLoading && <LoadingSpinner isLoading={isLoading} />}
         {isError && error instanceof Error && <div>Error: {error}</div>}

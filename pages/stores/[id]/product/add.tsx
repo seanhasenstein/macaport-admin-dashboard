@@ -21,7 +21,6 @@ import {
   createBlankPersonalizedItem,
   formatPersonalizationValues,
 } from '../../../../utils/storeProduct';
-import { useSession } from '../../../../hooks/useSession';
 import { useStoreQuery } from '../../../../hooks/useStoreQuery';
 import { useStoreProductMutations } from '../../../../hooks/useStoreProductMutations';
 import { fetchAllInventoryProducts } from '../../../../queries/inventory-products';
@@ -69,7 +68,6 @@ const validationSchema = Yup.object().shape({
 });
 
 export default function AddProduct() {
-  const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
   const queryClient = useQueryClient();
   const [primaryImageStatus, setPrimaryImageStatus] =
@@ -273,10 +271,11 @@ export default function AddProduct() {
     document.querySelector<HTMLInputElement>(selector)?.focus();
   };
 
-  if (sessionLoading || !session) return <div />;
-
   return (
-    <BasicLayout title="Add a store product | Macaport Dashboard">
+    <BasicLayout
+      title="Add a store product | Macaport Dashboard"
+      requiresAuth={true}
+    >
       <AddProductStyles>
         <Formik
           initialValues={initialValues}

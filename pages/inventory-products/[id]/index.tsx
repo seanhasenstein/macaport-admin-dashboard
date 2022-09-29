@@ -1,11 +1,10 @@
 import React from 'react';
 import styled from 'styled-components';
-import { useSession } from '../../../hooks/useSession';
 import { useInventoryProductQuery } from '../../../hooks/useInventoryProductQuery';
 import { useInventoryProductMutations } from '../../../hooks/useInventoryProductMutations';
 import Layout from '../../../components/Layout';
 import InventoryProductSkus from '../../../components/inventoryProduct/InventoryProductSkus';
-import PageNavigationButtons from '../../../components/PageNavigationButtons';
+import PageNavButtons from '../../../components/PageNavButtons';
 import InventoryModal from '../../../components/inventoryProduct/InventoryModal';
 import InventoryProductMenu from '../../../components/inventoryProduct/InventoryProductMenu';
 import InventoryProductDetails from '../../../components/inventoryProduct/InventoryProductDetails';
@@ -13,17 +12,14 @@ import Notes from '../../../components/Notes';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 
 export default function InventoryProduct() {
-  const [session, sessionLoading] = useSession({ required: true });
   const [showInventoryModal, setShowInventoryModal] = React.useState(false);
   const invProdQuery = useInventoryProductQuery();
   const { addNote, updateNote, deleteNote } = useInventoryProductMutations(
     invProdQuery.data
   );
 
-  if (sessionLoading || !session) return <div />;
-
   return (
-    <Layout title="Inventory Product | Macaport Dashboard">
+    <Layout title="Inventory Product | Macaport Dashboard" requiresAuth={true}>
       <InventoryProductStyles>
         <div className="container">
           {invProdQuery.isLoading && (
@@ -34,7 +30,7 @@ export default function InventoryProduct() {
           )}
           {invProdQuery.data && (
             <>
-              <PageNavigationButtons />
+              <PageNavButtons />
               <div className="header">
                 <div>
                   <div className="category">

@@ -9,7 +9,6 @@ import {
   createBlankPersonalizedItem,
   formatPersonalizationValues,
 } from '../../../../utils/storeProduct';
-import { useSession } from '../../../../hooks/useSession';
 import { useUpdateStoreProduct } from '../../../../hooks/useUpdateStoreProduct';
 import { useStoreQuery } from '../../../../hooks/useStoreQuery';
 import { useStoreProductMutations } from '../../../../hooks/useStoreProductMutations';
@@ -68,7 +67,6 @@ const validationSchema = Yup.object().shape({
 });
 
 export default function UpdateProduct() {
-  const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
   const storeQuery = useStoreQuery();
   const { updateProduct } = useStoreProductMutations({
@@ -87,10 +85,11 @@ export default function UpdateProduct() {
     handleAddClick,
   } = useUpdateStoreProduct({ storeQuery });
 
-  if (sessionLoading || !session) return <div />;
-
   return (
-    <BasicLayout title="Update Product | Macaport Dashboard">
+    <BasicLayout
+      title="Update Product | Macaport Dashboard"
+      requiresAuth={true}
+    >
       <UpdateProductStyles>
         <div className="main-content">
           <div className="form-container">

@@ -1,18 +1,14 @@
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
-import { useSession } from '../../hooks/useSession';
 import { useOrderQuery } from '../../hooks/useOrderQuery';
 import BasicLayout from '../../components/BasicLayout';
 
 export default function UpdateOrder() {
-  const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
   const { isLoading, isError, error, data } = useOrderQuery();
 
-  if (sessionLoading || !session) return <div />;
-
   return (
-    <BasicLayout title="Update Order | Macaport Dashboard">
+    <BasicLayout title="Update Order | Macaport Dashboard" requiresAuth={true}>
       <UpdateOrderStyles>
         {isLoading && <div>Loading Order...</div>}
         {isError && error instanceof Error && (

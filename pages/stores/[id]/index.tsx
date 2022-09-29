@@ -2,14 +2,13 @@ import React from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import { getStoreStatus } from '../../../utils';
-import { useSession } from '../../../hooks/useSession';
 import { useStoreQuery } from '../../../hooks/useStoreQuery';
 import { useStoreMutations } from '../../../hooks/useStoreMutations';
 import useOutsideClick from '../../../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../../../hooks/useEscapeKeydownClose';
 import Layout from '../../../components/Layout';
 import Notes from '../../../components/Notes';
-import PageNavigationButtons from '../../../components/PageNavigationButtons';
+import PageNavButtons from '../../../components/PageNavButtons';
 import StoreMenu from '../../../components/store/StoreMenu';
 import StoreDetails from '../../../components/store/StoreDetails';
 import StoreProducts from '../../../components/store/StoreProducts';
@@ -23,7 +22,6 @@ import DeleteStoreModal from '../../../components/store/DeleteStoreModal';
 type StoreStatus = 'upcoming' | 'open' | 'closed';
 
 export default function Store() {
-  const [session, loading] = useSession({ required: true });
   const router = useRouter();
   const deleteProductRef = React.useRef<HTMLDivElement>(null);
   const csvModalRef = React.useRef<HTMLDivElement>(null);
@@ -51,8 +49,6 @@ export default function Store() {
     }
   }, [storeQuery.data]);
 
-  if (loading || !session) return <div />;
-
   return (
     <Layout
       title={
@@ -60,6 +56,7 @@ export default function Store() {
           ? `${storeQuery.data.name} | Macaport Dashboard`
           : 'Macaport Dashboard'
       }
+      requiresAuth={true}
     >
       <StoreStyles>
         <div className="container">
@@ -73,7 +70,7 @@ export default function Store() {
 
           {storeQuery.data && (
             <>
-              <PageNavigationButtons />
+              <PageNavButtons />
 
               <div className="header">
                 <div>
@@ -291,7 +288,7 @@ const StoreStyles = styled.div`
   .section-title {
     margin: 0 0 0.875rem;
     padding: 0 0 0.75rem;
-    border-bottom: 1px solid #dcdfe4;
+    border-bottom: 1px solid #d1d5db;
   }
 
   @media print {

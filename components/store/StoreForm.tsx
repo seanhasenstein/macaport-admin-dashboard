@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { Field, FieldArray, FieldArrayRenderProps } from 'formik';
-import { unitedStates } from '../utils';
-import { StoreForm as StoreFormInterface } from '../interfaces';
+import { unitedStates } from '../../utils';
+import { StoreForm as StoreFormInterface } from '../../interfaces';
 
 type Props = {
   values: StoreFormInterface;

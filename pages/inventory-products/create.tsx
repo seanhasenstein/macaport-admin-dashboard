@@ -2,7 +2,6 @@ import styled from 'styled-components';
 import { useRouter } from 'next/router';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import { createId, createInventoryProductSkus } from '../../utils';
-import { useSession } from '../../hooks/useSession';
 import {
   useInventoryProductMutations,
   InitialValues,
@@ -11,7 +10,6 @@ import BasicLayout from '../../components/BasicLayout';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 export default function CreateInventoryProduct() {
-  const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
   const { createProduct } = useInventoryProductMutations();
 
@@ -20,10 +18,8 @@ export default function CreateInventoryProduct() {
     document.querySelector<HTMLInputElement>(selector)?.focus();
   };
 
-  if (sessionLoading || !session) return <div />;
-
   return (
-    <BasicLayout title="Create an Inventory Product">
+    <BasicLayout title="Create an Inventory Product" requiresAuth={true}>
       <CreateInventoryProductStyles>
         <Formik
           initialValues={{

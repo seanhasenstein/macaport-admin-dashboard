@@ -9,7 +9,8 @@ import { fetchPaginatedInventoryProducts } from '../queries/inventory-products';
 import TableLoadingSpinner from './TableLoadingSpinner';
 import LoadingSpinner from './LoadingSpinner';
 import Pagination from './Pagination';
-import PageNavigationButtons from './PageNavigationButtons';
+import PageNavButtons from './PageNavButtons';
+import Table from './common/Table';
 
 interface InventoryProductsQuery {
   inventoryProducts: InventoryProduct[];
@@ -56,7 +57,7 @@ export default function InventoryProductsTable() {
       {isLoading && <TableLoadingSpinner />}
       {data?.inventoryProducts && (
         <div className="container">
-          <PageNavigationButtons />
+          <PageNavButtons />
           <div className="header">
             <div className="row">
               <h2>Inventory Products</h2>
@@ -79,7 +80,7 @@ export default function InventoryProductsTable() {
               </a>
             </Link>
           </div>
-          <div className="table-container" id="inventory-products">
+          <Table id="inventory-products">
             <table>
               <thead>
                 <tr>
@@ -102,21 +103,16 @@ export default function InventoryProductsTable() {
                     {data.inventoryProducts.map(product => (
                       <tr key={product._id}>
                         <td>
-                          <Link
-                            href={`/inventory-products/${product.inventoryProductId}`}
-                          >
-                            <a>
-                              <div
-                                className="product-name"
-                                title={product.name}
-                              >
-                                {product.name}
-                              </div>
-                              <div className="product-id">
-                                {product.inventoryProductId}
-                              </div>
-                            </a>
-                          </Link>
+                          <div className="product-name" title={product.name}>
+                            <Link
+                              href={`/inventory-products/${product.inventoryProductId}`}
+                            >
+                              <a>{product.name}</a>
+                            </Link>
+                          </div>
+                          <div className="product-id">
+                            {product.inventoryProductId}
+                          </div>
                         </td>
                         <td>{product.merchandiseCode}</td>
                         <td className="text-center">{product.sizes.length}</td>
@@ -137,7 +133,7 @@ export default function InventoryProductsTable() {
                 )}
               </tbody>
             </table>
-          </div>
+          </Table>
           {currentPage && (
             <Pagination
               currentPage={currentPage}
@@ -181,14 +177,14 @@ const InventoryProductsTableStyles = styled.div`
   }
 
   .link-button {
-    padding: 0.5rem 1rem;
+    padding: 0.625rem 1.25rem;
     display: inline-flex;
     align-items: center;
     font-size: 0.875rem;
     font-weight: 500;
     color: #111827;
     background-color: #fff;
-    border: 1px solid #e5e7eb;
+    border: 1px solid #dcdfe4;
     border-radius: 0.375rem;
     box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 
@@ -204,98 +200,22 @@ const InventoryProductsTableStyles = styled.div`
     }
   }
 
-  .table-container {
+  .product-name {
+    margin: 0 0 0.1875rem;
+    max-width: 22rem;
     width: 100%;
-    background-color: #fff;
-    border-width: 1px 1px 0 1px;
-    border-style: solid;
-    border-color: #e5e7eb;
-    border-radius: 0.25rem;
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  th,
-  td {
-    border-bottom: 1px solid #e5e7eb;
-
-    &:first-of-type {
-      padding-left: 1.75rem;
-    }
-
-    &:last-of-type {
-      padding-right: 1.75rem;
-    }
-  }
-
-  tr:last-of-type td {
-    border-bottom: none;
-  }
-
-  th {
-    padding: 1rem;
-    background-color: #f3f4f6;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.0375em;
-    color: #4b5563;
-  }
-
-  tr {
-    &:first-of-type {
-      th:first-of-type {
-        border-radius: 0.25rem 0 0 0;
-      }
-      th:last-of-type {
-        border-radius: 0 0.25rem 0 0;
-      }
-    }
-  }
-
-  td {
-    padding: 1rem 1rem;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #374151;
+    color: #000;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
-    a {
-      &:hover .product-name {
-        text-decoration: underline;
-      }
-
-      &:focus {
-        outline: 2px solid transparent;
-        outline-offset: 2px;
-      }
-
-      &:focus-visible .product-name {
-        text-decoration: underline;
-        color: #1c44b9;
-      }
-    }
-
-    .product-name {
-      margin: 0 0 0.1875rem;
-      max-width: 22rem;
-      width: 100%;
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: #000;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .product-id {
-      font-family: 'Dank Mono', 'Menlo', monospace;
-      font-size: 0.875rem;
-      font-weight: 700;
-      color: #6b7280;
-    }
+  .product-id {
+    font-family: 'Dank Mono', 'Menlo', monospace;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #6b7280;
   }
 `;

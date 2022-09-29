@@ -101,11 +101,11 @@ const StoreProductAddonStyles = styled.div<{ isOpen: boolean }>`
   margin-top: -1px;
   max-width: 40rem;
   width: 100%;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #d1d5db;
 
   &:first-of-type {
     margin-top: 0;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid #d1d5db;
   }
 
   .addon-button {

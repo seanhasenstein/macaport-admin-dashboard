@@ -3,7 +3,6 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import styled from 'styled-components';
 import { format } from 'date-fns';
-import { useSession } from '../../hooks/useSession';
 import { useOrderQuery } from '../../hooks/useOrderQuery';
 import { useOrderMutation } from '../../hooks/useOrderMutations';
 import Layout from '../../components/Layout';
@@ -18,7 +17,6 @@ import OrderSummary from '../../components/order/OrderSummary';
 import CancelOrderModal from '../../components/order/CancelOrderModal';
 
 export default function Order() {
-  const [session, sessionLoading] = useSession({ required: true });
   const router = useRouter();
   const [showCancelOrderModal, setShowCancelOrderModal] = React.useState(false);
   const { isLoading, isFetching, isError, error, data } = useOrderQuery();
@@ -27,11 +25,12 @@ export default function Order() {
     store: data?.store,
   });
 
-  if (sessionLoading || !session) return <div />;
-
   return (
     <>
-      <Layout title={`Order #${data?.order?.orderId} | Macaport Dashboard`}>
+      <Layout
+        title={`Order #${data?.order?.orderId} | Macaport Dashboard`}
+        requiresAuth={true}
+      >
         <OrderStyles>
           <div className="container">
             {isLoading && <LoadingSpinner isLoading={isLoading} />}

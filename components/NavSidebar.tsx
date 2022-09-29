@@ -49,8 +49,8 @@ export default function NavSidebar({ sidebarOpen, setSidebarOpen }: Props) {
           <Link href="/">Home</Link>
           <Link href="/stores">All Stores</Link>
           <Link href="/inventory-products">Inventory products</Link>
-          <Link href="stores/create">Create a store</Link>
-          <Link href="inventory-products/create">
+          <Link href="/stores/create">Create a store</Link>
+          <Link href="/inventory-products/create">
             Create an inventory product
           </Link>
           <a

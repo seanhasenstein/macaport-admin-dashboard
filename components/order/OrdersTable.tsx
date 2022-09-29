@@ -6,6 +6,7 @@ import { calculateTotalItems, formatToMoney } from '../../utils';
 import { OrderStatus, Store } from '../../interfaces';
 import OrdersTableMenu from './OrdersTableMenu';
 import OrderStatusButton from './OrderStatusButton';
+import Table from '../common/Table';
 
 type OrderViewOptions = OrderStatus | 'All';
 
@@ -61,7 +62,7 @@ export default function OrdersTable({ store }: Props) {
               ))}
             </div>
           </div>
-          <div className="table-container">
+          <Table>
             <table>
               <thead>
                 <tr>
@@ -127,7 +128,7 @@ export default function OrdersTable({ store }: Props) {
                 )}
               </tbody>
             </table>
-          </div>
+          </Table>
         </div>
       )}
     </OrdersTableStyles>
@@ -142,9 +143,10 @@ const OrdersTableStyles = styled.div`
     .container {
       padding: 0.1875rem;
       display: inline-flex;
-      background-color: #f3f4f6;
-      border: 1px solid #e5e7eb;
+      background-color: #e8eaee;
+      border: 1px solid #d1d5db;
       border-radius: 0.375rem;
+      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     }
 
     button {
@@ -153,7 +155,7 @@ const OrdersTableStyles = styled.div`
       border: 1px solid transparent;
       font-size: 0.875rem;
       font-weight: 500;
-      color: #6b7280;
+      color: #1f2937;
       border-radius: 0.375rem;
       cursor: pointer;
 
@@ -163,7 +165,7 @@ const OrdersTableStyles = styled.div`
 
       &.active {
         background-color: #fff;
-        border-color: #e5e7eb;
+        border-color: #c6cbd2;
         color: #1f2937;
         box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
           rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
@@ -175,71 +177,10 @@ const OrdersTableStyles = styled.div`
     }
   }
 
-  .table-container {
-    width: 100%;
-    background-color: #fff;
-    border-width: 1px 1px 0 1px;
-    border-style: solid;
-    border-color: #e5e7eb;
-    border-radius: 0.25rem;
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  th,
-  td {
-    border-bottom: 1px solid #e5e7eb;
-
-    &:first-of-type {
-      padding-left: 2rem;
-    }
-
-    &:last-of-type {
-      padding-right: 2rem;
-    }
-  }
-
-  tr {
-    &:first-of-type {
-      th:first-of-type {
-        border-radius: 0.25rem 0 0 0;
-      }
-
-      th:last-of-type {
-        border-radius: 0 0.25rem 0 0;
-      }
-    }
-
-    &:last-of-type td {
-      border-bottom: none;
-    }
-  }
-
-  th {
-    padding: 0.875rem 1rem;
-    background-color: #f3f4f6;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.0375em;
-    color: #4b5563;
-  }
-
-  td {
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #4b5563;
-
-    &.empty {
-      padding: 1.25rem 2rem;
-      color: #6b7280;
-      font-size: 0.9375rem;
-    }
+  td.empty {
+    padding: 1.25rem 2rem;
+    color: #1f2937;
+    font-size: 0.9375rem;
   }
 
   .customer-name {

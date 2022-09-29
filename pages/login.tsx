@@ -39,7 +39,7 @@ const loginSchema = Yup.object().shape({
 
 export default function Login() {
   return (
-    <BasicLayout title="Login | Macaport Dashboard">
+    <BasicLayout title="Login | Macaport Dashboard" requiresAuth={false}>
       <LoginStyles>
         <div className="container">
           <img

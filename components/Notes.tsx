@@ -171,7 +171,7 @@ const NotesStyles = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
-    border-bottom: 1px solid #dcdfe4;
+    border-bottom: 1px solid #d1d5db;
 
     h3 {
       margin: 0;
@@ -306,7 +306,7 @@ const NotesStyles = styled.div`
     padding: 1rem 1.5rem;
     position: relative;
     display: flex;
-    border: 1px solid #dcdfe4;
+    border: 1px solid #d1d5db;
     border-radius: 0.375rem;
     box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 

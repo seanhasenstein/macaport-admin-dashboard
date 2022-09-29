@@ -1,23 +1,23 @@
 import Link from 'next/link';
 import styled from 'styled-components';
 
-export default function PageNavigationButtons() {
+export default function PageNavButtons() {
   return (
-    <PageNavigationButtonStyles>
+    <PageNavButtonstyles>
       <Link href="/">Dashboard home</Link>
       <Link href="/stores">All stores</Link>
       <Link href="/inventory-products">Inventory products</Link>
-    </PageNavigationButtonStyles>
+    </PageNavButtonstyles>
   );
 }
 
-const PageNavigationButtonStyles = styled.div`
+const PageNavButtonstyles = styled.div`
   margin: 0 auto 3.5rem;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   background-color: #fff;
   border-radius: 0.375rem;
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 
   a {
     padding: 0.75rem 2rem 0.875rem;
@@ -25,11 +25,17 @@ const PageNavigationButtonStyles = styled.div`
     font-weight: 500;
     color: #111827;
     text-align: center;
-    border: 1px solid #e5e7eb;
-    transition: all 150ms linear;
+    border-top: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    border-bottom: 1px solid transparent;
+    border-left: 1px solid #e5e7eb;
+    transition: all 100ms linear;
 
     &:hover {
-      background-color: #fcfcfd;
+      background-color: #eef2f9;
+      color: #000;
+      border-color: #d1dcef;
+      z-index: 100;
     }
 
     &:focus-visible {
