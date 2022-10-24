@@ -258,6 +258,18 @@ export interface Order {
 
 export type CloudinaryStatus = 'idle' | 'loading';
 
+export interface ShippingData {
+  _id: string;
+  price: number;
+  freeMinimum: number;
+}
+
+export interface ShippingDataForm {
+  _id: string;
+  price: string;
+  freeMinimum: string;
+}
+
 export interface Request extends NextApiRequest {
   db: Db;
   dbClient: MongoClient;

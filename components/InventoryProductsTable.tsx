@@ -165,7 +165,7 @@ const InventoryProductsTableStyles = styled.div`
   }
 
   .header {
-    margin: 0 0 1.5rem;
+    margin: 3.5rem 0 1.5rem;
     display: flex;
     justify-content: space-between;
     align-items: center;

@@ -46,17 +46,26 @@ export default function NavSidebar({ sidebarOpen, setSidebarOpen }: Props) {
           </button>
         </div>
         <div className="main-nav">
-          <Link href="/">Home</Link>
-          <Link href="/stores">All Stores</Link>
-          <Link href="/inventory-products">Inventory products</Link>
-          <Link href="/stores/create">Create a store</Link>
+          <Link href="/">
+            <a className="nav-link">Home</a>
+          </Link>
+          <Link href="/stores">
+            <a className="nav-link">All Stores</a>
+          </Link>
+          <Link href="/inventory-products">
+            <a className="nav-link">Inventory products</a>
+          </Link>
+          <Link href="/stores/create">
+            <a className="nav-link">Create a store</a>
+          </Link>
           <Link href="/inventory-products/create">
-            Create an inventory product
+            <a className="nav-link">Create an inventory product</a>
           </Link>
           <a
             href="https://dashboard.stripe.com/dashboard"
             target="_blank"
             rel="noreferrer"
+            className="nav-link"
           >
             Go to the stripe dashboard
           </a>
@@ -126,15 +135,22 @@ const NavSidebarStyles = styled.div`
     display: flex;
     flex-direction: column;
 
-    a {
+    .nav-link {
       padding: 0.75rem 0;
+      display: block;
+      width: 100%;
       font-size: 0.9375rem;
       font-weight: 500;
       color: #374151;
-      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+      background-color: transparent;
+      border-width: 0 0 1px 0;
+      border-style: solid;
+      border-color: #e5e7eb;
+      cursor: pointer;
       transition: color 150ms linear;
 
-      &:first-of-type {
+      &:first-child {
         border-top: 1px solid #e5e7eb;
       }
 
@@ -154,7 +170,7 @@ const NavSidebarStyles = styled.div`
   }
 
   .logout-button {
-    padding: 0.5rem;
+    padding: 0.625rem;
     display: flex;
     justify-content: center;
     align-items: center;

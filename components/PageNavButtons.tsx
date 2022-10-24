@@ -12,7 +12,8 @@ export default function PageNavButtons() {
 }
 
 const PageNavButtonstyles = styled.div`
-  margin: 0 auto 3.5rem;
+  margin: 0 auto;
+  width: 100%;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   background-color: #fff;

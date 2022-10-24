@@ -1,4 +1,4 @@
-import { Store, StoreStatusFilter } from '../interfaces';
+import { ShippingData, Store, StoreStatusFilter } from '../interfaces';
 
 export async function fetchAllStores() {
   const response = await fetch('/api/stores/get-all-stores');
@@ -18,7 +18,8 @@ export async function fetchHomepageStores() {
     throw new Error('Failed to fetch the stores.');
   }
 
-  const data: Store[] = await response.json();
+  const data: { stores: Store[]; shipping: ShippingData } =
+    await response.json();
   return data;
 }
 

@@ -117,6 +117,7 @@ const InventoryProductStyles = styled.div`
   }
 
   .header {
+    margin: 3.5rem 0 0;
     display: flex;
     justify-content: space-between;
     align-items: center;

@@ -3,15 +3,16 @@ import nc from 'next-connect';
 import { withAuth } from '../../../utils/withAuth';
 import { Request, Store } from '../../../interfaces';
 import database from '../../../middleware/db';
-import { store } from '../../../db';
+import { shipping, store } from '../../../db';
 import { homepageStoresReducer } from '../../../utils/stores';
 
 const handler = nc<Request, NextApiResponse>()
   .use(database)
   .get(async (req, res) => {
-    const result: Store[] = await store.getStores(req.db);
-    const homepageStores = homepageStoresReducer(result);
-    res.json(homepageStores);
+    const storesData: Store[] = await store.getStores(req.db);
+    const shippingData = await shipping.getShippingData(req.db);
+    const homepageStores = homepageStoresReducer(storesData);
+    res.json({ stores: homepageStores, shipping: shippingData });
   });
 
 export default withAuth(handler);

@@ -1,12 +1,12 @@
 import { useQuery, useQueryClient } from 'react-query';
 import { fetchHomepageStores } from '../queries/stores';
 
-export default function useHomeStoresQuery() {
+export default function useHomepageData() {
   const queryClient = useQueryClient();
 
   return useQuery(['stores', 'homepage'], fetchHomepageStores, {
     onSuccess: data => {
-      data.forEach(store => {
+      data.stores.forEach(store => {
         queryClient.setQueryData(['stores', 'store', store._id], store);
       });
     },

@@ -170,7 +170,7 @@ const StoresStyles = styled.div<{ unfulfilledChecked: boolean }>`
   }
 
   .header {
-    margin: 0 0 1.25rem;
+    margin: 3.5rem 0 1.25rem;
   }
 
   h2 {
