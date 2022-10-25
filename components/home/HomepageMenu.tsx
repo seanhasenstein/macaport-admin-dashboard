@@ -1,19 +1,21 @@
 import React from 'react';
 import styled from 'styled-components';
-import { ShippingData } from '../../interfaces';
+import { ShippingDataForm } from '../../interfaces';
 import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
 import useOutsideClick from '../../hooks/useOutsideClick';
 
 type Props = {
+  showMenu: boolean;
+  setShowMenu: React.Dispatch<React.SetStateAction<boolean>>;
   setShowShippingModal: React.Dispatch<React.SetStateAction<boolean>>;
-  shipping: ShippingData;
+  shipping: ShippingDataForm;
+  successfulMutation: boolean;
 };
 
 export default function HomepageMenu(props: Props) {
   const menuRef = React.useRef<HTMLDivElement>(null);
-  const [showMenu, setShowMenu] = React.useState(false);
-  useOutsideClick(showMenu, setShowMenu, menuRef);
-  useEscapeKeydownClose(showMenu, setShowMenu);
+  useOutsideClick(props.showMenu, props.setShowMenu, menuRef);
+  useEscapeKeydownClose(props.showMenu, props.setShowMenu);
 
   const handleShowShippngPriceModal = () => {
     props.setShowShippingModal(true);
@@ -23,7 +25,7 @@ export default function HomepageMenu(props: Props) {
     <HomepageMenuStyles>
       <button
         type="button"
-        onClick={() => setShowMenu(!showMenu)}
+        onClick={() => props.setShowMenu(!props.showMenu)}
         className="main-menu-button"
       >
         <svg
@@ -39,19 +41,34 @@ export default function HomepageMenu(props: Props) {
         </svg>
         <span className="sr-only">Toggle nav menu</span>
       </button>
-      <div ref={menuRef} className={`menu-container${showMenu ? ' show' : ''}`}>
+      <div
+        ref={menuRef}
+        className={`menu-container${props.showMenu ? ' show' : ''}`}
+      >
+        {props.successfulMutation ? (
+          <div className="successful-mutation">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Successfully updated!
+          </div>
+        ) : null}
         <div className="details">
           <div className="item">
             <div className="label">Shipping price</div>
-            <div className="value">
-              ${(props.shipping.price / 100).toFixed(2)}
-            </div>
+            <div className="value">${props.shipping.price}</div>
           </div>
           <div className="item">
             <div className="label">Free at cart of</div>
-            <div className="value">
-              ${(props.shipping.freeMinimum / 100).toFixed(2)}
-            </div>
+            <div className="value">${props.shipping.freeMinimum}</div>
           </div>
         </div>
         <button
@@ -89,10 +106,10 @@ const HomepageMenuStyles = styled.div`
   }
 
   .menu-container {
-    padding: 0.5rem 1.75rem 1.125rem;
+    padding: 0.25rem 1.375rem 1rem;
     position: absolute;
     top: 7rem;
-    right: 0;
+    right: -1rem;
     white-space: nowrap;
     display: none;
     flex-direction: column;
@@ -163,5 +180,21 @@ const HomepageMenuStyles = styled.div`
 
   .label {
     min-width: 4rem;
+  }
+
+  .successful-mutation {
+    margin: 0.875rem 0 0.125rem;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #032a1f;
+
+    svg {
+      height: 0.875rem;
+      width: 0.875rem;
+      color: #059669;
+    }
   }
 `;

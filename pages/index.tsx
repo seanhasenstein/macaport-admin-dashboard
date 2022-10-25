@@ -7,10 +7,13 @@ import StoresTable from '../components/storesTable/StoresTable';
 import TableLoadingSpinner from '../components/TableLoadingSpinner';
 import HomepageMenu from '../components/home/HomepageMenu';
 import ShippingPriceModal from '../components/home/ShippingPriceModal';
+import useShippingDetailsMutation from '../hooks/useShippingDetailsMutation';
 
 export default function Index() {
   const query = useHomepageData();
+  const [showMenu, setShowMenu] = React.useState(false);
   const [showShippingModal, setShowShippingModal] = React.useState(false);
+  const { updateShippingDetails } = useShippingDetailsMutation(query.data);
 
   return (
     <Layout
@@ -26,8 +29,11 @@ export default function Index() {
               <div className="homepage-actions">
                 <PageNavButtons />
                 <HomepageMenu
+                  showMenu={showMenu}
+                  setShowMenu={setShowMenu}
                   shipping={query.data.shipping}
                   setShowShippingModal={setShowShippingModal}
+                  successfulMutation={updateShippingDetails.isSuccess}
                 />
               </div>
               <StoresTable
@@ -38,8 +44,13 @@ export default function Index() {
             {showShippingModal ? (
               <ShippingPriceModal
                 initialValues={query.data.shipping}
+                homepageStores={query.data.stores}
                 showModal={showShippingModal}
                 setShowModal={setShowShippingModal}
+                updateShippingDetails={updateShippingDetails}
+                onSuccess={() => {
+                  setShowMenu(true);
+                }}
               />
             ) : null}
           </>

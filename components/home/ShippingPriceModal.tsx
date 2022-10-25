@@ -1,11 +1,11 @@
 import React from 'react';
+import { UseMutationResult } from 'react-query';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import styled from 'styled-components';
 import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
 import useOutsideClick from '../../hooks/useOutsideClick';
-import { ShippingData, ShippingDataForm } from '../../interfaces';
-import useShippingDetailsMutation from '../../hooks/useShippingDetailsMutation';
+import { ShippingData, ShippingDataForm, Store } from '../../interfaces';
 import LoadingSpinner from '../LoadingSpinner';
 
 const validationSchema = Yup.object().shape({
@@ -18,24 +18,45 @@ const validationSchema = Yup.object().shape({
 });
 
 type Props = {
-  initialValues: ShippingData;
+  initialValues: ShippingDataForm;
+  homepageStores: Store[];
   showModal: boolean;
   setShowModal: React.Dispatch<React.SetStateAction<boolean>>;
+  updateShippingDetails: UseMutationResult<
+    {
+      shipping: ShippingData;
+      stores: Store[];
+    },
+    unknown,
+    {
+      formValues: ShippingDataForm;
+      homepageStores: Store[];
+    },
+    {
+      shipping: ShippingDataForm;
+      stores: Store[];
+    }
+  >;
+  onSuccess?: () => void;
 };
 
 export default function ShippingPriceModal(props: Props) {
   const deleteStoreRef = React.useRef<HTMLDivElement>(null);
-  const { updateShippingDetails } = useShippingDetailsMutation();
+
   useOutsideClick(props.showModal, props.setShowModal, deleteStoreRef);
   useEscapeKeydownClose(props.showModal, props.setShowModal);
 
   const handleSubmit = (formValues: ShippingDataForm) => {
     console.log('hello?');
-    updateShippingDetails.mutate(formValues, {
-      onSuccess: () => {
-        props.setShowModal(false);
-      },
-    });
+    props.updateShippingDetails.mutate(
+      { formValues, homepageStores: props.homepageStores },
+      {
+        onSuccess: () => {
+          props.setShowModal(false);
+          props.onSuccess && props.onSuccess();
+        },
+      }
+    );
   };
 
   return (
@@ -44,8 +65,8 @@ export default function ShippingPriceModal(props: Props) {
         <Formik
           initialValues={{
             _id: props.initialValues._id,
-            price: (props.initialValues.price / 100).toFixed(2),
-            freeMinimum: (props.initialValues.freeMinimum / 100).toFixed(2),
+            price: props.initialValues.price,
+            freeMinimum: props.initialValues.freeMinimum,
           }}
           validationSchema={validationSchema}
           onSubmit={handleSubmit}
@@ -84,17 +105,17 @@ export default function ShippingPriceModal(props: Props) {
                     Cancel
                   </button>
                   <button type="submit" className="primary-button">
-                    {updateShippingDetails.isLoading ? (
+                    {props.updateShippingDetails.isLoading ? (
                       <LoadingSpinner
                         theme="dark"
-                        isLoading={updateShippingDetails.isLoading}
+                        isLoading={props.updateShippingDetails.isLoading}
                       />
                     ) : (
                       'Update shipping'
                     )}
                   </button>
                 </div>
-                {updateShippingDetails.isError ? (
+                {props.updateShippingDetails.isError ? (
                   <div className="server-error">
                     Server error. Please try again.
                   </div>
