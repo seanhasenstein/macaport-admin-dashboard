@@ -72,6 +72,7 @@ export default function PrintableOrder({ order, store }: Props) {
                 <div className="item">
                   <div className="label">Address</div>
                   <div className="value">
+                    {order.customer.firstName} {order.customer.lastName} <br />
                     {order.shippingAddress.street} <br />
                     {order.shippingAddress.street2 && (
                       <>
@@ -298,7 +299,6 @@ const PrintableOrderStyles = styled.div`
     .item {
       margin: 0 0 3px;
       display: flex;
-      align-items: center;
     }
 
     .label {
