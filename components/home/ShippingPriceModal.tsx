@@ -73,8 +73,8 @@ export default function ShippingPriceModal(props: Props) {
         >
           {() => (
             <>
-              <h3>Update shipping price</h3>
-              <p>This form will update shipping for all stores.</p>
+              <h3>Update shipping details</h3>
+              <p>This form will update shipping details for all stores.</p>
               <Form>
                 <div className="form-item">
                   <label htmlFor="price">Shipping Price</label>
