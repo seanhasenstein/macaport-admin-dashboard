@@ -5,6 +5,7 @@ import {
   CloudinaryStatus,
   Color,
   FormSize,
+  InventoryProduct,
   Note,
   PersonalizationForm,
   ProductSku,
@@ -36,10 +37,11 @@ type InitialValues = {
 };
 
 type Props = {
+  inventoryProductQuery: UseQueryResult<InventoryProduct, unknown>;
   storeQuery: UseQueryResult<Store, unknown>;
 };
 
-export function useUpdateStoreProduct({ storeQuery }: Props) {
+export function useUpdateStoreProduct(props: Props) {
   const router = useRouter();
   const [product, setProduct] = React.useState<StoreProduct>();
   const [primaryImages, setPrimaryImages] = React.useState<string[]>([]);
@@ -68,16 +70,30 @@ export function useUpdateStoreProduct({ storeQuery }: Props) {
   });
 
   React.useEffect(() => {
-    if (storeQuery.data) {
-      const product = storeQuery.data.products.find(
+    if (props.storeQuery.data) {
+      const product = props.storeQuery.data.products.find(
         p => p.id === router.query.pid
       );
       setProduct(product);
     }
-  }, [router.query.pid, storeQuery.data]);
+  }, [router.query.pid, props.storeQuery.data]);
 
   React.useEffect(() => {
-    if (product) {
+    if (product && props.inventoryProductQuery.data) {
+      const colors: Color[] = props.inventoryProductQuery.data.colors.map(
+        invProdColor => {
+          const storeProdColor = product.colors.find(
+            storeProd => storeProd.id === invProdColor.id
+          );
+
+          if (storeProdColor) {
+            return storeProdColor;
+          } else {
+            return { ...invProdColor, primaryImage: '', secondaryImages: [] };
+          }
+        }
+      );
+
       setInitialValues({
         id: product.id,
         inventoryProductId: product.inventoryProductId,
@@ -94,21 +110,19 @@ export function useUpdateStoreProduct({ storeQuery }: Props) {
           ...s,
           price: formatFromStripeToPrice(s.price),
         })),
-        colors: product.colors,
+        colors,
         productSkus: product.productSkus,
         notes: product.notes,
       });
 
-      const primaryImages = product.colors.map((c: Color) => c.primaryImage);
+      const primaryImages = colors.map((c: Color) => c.primaryImage);
 
-      const secondaryImages = product.colors.map(
-        (c: Color) => c.secondaryImages
-      );
+      const secondaryImages = colors.map((c: Color) => c.secondaryImages);
 
       setPrimaryImages(primaryImages);
       setSecondaryImages(secondaryImages);
     }
-  }, [product]);
+  }, [product, props.inventoryProductQuery.data]);
 
   const handlePrimaryImageChange = async (
     index: number,

@@ -1,18 +1,14 @@
-import { useRouter } from 'next/router';
 import { useQuery, useQueryClient } from 'react-query';
 import { InventoryProduct } from '../interfaces';
 
-export function useInventoryProductQuery() {
-  const router = useRouter();
+export function useInventoryProductQuery(id: string | undefined) {
   const queryClient = useQueryClient();
 
   return useQuery<InventoryProduct>(
-    ['inventory-products', 'inventory-product', router.query.id],
+    ['inventory-products', 'inventory-product', id],
     async () => {
-      if (!router.query.id) return;
-      const response = await fetch(
-        `/api/inventory-products/${router.query.id}`
-      );
+      if (!id) return;
+      const response = await fetch(`/api/inventory-products/${id}`);
 
       if (!response.ok) {
         throw new Error('Failed to fetch the inventory product.');
@@ -25,7 +21,7 @@ export function useInventoryProductQuery() {
       initialData: () => {
         return queryClient
           .getQueryData<InventoryProduct[]>(['inventory-products'])
-          ?.find(ip => ip.inventoryProductId === router.query.id);
+          ?.find(ip => ip.inventoryProductId === id);
       },
       initialDataUpdatedAt: () =>
         queryClient.getQueryState(['inventory-products'])?.dataUpdatedAt,

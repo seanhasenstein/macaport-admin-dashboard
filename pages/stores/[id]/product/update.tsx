@@ -4,7 +4,11 @@ import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import styled from 'styled-components';
 import { Size, FormSize } from '../../../../interfaces';
-import { removeNonAlphanumeric, updateProductSkus } from '../../../../utils';
+import {
+  getQueryParameter,
+  removeNonAlphanumeric,
+  updateProductSkus,
+} from '../../../../utils';
 import {
   createBlankPersonalizedItem,
   formatPersonalizationValues,
@@ -12,6 +16,7 @@ import {
 import { useUpdateStoreProduct } from '../../../../hooks/useUpdateStoreProduct';
 import { useStoreQuery } from '../../../../hooks/useStoreQuery';
 import { useStoreProductMutations } from '../../../../hooks/useStoreProductMutations';
+import { useInventoryProductQuery } from '../../../../hooks/useInventoryProductQuery';
 import BasicLayout from '../../../../components/BasicLayout';
 import LoadingSpinner from '../../../../components/LoadingSpinner';
 
@@ -68,7 +73,9 @@ const validationSchema = Yup.object().shape({
 
 export default function UpdateProduct() {
   const router = useRouter();
+  const [invProdId, setInvProdId] = React.useState<string>();
   const storeQuery = useStoreQuery();
+  const inventoryProductQuery = useInventoryProductQuery(invProdId);
   const { updateProduct } = useStoreProductMutations({
     store: storeQuery.data,
   });
@@ -83,7 +90,17 @@ export default function UpdateProduct() {
     handleSecondaryImagesChange,
     handleRemoveSecondaryImage,
     handleAddClick,
-  } = useUpdateStoreProduct({ storeQuery });
+  } = useUpdateStoreProduct({ inventoryProductQuery, storeQuery });
+
+  React.useEffect(() => {
+    if (storeQuery.data) {
+      const storeProduct = storeQuery.data.products.find(
+        storeProduct => storeProduct.id === getQueryParameter(router.query.pid)
+      );
+
+      setInvProdId(storeProduct?.inventoryProductId);
+    }
+  }, [router.query.pid, storeQuery.data]);
 
   return (
     <BasicLayout
@@ -93,805 +110,792 @@ export default function UpdateProduct() {
       <UpdateProductStyles>
         <div className="main-content">
           <div className="form-container">
-            {storeQuery.isLoading && (
-              <LoadingSpinner isLoading={storeQuery.isLoading} />
+            {(storeQuery.isLoading || inventoryProductQuery.isLoading) && (
+              <div>Loading...</div>
             )}
             {storeQuery.isError && storeQuery.error instanceof Error && (
               <div>Error: {storeQuery.error.message}</div>
             )}
-            <Formik
-              initialValues={initialValues}
-              enableReinitialize={true}
-              validationSchema={validationSchema}
-              onSubmit={values => {
-                if (!product) {
-                  throw new Error('Failed to load the product.');
-                }
+            {storeQuery.data && inventoryProductQuery.data && (
+              <Formik
+                initialValues={initialValues}
+                enableReinitialize={true}
+                validationSchema={validationSchema}
+                onSubmit={values => {
+                  if (!product) {
+                    throw new Error('Failed to load the product.');
+                  }
 
-                const updatedSizes: Size[] = values.sizes.map(size => {
-                  return {
-                    ...size,
-                    price: Number(size.price) * 100,
+                  const updatedSizes: Size[] = values.sizes.map(size => {
+                    return {
+                      ...size,
+                      price: Number(size.price) * 100,
+                    };
+                  });
+
+                  const updatedPersonalization = formatPersonalizationValues(
+                    values.personalization
+                  );
+
+                  const updatedFormValues = {
+                    ...values,
+                    personalization: updatedPersonalization,
+                    sizes: updatedSizes,
                   };
-                });
 
-                const updatedPersonalization = formatPersonalizationValues(
-                  values.personalization
-                );
+                  const updatedSkus = updateProductSkus(
+                    product.productSkus,
+                    updatedFormValues
+                  );
 
-                const updatedFormValues = {
-                  ...values,
-                  personalization: updatedPersonalization,
-                  sizes: updatedSizes,
-                };
+                  const updatedProduct = {
+                    ...values,
+                    personalization: updatedPersonalization,
+                    sizes: updatedSizes,
+                    productSkus: updatedSkus,
+                  };
 
-                const updatedSkus = updateProductSkus(
-                  product.productSkus,
-                  updatedFormValues
-                );
-
-                const updatedProduct = {
-                  ...values,
-                  personalization: updatedPersonalization,
-                  sizes: updatedSizes,
-                  productSkus: updatedSkus,
-                };
-
-                updateProduct.mutate(updatedProduct);
-              }}
-            >
-              {({ values, setFieldValue }) => (
-                <Form>
-                  <div className="title">
-                    <div>
-                      <button
-                        type="button"
-                        className="cancel-link"
-                        onClick={() => router.back()}
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
+                  updateProduct.mutate(updatedProduct);
+                }}
+              >
+                {({ values, setFieldValue }) => (
+                  <Form>
+                    <div className="title">
+                      <div>
+                        <button
+                          type="button"
+                          className="cancel-link"
+                          onClick={() => router.back()}
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
-                      <h2>Edit product</h2>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                        <h2>Edit product</h2>
+                      </div>
+                      <div className="save-buttons">
+                        <button type="submit" className="primary-button">
+                          {updateProduct.isLoading ? (
+                            <LoadingSpinner
+                              isLoading={updateProduct.isLoading}
+                              theme="dark"
+                            />
+                          ) : (
+                            'Update product'
+                          )}
+                        </button>
+                      </div>
                     </div>
-                    <div className="save-buttons">
-                      <button type="submit" className="primary-button">
-                        {updateProduct.isLoading ? (
-                          <LoadingSpinner
-                            isLoading={updateProduct.isLoading}
-                            theme="dark"
-                          />
-                        ) : (
-                          'Update product'
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="section">
-                    <div className="item">
-                      <label htmlFor="name">Product name</label>
-                      <Field name="name" id="name" />
-                      <ErrorMessage
-                        name="name"
-                        component="div"
-                        className="validation-error"
-                      />
-                    </div>
-                    <div className="item">
-                      <label htmlFor="description">Product description</label>
-                      <Field
-                        as="textarea"
-                        name="description"
-                        id="description"
-                      />
-                    </div>
-                    <div className="item">
-                      <label htmlFor="tag">Product tag</label>
-                      <Field
-                        name="tag"
-                        id="tag"
-                        placeholder="i.e. Adult Sizes"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="section">
-                    <div className="toggle-header-row">
-                      <h3>Personalization addons</h3>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setFieldValue(
-                            'personalization.active',
-                            !values.personalization.active
-                          )
-                        }
-                        role="switch"
-                        aria-checked={values.personalization.active}
-                        className={`toggle-button ${
-                          values.personalization.active ? 'on' : 'off'
-                        }`}
-                      >
-                        <span aria-hidden="true" className="switch" />
-                        <span className="sr-only">
-                          Toggle personalization{' '}
-                          {values.personalization.active
-                            ? 'active'
-                            : 'inactive'}
-                        </span>
-                      </button>
+                    <div className="section">
+                      <div className="item">
+                        <label htmlFor="name">Product name</label>
+                        <Field name="name" id="name" />
+                        <ErrorMessage
+                          name="name"
+                          component="div"
+                          className="validation-error"
+                        />
+                      </div>
+                      <div className="item">
+                        <label htmlFor="description">Product description</label>
+                        <Field
+                          as="textarea"
+                          name="description"
+                          id="description"
+                        />
+                      </div>
+                      <div className="item">
+                        <label htmlFor="tag">Product tag</label>
+                        <Field
+                          name="tag"
+                          id="tag"
+                          placeholder="i.e. Adult Sizes"
+                        />
+                      </div>
                     </div>
 
-                    {values.personalization.active ? (
-                      <>
-                        <div className="item">
-                          <label htmlFor="personalization.maxLines">
-                            Maximum lines allowed for this product
-                          </label>
-                          <Field
-                            name="personalization.maxLines"
-                            id="personalization.maxLines"
-                          />
-                          <ErrorMessage
-                            name="personalization.maxLines"
-                            component="div"
-                            className="validation-error"
-                          />
-                        </div>
+                    <div className="section">
+                      <div className="toggle-header-row">
+                        <h3>Personalization addons</h3>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFieldValue(
+                              'personalization.active',
+                              !values.personalization.active
+                            )
+                          }
+                          role="switch"
+                          aria-checked={values.personalization.active}
+                          className={`toggle-button ${
+                            values.personalization.active ? 'on' : 'off'
+                          }`}
+                        >
+                          <span aria-hidden="true" className="switch" />
+                          <span className="sr-only">
+                            Toggle personalization{' '}
+                            {values.personalization.active
+                              ? 'active'
+                              : 'inactive'}
+                          </span>
+                        </button>
+                      </div>
 
-                        <FieldArray
-                          name="personalization.addons"
-                          render={arrayHelpers => (
-                            <>
-                              {values.personalization.addons.length > 0 &&
-                                values.personalization.addons.map(
-                                  (item, index) => (
-                                    <div
-                                      key={item.id}
-                                      className="personalization-item"
-                                    >
-                                      <h3>Addon {index + 1}</h3>
+                      {values.personalization.active ? (
+                        <>
+                          <div className="item">
+                            <label htmlFor="personalization.maxLines">
+                              Maximum lines allowed for this product
+                            </label>
+                            <Field
+                              name="personalization.maxLines"
+                              id="personalization.maxLines"
+                            />
+                            <ErrorMessage
+                              name="personalization.maxLines"
+                              component="div"
+                              className="validation-error"
+                            />
+                          </div>
 
-                                      <div className="item">
-                                        <label
-                                          htmlFor={`personalization.addons.${index}.name`}
-                                        >
-                                          Name (Name, Number, Event, etc.)
-                                        </label>
-                                        <Field
-                                          name={`personalization.addons.${index}.name`}
-                                          id={`personalization.addons.${index}.name`}
-                                        />
-                                        <ErrorMessage
-                                          name={`personalization.addons.${index}.name`}
-                                          component="div"
-                                          className="validation-error"
-                                        />
-                                      </div>
+                          <FieldArray
+                            name="personalization.addons"
+                            render={arrayHelpers => (
+                              <>
+                                {values.personalization.addons.length > 0 &&
+                                  values.personalization.addons.map(
+                                    (item, index) => (
+                                      <div
+                                        key={item.id}
+                                        className="personalization-item"
+                                      >
+                                        <h3>Addon {index + 1}</h3>
 
-                                      <div className="item">
-                                        <label
-                                          htmlFor={`personalization.addons.${index}.location`}
-                                        >
-                                          Location (Back, Front, Shoulder, etc.)
-                                        </label>
-                                        <Field
-                                          name={`personalization.addons.${index}.location`}
-                                          id={`personalization.addons.${index}.location`}
-                                        />
-                                        <ErrorMessage
-                                          name={`personalization.addons.${index}.location`}
-                                          component="div"
-                                          className="validation-error"
-                                        />
-                                      </div>
-
-                                      <div className="item">
-                                        <label
-                                          htmlFor={`personalization.addons.${index}.lines`}
-                                        >
-                                          Lines (How many lines does this addon
-                                          take up?)
-                                        </label>
-                                        <Field
-                                          name={`personalization.addons.${index}.lines`}
-                                          id={`personalization.addons.${index}.lines`}
-                                        />
-                                        <ErrorMessage
-                                          name={`personalization.addons.${index}.lines`}
-                                          component="div"
-                                          className="validation-error"
-                                        />
-                                      </div>
-
-                                      <div className="item radio-group">
-                                        <div className="radio-group-label">
-                                          Type
-                                        </div>
-                                        <div>
-                                          <label
-                                            htmlFor={`personalization.addons.${index}.string`}
-                                            className="radio-item"
-                                          >
-                                            <Field
-                                              type="radio"
-                                              name={`personalization.addons.${index}.type`}
-                                              id={`personalization.addons.${index}.string`}
-                                              value="string"
-                                            />
-                                            Alphanumeric characters (A-Z and
-                                            0-9)
-                                          </label>
-                                        </div>
-                                        <div>
-                                          <label
-                                            htmlFor={`personalization.addons.${index}.number`}
-                                            className="radio-item"
-                                          >
-                                            <Field
-                                              type="radio"
-                                              name={`personalization.addons.${index}.type`}
-                                              id={`personalization.addons.${index}.number`}
-                                              value="number"
-                                            />
-                                            Numbers only
-                                          </label>
-                                        </div>
-                                        <div>
-                                          <label
-                                            htmlFor={`personalization.addons.${index}.type-list`}
-                                            className="radio-item"
-                                          >
-                                            <Field
-                                              type="radio"
-                                              name={`personalization.addons.${index}.type`}
-                                              id={`personalization.addons.${index}.type-list`}
-                                              value="list"
-                                            />
-                                            A list that customers must choose
-                                            from
-                                          </label>
-                                        </div>
-                                      </div>
-
-                                      {values.personalization.addons[index]
-                                        .type === 'list' ? (
                                         <div className="item">
                                           <label
-                                            htmlFor={`personalization.addons.${index}.list`}
+                                            htmlFor={`personalization.addons.${index}.name`}
                                           >
-                                            List (separated by commas)
+                                            Name (Name, Number, Event, etc.)
                                           </label>
                                           <Field
-                                            as="textarea"
-                                            name={`personalization.addons.${index}.list`}
-                                            id={`personalization.addons.${index}.list`}
+                                            name={`personalization.addons.${index}.name`}
+                                            id={`personalization.addons.${index}.name`}
                                           />
                                           <ErrorMessage
-                                            name={`personalization.addons.${index}.list`}
+                                            name={`personalization.addons.${index}.name`}
                                             component="div"
                                             className="validation-error"
                                           />
                                         </div>
-                                      ) : null}
 
-                                      <div className="item">
-                                        <label
-                                          htmlFor={`personalization.addons.${index}.price`}
-                                        >
-                                          Price
-                                        </label>
-                                        <Field
-                                          name={`personalization.addons.${index}.price`}
-                                          id={`personalization.addons.${index}.price`}
-                                        />
-                                        <ErrorMessage
-                                          name={`personalization.addons.${index}.price`}
-                                          component="div"
-                                          className="validation-error"
-                                        />
-                                      </div>
+                                        <div className="item">
+                                          <label
+                                            htmlFor={`personalization.addons.${index}.location`}
+                                          >
+                                            Location (Back, Front, Shoulder,
+                                            etc.)
+                                          </label>
+                                          <Field
+                                            name={`personalization.addons.${index}.location`}
+                                            id={`personalization.addons.${index}.location`}
+                                          />
+                                          <ErrorMessage
+                                            name={`personalization.addons.${index}.location`}
+                                            component="div"
+                                            className="validation-error"
+                                          />
+                                        </div>
 
-                                      <div className="item">
-                                        <label
-                                          htmlFor={`personalization.addons.${index}.limit`}
-                                        >
-                                          Limit
-                                        </label>
-                                        <Field
-                                          name={`personalization.addons.${index}.limit`}
-                                          id={`personalization.addons.${index}.limit`}
-                                        />
-                                        <ErrorMessage
-                                          name={`personalization.addons.${index}.limit`}
-                                          component="div"
-                                          className="validation-error"
-                                        />
-                                      </div>
+                                        <div className="item">
+                                          <label
+                                            htmlFor={`personalization.addons.${index}.lines`}
+                                          >
+                                            Lines (How many lines does this
+                                            addon take up?)
+                                          </label>
+                                          <Field
+                                            name={`personalization.addons.${index}.lines`}
+                                            id={`personalization.addons.${index}.lines`}
+                                          />
+                                          <ErrorMessage
+                                            name={`personalization.addons.${index}.lines`}
+                                            component="div"
+                                            className="validation-error"
+                                          />
+                                        </div>
 
-                                      <FieldArray
-                                        name={`personalization.addons.${index}.subItems`}
-                                        render={subtItemArrayHelpers => (
-                                          <>
-                                            {values.personalization.addons[
-                                              index
-                                            ].subItems.map(
-                                              (subItem, subItemIndex) => (
-                                                <div
-                                                  key={subItem.id}
-                                                  className="subitem"
-                                                >
-                                                  <h3>
-                                                    Subitem {subItemIndex + 1}
-                                                  </h3>
+                                        <div className="item radio-group">
+                                          <div className="radio-group-label">
+                                            Type
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor={`personalization.addons.${index}.string`}
+                                              className="radio-item"
+                                            >
+                                              <Field
+                                                type="radio"
+                                                name={`personalization.addons.${index}.type`}
+                                                id={`personalization.addons.${index}.string`}
+                                                value="string"
+                                              />
+                                              Alphanumeric characters (A-Z and
+                                              0-9)
+                                            </label>
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor={`personalization.addons.${index}.number`}
+                                              className="radio-item"
+                                            >
+                                              <Field
+                                                type="radio"
+                                                name={`personalization.addons.${index}.type`}
+                                                id={`personalization.addons.${index}.number`}
+                                                value="number"
+                                              />
+                                              Numbers only
+                                            </label>
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor={`personalization.addons.${index}.type-list`}
+                                              className="radio-item"
+                                            >
+                                              <Field
+                                                type="radio"
+                                                name={`personalization.addons.${index}.type`}
+                                                id={`personalization.addons.${index}.type-list`}
+                                                value="list"
+                                              />
+                                              A list that customers must choose
+                                              from
+                                            </label>
+                                          </div>
+                                        </div>
 
-                                                  <div className="item">
-                                                    <label
-                                                      htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.name`}
-                                                    >
-                                                      Name (Name, Number, Event,
-                                                      etc.)
-                                                    </label>
-                                                    <Field
-                                                      name={`personalization.addons.${index}.subItems.${subItemIndex}.name`}
-                                                      id={`personalization.addons.${index}.subItems.${subItemIndex}.name`}
-                                                    />
-                                                    <ErrorMessage
-                                                      name={`personalization.addons.${index}.subItems.${subItemIndex}.name`}
-                                                      component="div"
-                                                      className="validation-error"
-                                                    />
-                                                  </div>
+                                        {values.personalization.addons[index]
+                                          .type === 'list' ? (
+                                          <div className="item">
+                                            <label
+                                              htmlFor={`personalization.addons.${index}.list`}
+                                            >
+                                              List (separated by commas)
+                                            </label>
+                                            <Field
+                                              as="textarea"
+                                              name={`personalization.addons.${index}.list`}
+                                              id={`personalization.addons.${index}.list`}
+                                            />
+                                            <ErrorMessage
+                                              name={`personalization.addons.${index}.list`}
+                                              component="div"
+                                              className="validation-error"
+                                            />
+                                          </div>
+                                        ) : null}
 
-                                                  <div className="item">
-                                                    <label
-                                                      htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.location`}
-                                                    >
-                                                      Location (Back, Front,
-                                                      Shoulder, etc.)
-                                                    </label>
-                                                    <Field
-                                                      name={`personalization.addons.${index}.subItems.${subItemIndex}.location`}
-                                                      id={`personalization.addons.${index}.subItems.${subItemIndex}.location`}
-                                                    />
-                                                    <ErrorMessage
-                                                      name={`personalization.addons.${index}.subItems.${subItemIndex}.location`}
-                                                      component="div"
-                                                      className="validation-error"
-                                                    />
-                                                  </div>
+                                        <div className="item">
+                                          <label
+                                            htmlFor={`personalization.addons.${index}.price`}
+                                          >
+                                            Price
+                                          </label>
+                                          <Field
+                                            name={`personalization.addons.${index}.price`}
+                                            id={`personalization.addons.${index}.price`}
+                                          />
+                                          <ErrorMessage
+                                            name={`personalization.addons.${index}.price`}
+                                            component="div"
+                                            className="validation-error"
+                                          />
+                                        </div>
 
-                                                  <div className="item">
-                                                    <label
-                                                      htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.lines`}
-                                                    >
-                                                      Lines (How many lines does
-                                                      this addon take up?)
-                                                    </label>
-                                                    <Field
-                                                      name={`personalization.addons.${index}.subItems.${subItemIndex}.lines`}
-                                                      id={`personalization.addons.${index}.subItems.${subItemIndex}.lines`}
-                                                    />
-                                                    <ErrorMessage
-                                                      name={`personalization.addons.${index}.subItems.${subItemIndex}.lines`}
-                                                      component="div"
-                                                      className="validation-error"
-                                                    />
-                                                  </div>
+                                        <div className="item">
+                                          <label
+                                            htmlFor={`personalization.addons.${index}.limit`}
+                                          >
+                                            Limit
+                                          </label>
+                                          <Field
+                                            name={`personalization.addons.${index}.limit`}
+                                            id={`personalization.addons.${index}.limit`}
+                                          />
+                                          <ErrorMessage
+                                            name={`personalization.addons.${index}.limit`}
+                                            component="div"
+                                            className="validation-error"
+                                          />
+                                        </div>
 
-                                                  <div className="item radio-group">
-                                                    <div className="radio-group-label">
-                                                      Type
-                                                    </div>
-                                                    <div>
-                                                      <label
-                                                        htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.string`}
-                                                        className="radio-item"
-                                                      >
-                                                        <Field
-                                                          type="radio"
-                                                          name={`personalization.addons.${index}.subItems.${subItemIndex}.type`}
-                                                          id={`personalization.addons.${index}.subItems.${subItemIndex}.string`}
-                                                          value="string"
-                                                        />
-                                                        Alphanumeric characters
-                                                        (A-Z and 0-9)
-                                                      </label>
-                                                    </div>
-                                                    <div>
-                                                      <label
-                                                        htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.number`}
-                                                        className="radio-item"
-                                                      >
-                                                        <Field
-                                                          type="radio"
-                                                          name={`personalization.addons.${index}.subItems.${subItemIndex}.type`}
-                                                          id={`personalization.addons.${index}.subItems.${subItemIndex}.number`}
-                                                          value="number"
-                                                        />
-                                                        Numbers only
-                                                      </label>
-                                                    </div>
-                                                    <div>
-                                                      <label
-                                                        htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.type-list`}
-                                                        className="radio-item"
-                                                      >
-                                                        <Field
-                                                          type="radio"
-                                                          name={`personalization.addons.${index}.subItems.${subItemIndex}.type`}
-                                                          id={`personalization.addons.${index}.subItems.${subItemIndex}.type-list`}
-                                                          value="list"
-                                                        />
-                                                        A list that customers
-                                                        must choose from
-                                                      </label>
-                                                    </div>
-                                                  </div>
+                                        <FieldArray
+                                          name={`personalization.addons.${index}.subItems`}
+                                          render={subtItemArrayHelpers => (
+                                            <>
+                                              {values.personalization.addons[
+                                                index
+                                              ].subItems.map(
+                                                (subItem, subItemIndex) => (
+                                                  <div
+                                                    key={subItem.id}
+                                                    className="subitem"
+                                                  >
+                                                    <h3>
+                                                      Subitem {subItemIndex + 1}
+                                                    </h3>
 
-                                                  {subItem.type === 'list' ? (
                                                     <div className="item">
                                                       <label
-                                                        htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.list`}
+                                                        htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.name`}
                                                       >
-                                                        List (separated by
-                                                        commas)
+                                                        Name (Name, Number,
+                                                        Event, etc.)
                                                       </label>
                                                       <Field
-                                                        as="textarea"
-                                                        name={`personalization.addons.${index}.subItems.${subItemIndex}.list`}
-                                                        id={`personalization.addons.${index}.subItems.${subItemIndex}.list`}
+                                                        name={`personalization.addons.${index}.subItems.${subItemIndex}.name`}
+                                                        id={`personalization.addons.${index}.subItems.${subItemIndex}.name`}
                                                       />
                                                       <ErrorMessage
-                                                        name={`personalization.addons.${index}.subItems.${subItemIndex}.list`}
+                                                        name={`personalization.addons.${index}.subItems.${subItemIndex}.name`}
                                                         component="div"
                                                         className="validation-error"
                                                       />
                                                     </div>
-                                                  ) : null}
 
-                                                  <div className="item">
-                                                    <label
-                                                      htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.price`}
-                                                    >
-                                                      Price
-                                                    </label>
-                                                    <Field
-                                                      name={`personalization.addons.${index}.subItems.${subItemIndex}.price`}
-                                                      id={`personalization.addons.${index}.subItems.${subItemIndex}.price`}
-                                                    />
-                                                    <ErrorMessage
-                                                      name={`personalization.addons.${index}.subItems.${subItemIndex}.price`}
-                                                      component="div"
-                                                      className="validation-error"
-                                                    />
-                                                  </div>
-
-                                                  <div className="item">
-                                                    <label
-                                                      htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.limit`}
-                                                    >
-                                                      Limit
-                                                    </label>
-                                                    <Field
-                                                      name={`personalization.addons.${index}.subItems.${subItemIndex}.limit`}
-                                                      id={`personalization.addons.${index}.subItems.${subItemIndex}.limit`}
-                                                    />
-                                                    <ErrorMessage
-                                                      name={`personalization.addons.${index}.subItems.${subItemIndex}.limit`}
-                                                      component="div"
-                                                      className="validation-error"
-                                                    />
-                                                  </div>
-
-                                                  <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                      subtItemArrayHelpers.remove(
-                                                        subItemIndex
-                                                      )
-                                                    }
-                                                    className="remove-addon-button"
-                                                  >
-                                                    <svg
-                                                      xmlns="http://www.w3.org/2000/svg"
-                                                      viewBox="0 0 20 20"
-                                                      fill="currentColor"
-                                                    >
-                                                      <path
-                                                        fillRule="evenodd"
-                                                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                                        clipRule="evenodd"
+                                                    <div className="item">
+                                                      <label
+                                                        htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.location`}
+                                                      >
+                                                        Location (Back, Front,
+                                                        Shoulder, etc.)
+                                                      </label>
+                                                      <Field
+                                                        name={`personalization.addons.${index}.subItems.${subItemIndex}.location`}
+                                                        id={`personalization.addons.${index}.subItems.${subItemIndex}.location`}
                                                       />
-                                                    </svg>
-                                                    <span className="sr-only">
-                                                      Remove subitem{' '}
-                                                      {subItemIndex + 1}
-                                                    </span>
-                                                  </button>
-                                                </div>
-                                              )
-                                            )}
-                                            <button
-                                              type="button"
-                                              onClick={() =>
-                                                subtItemArrayHelpers.push(
-                                                  createBlankPersonalizedItem(
-                                                    'si'
-                                                  )
-                                                )
-                                              }
-                                              className="secondary-button"
-                                            >
-                                              Add{' '}
-                                              {values.personalization.addons[
-                                                index
-                                              ].subItems.length > 0
-                                                ? 'another'
-                                                : 'a'}{' '}
-                                              subitem to{' '}
-                                              {values.personalization.addons[
-                                                index
-                                              ].name.toLowerCase()}
-                                            </button>
-                                          </>
-                                        )}
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          arrayHelpers.remove(index)
-                                        }
-                                        className="remove-addon-button"
-                                      >
-                                        <svg
-                                          xmlns="http://www.w3.org/2000/svg"
-                                          viewBox="0 0 20 20"
-                                          fill="currentColor"
-                                        >
-                                          <path
-                                            fillRule="evenodd"
-                                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                            clipRule="evenodd"
-                                          />
-                                        </svg>
-                                        <span className="sr-only">
-                                          Remove addon {index + 1}
-                                        </span>
-                                      </button>
-                                    </div>
-                                  )
-                                )}
-                              <div>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    arrayHelpers.push(
-                                      createBlankPersonalizedItem('pi')
-                                    )
-                                  }
-                                  className="secondary-button"
-                                >
-                                  Add{' '}
-                                  {values.personalization.addons.length > 0
-                                    ? 'another'
-                                    : 'a'}{' '}
-                                  personalization item
-                                </button>
-                              </div>
-                            </>
-                          )}
-                        />
-                      </>
-                    ) : null}
-                  </div>
+                                                      <ErrorMessage
+                                                        name={`personalization.addons.${index}.subItems.${subItemIndex}.location`}
+                                                        component="div"
+                                                        className="validation-error"
+                                                      />
+                                                    </div>
 
-                  <div className="section">
-                    <h3>Product details</h3>
-                    <FieldArray
-                      name="details"
-                      render={arrayHelpers => (
-                        <>
-                          {values.details.length > 0 &&
-                            values.details.map(
-                              (_detail: string, detailIndex) => (
-                                <div key={detailIndex} className="details-item">
-                                  <div className="item">
-                                    <label htmlFor={`details.${detailIndex}`}>
-                                      Detail {detailIndex + 1}
-                                    </label>
-                                    <Field
-                                      name={`details.${detailIndex}`}
-                                      id={`details.${detailIndex}`}
-                                    />
-                                  </div>
+                                                    <div className="item">
+                                                      <label
+                                                        htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.lines`}
+                                                      >
+                                                        Lines (How many lines
+                                                        does this addon take
+                                                        up?)
+                                                      </label>
+                                                      <Field
+                                                        name={`personalization.addons.${index}.subItems.${subItemIndex}.lines`}
+                                                        id={`personalization.addons.${index}.subItems.${subItemIndex}.lines`}
+                                                      />
+                                                      <ErrorMessage
+                                                        name={`personalization.addons.${index}.subItems.${subItemIndex}.lines`}
+                                                        component="div"
+                                                        className="validation-error"
+                                                      />
+                                                    </div>
+
+                                                    <div className="item radio-group">
+                                                      <div className="radio-group-label">
+                                                        Type
+                                                      </div>
+                                                      <div>
+                                                        <label
+                                                          htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.string`}
+                                                          className="radio-item"
+                                                        >
+                                                          <Field
+                                                            type="radio"
+                                                            name={`personalization.addons.${index}.subItems.${subItemIndex}.type`}
+                                                            id={`personalization.addons.${index}.subItems.${subItemIndex}.string`}
+                                                            value="string"
+                                                          />
+                                                          Alphanumeric
+                                                          characters (A-Z and
+                                                          0-9)
+                                                        </label>
+                                                      </div>
+                                                      <div>
+                                                        <label
+                                                          htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.number`}
+                                                          className="radio-item"
+                                                        >
+                                                          <Field
+                                                            type="radio"
+                                                            name={`personalization.addons.${index}.subItems.${subItemIndex}.type`}
+                                                            id={`personalization.addons.${index}.subItems.${subItemIndex}.number`}
+                                                            value="number"
+                                                          />
+                                                          Numbers only
+                                                        </label>
+                                                      </div>
+                                                      <div>
+                                                        <label
+                                                          htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.type-list`}
+                                                          className="radio-item"
+                                                        >
+                                                          <Field
+                                                            type="radio"
+                                                            name={`personalization.addons.${index}.subItems.${subItemIndex}.type`}
+                                                            id={`personalization.addons.${index}.subItems.${subItemIndex}.type-list`}
+                                                            value="list"
+                                                          />
+                                                          A list that customers
+                                                          must choose from
+                                                        </label>
+                                                      </div>
+                                                    </div>
+
+                                                    {subItem.type === 'list' ? (
+                                                      <div className="item">
+                                                        <label
+                                                          htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.list`}
+                                                        >
+                                                          List (separated by
+                                                          commas)
+                                                        </label>
+                                                        <Field
+                                                          as="textarea"
+                                                          name={`personalization.addons.${index}.subItems.${subItemIndex}.list`}
+                                                          id={`personalization.addons.${index}.subItems.${subItemIndex}.list`}
+                                                        />
+                                                        <ErrorMessage
+                                                          name={`personalization.addons.${index}.subItems.${subItemIndex}.list`}
+                                                          component="div"
+                                                          className="validation-error"
+                                                        />
+                                                      </div>
+                                                    ) : null}
+
+                                                    <div className="item">
+                                                      <label
+                                                        htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.price`}
+                                                      >
+                                                        Price
+                                                      </label>
+                                                      <Field
+                                                        name={`personalization.addons.${index}.subItems.${subItemIndex}.price`}
+                                                        id={`personalization.addons.${index}.subItems.${subItemIndex}.price`}
+                                                      />
+                                                      <ErrorMessage
+                                                        name={`personalization.addons.${index}.subItems.${subItemIndex}.price`}
+                                                        component="div"
+                                                        className="validation-error"
+                                                      />
+                                                    </div>
+
+                                                    <div className="item">
+                                                      <label
+                                                        htmlFor={`personalization.addons.${index}.subItems.${subItemIndex}.limit`}
+                                                      >
+                                                        Limit
+                                                      </label>
+                                                      <Field
+                                                        name={`personalization.addons.${index}.subItems.${subItemIndex}.limit`}
+                                                        id={`personalization.addons.${index}.subItems.${subItemIndex}.limit`}
+                                                      />
+                                                      <ErrorMessage
+                                                        name={`personalization.addons.${index}.subItems.${subItemIndex}.limit`}
+                                                        component="div"
+                                                        className="validation-error"
+                                                      />
+                                                    </div>
+
+                                                    <button
+                                                      type="button"
+                                                      onClick={() =>
+                                                        subtItemArrayHelpers.remove(
+                                                          subItemIndex
+                                                        )
+                                                      }
+                                                      className="remove-addon-button"
+                                                    >
+                                                      <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        viewBox="0 0 20 20"
+                                                        fill="currentColor"
+                                                      >
+                                                        <path
+                                                          fillRule="evenodd"
+                                                          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                                          clipRule="evenodd"
+                                                        />
+                                                      </svg>
+                                                      <span className="sr-only">
+                                                        Remove subitem{' '}
+                                                        {subItemIndex + 1}
+                                                      </span>
+                                                    </button>
+                                                  </div>
+                                                )
+                                              )}
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  subtItemArrayHelpers.push(
+                                                    createBlankPersonalizedItem(
+                                                      'si'
+                                                    )
+                                                  )
+                                                }
+                                                className="secondary-button"
+                                              >
+                                                Add{' '}
+                                                {values.personalization.addons[
+                                                  index
+                                                ].subItems.length > 0
+                                                  ? 'another'
+                                                  : 'a'}{' '}
+                                                subitem to{' '}
+                                                {values.personalization.addons[
+                                                  index
+                                                ].name.toLowerCase()}
+                                              </button>
+                                            </>
+                                          )}
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            arrayHelpers.remove(index)
+                                          }
+                                          className="remove-addon-button"
+                                        >
+                                          <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 20 20"
+                                            fill="currentColor"
+                                          >
+                                            <path
+                                              fillRule="evenodd"
+                                              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                              clipRule="evenodd"
+                                            />
+                                          </svg>
+                                          <span className="sr-only">
+                                            Remove addon {index + 1}
+                                          </span>
+                                        </button>
+                                      </div>
+                                    )
+                                  )}
+                                <div>
                                   <button
                                     type="button"
-                                    className="remove-button"
                                     onClick={() =>
-                                      arrayHelpers.remove(detailIndex)
+                                      arrayHelpers.push(
+                                        createBlankPersonalizedItem('pi')
+                                      )
                                     }
+                                    className="secondary-button"
                                   >
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      viewBox="0 0 20 20"
-                                      fill="currentColor"
-                                    >
-                                      <path
-                                        fillRule="evenodd"
-                                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                        clipRule="evenodd"
-                                      />
-                                    </svg>
-                                    <span className="sr-only">
-                                      Remove detail
-                                    </span>
+                                    Add{' '}
+                                    {values.personalization.addons.length > 0
+                                      ? 'another'
+                                      : 'a'}{' '}
+                                    personalization item
                                   </button>
                                 </div>
-                              )
+                              </>
                             )}
-                          <button
-                            type="button"
-                            className="primary-button"
-                            onClick={() =>
-                              handleAddClick(
-                                () => arrayHelpers.push(''),
-                                `#details\\.${values.details.length}`
-                              )
-                            }
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
+                          />
+                        </>
+                      ) : null}
+                    </div>
+
+                    <div className="section">
+                      <h3>Product details</h3>
+                      <FieldArray
+                        name="details"
+                        render={arrayHelpers => (
+                          <>
+                            {values.details.length > 0 &&
+                              values.details.map(
+                                (_detail: string, detailIndex) => (
+                                  <div
+                                    key={detailIndex}
+                                    className="details-item"
+                                  >
+                                    <div className="item">
+                                      <label htmlFor={`details.${detailIndex}`}>
+                                        Detail {detailIndex + 1}
+                                      </label>
+                                      <Field
+                                        name={`details.${detailIndex}`}
+                                        id={`details.${detailIndex}`}
+                                      />
+                                    </div>
+                                    <button
+                                      type="button"
+                                      className="remove-button"
+                                      onClick={() =>
+                                        arrayHelpers.remove(detailIndex)
+                                      }
+                                    >
+                                      <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 20 20"
+                                        fill="currentColor"
+                                      >
+                                        <path
+                                          fillRule="evenodd"
+                                          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                          clipRule="evenodd"
+                                        />
+                                      </svg>
+                                      <span className="sr-only">
+                                        Remove detail
+                                      </span>
+                                    </button>
+                                  </div>
+                                )
+                              )}
+                            <button
+                              type="button"
+                              className="primary-button"
+                              onClick={() =>
+                                handleAddClick(
+                                  () => arrayHelpers.push(''),
+                                  `#details\\.${values.details.length}`
+                                )
+                              }
                             >
-                              <path
-                                fillRule="evenodd"
-                                d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            Add a{values.details.length > 0 ? 'nother' : ''}{' '}
-                            detail
-                          </button>
-                        </>
-                      )}
-                    />
-                  </div>
-                  <div className="section">
-                    <h3>Product sizes</h3>
-                    <FieldArray
-                      name="sizes"
-                      render={() => (
-                        <>
-                          {values.sizes.length > 0 &&
-                            values.sizes.map((size: FormSize, sizeIndex) => (
-                              <div key={sizeIndex} className="size-item">
-                                <div className="grid-col-2">
-                                  <div className="item">
-                                    <label htmlFor={`sizes.${sizeIndex}.label`}>
-                                      Size label
-                                    </label>
-                                    <input
-                                      type="text"
-                                      name={`sizes.${sizeIndex}.label`}
-                                      id={`sizes.${sizeIndex}.label`}
-                                      value={size.label}
-                                      readOnly
-                                    />
-                                  </div>
-                                  <div className="item">
-                                    <label htmlFor={`sizes.${sizeIndex}.price`}>
-                                      Size price
-                                    </label>
-                                    <Field
-                                      name={`sizes.${sizeIndex}.price`}
-                                      id={`sizes.${sizeIndex}.price`}
-                                      placeholder="0.00"
-                                    />
-                                    <ErrorMessage
-                                      name={`sizes.${sizeIndex}.price`}
-                                      component="div"
-                                      className="validation-error"
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                        </>
-                      )}
-                    />
-                  </div>
-                  <div className="section">
-                    <h3>Product colors</h3>
-                    <FieldArray
-                      name="colors"
-                      render={() => (
-                        <>
-                          {values.colors.length > 0 &&
-                            values.colors.map((color, colorIndex) => (
-                              <div key={colorIndex} className="color-item">
-                                <div>
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                              Add a{values.details.length > 0 ? 'nother' : ''}{' '}
+                              detail
+                            </button>
+                          </>
+                        )}
+                      />
+                    </div>
+                    <div className="section">
+                      <h3>Product sizes</h3>
+                      <FieldArray
+                        name="sizes"
+                        render={() => (
+                          <>
+                            {values.sizes.length > 0 &&
+                              values.sizes.map((size: FormSize, sizeIndex) => (
+                                <div key={sizeIndex} className="size-item">
                                   <div className="grid-col-2">
                                     <div className="item">
                                       <label
-                                        htmlFor={`colors.${colorIndex}.label`}
+                                        htmlFor={`sizes.${sizeIndex}.label`}
                                       >
-                                        Color label
+                                        Size label
                                       </label>
                                       <input
                                         type="text"
-                                        name={`colors.${colorIndex}.label`}
-                                        id={`colors.${colorIndex}.label`}
-                                        value={color.label}
+                                        name={`sizes.${sizeIndex}.label`}
+                                        id={`sizes.${sizeIndex}.label`}
+                                        value={size.label}
                                         readOnly
                                       />
                                     </div>
                                     <div className="item">
                                       <label
-                                        htmlFor={`colors.${colorIndex}.hex`}
+                                        htmlFor={`sizes.${sizeIndex}.price`}
                                       >
-                                        Hex color value
+                                        Size price
                                       </label>
-                                      <input
-                                        type="text"
-                                        name={`colors.${colorIndex}.hex`}
-                                        id={`colors.${colorIndex}.hex`}
-                                        value={color.hex}
-                                        readOnly
+                                      <Field
+                                        name={`sizes.${sizeIndex}.price`}
+                                        id={`sizes.${sizeIndex}.price`}
+                                        placeholder="0.00"
+                                      />
+                                      <ErrorMessage
+                                        name={`sizes.${sizeIndex}.price`}
+                                        component="div"
+                                        className="validation-error"
                                       />
                                     </div>
                                   </div>
-                                  <div className="item primary-image-item">
-                                    <h5>Primary image</h5>
-                                    <div className="row">
-                                      <div className="primary-thumbnail">
-                                        {primaryImages &&
-                                        primaryImages[colorIndex] ? (
-                                          <img
-                                            src={primaryImages[colorIndex]}
-                                            alt={`${values.name} - ${values.colors[colorIndex].label}`}
-                                          />
-                                        ) : (
-                                          <div className="placeholder">
-                                            <svg
-                                              xmlns="http://www.w3.org/2000/svg"
-                                              className="placeholder-icon"
-                                              fill="none"
-                                              viewBox="0 0 24 24"
-                                              stroke="currentColor"
-                                            >
-                                              <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                              />
-                                            </svg>
-                                          </div>
-                                        )}
-                                      </div>
-                                      <div>
+                                </div>
+                              ))}
+                          </>
+                        )}
+                      />
+                    </div>
+                    <div className="section">
+                      <h3>Product colors</h3>
+                      <FieldArray
+                        name="colors"
+                        render={() => (
+                          <>
+                            {values.colors.length > 0 &&
+                              values.colors.map((color, colorIndex) => (
+                                <div key={colorIndex} className="color-item">
+                                  <div>
+                                    <div className="grid-col-2">
+                                      <div className="item">
                                         <label
-                                          htmlFor={`primaryImage${colorIndex}`}
+                                          htmlFor={`colors.${colorIndex}.label`}
                                         >
-                                          {primaryImageStatus === 'loading' ? (
-                                            'Loading...'
+                                          Color label
+                                        </label>
+                                        <input
+                                          type="text"
+                                          name={`colors.${colorIndex}.label`}
+                                          id={`colors.${colorIndex}.label`}
+                                          value={color.label}
+                                          readOnly
+                                        />
+                                      </div>
+                                      <div className="item">
+                                        <label
+                                          htmlFor={`colors.${colorIndex}.hex`}
+                                        >
+                                          Hex color value
+                                        </label>
+                                        <input
+                                          type="text"
+                                          name={`colors.${colorIndex}.hex`}
+                                          id={`colors.${colorIndex}.hex`}
+                                          value={color.hex}
+                                          readOnly
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="item primary-image-item">
+                                      <h5>Primary image</h5>
+                                      <div className="row">
+                                        <div className="primary-thumbnail">
+                                          {primaryImages &&
+                                          primaryImages[colorIndex] ? (
+                                            <img
+                                              src={primaryImages[colorIndex]}
+                                              alt={`${values.name} - ${values.colors[colorIndex].label}`}
+                                            />
                                           ) : (
-                                            <>
+                                            <div className="placeholder">
                                               <svg
                                                 xmlns="http://www.w3.org/2000/svg"
+                                                className="placeholder-icon"
                                                 fill="none"
                                                 viewBox="0 0 24 24"
                                                 stroke="currentColor"
@@ -900,143 +904,169 @@ export default function UpdateProduct() {
                                                   strokeLinecap="round"
                                                   strokeLinejoin="round"
                                                   strokeWidth={2}
-                                                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                                                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                                                 />
                                               </svg>
-                                              {primaryImages[colorIndex]
-                                                ? 'Upload a different image'
-                                                : 'Upload an image'}
-                                            </>
+                                            </div>
                                           )}
-                                        </label>
-                                        <input
-                                          type="file"
-                                          accept="image/png, image/jpeg"
-                                          name={`primaryImage${colorIndex}`}
-                                          id={`primaryImage${colorIndex}`}
-                                          className="sr-only"
-                                          onChange={e =>
-                                            handlePrimaryImageChange(
-                                              colorIndex,
-                                              values.id,
-                                              color,
-                                              values.colors,
-                                              setFieldValue,
-                                              e
-                                            )
-                                          }
-                                        />
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="item secondary-images-item">
-                                    <h5>Secondary image</h5>
-                                    <div className="row">
-                                      <div>
-                                        <label
-                                          htmlFor={`secondaryImages${colorIndex}`}
-                                        >
-                                          {secondaryImageStatus ===
-                                          'loading' ? (
-                                            'Loading...'
-                                          ) : (
-                                            <>
-                                              <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                              >
-                                                <path
-                                                  strokeLinecap="round"
-                                                  strokeLinejoin="round"
-                                                  strokeWidth={2}
-                                                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                                                />
-                                              </svg>
-                                              Upload images
-                                            </>
-                                          )}
-                                        </label>
-                                        <input
-                                          type="file"
-                                          multiple
-                                          accept="image/png, image/jpeg"
-                                          name={`secondaryImages${colorIndex}`}
-                                          id={`secondaryImages${colorIndex}`}
-                                          className="sr-only"
-                                          onChange={e =>
-                                            handleSecondaryImagesChange(
-                                              colorIndex,
-                                              values.id,
-                                              color,
-                                              values.colors,
-                                              setFieldValue,
-                                              e
-                                            )
-                                          }
-                                        />
-                                      </div>
-                                    </div>
-                                    <div className="secondary-thumbnails">
-                                      {secondaryImages[colorIndex] &&
-                                        secondaryImages[colorIndex].map(
-                                          (secImg, secImgIndex) => {
-                                            return (
-                                              <div
-                                                key={secImgIndex}
-                                                className="thumbnail"
-                                              >
-                                                <img
-                                                  src={secImg}
-                                                  alt={`Secondary number ${secImgIndex} for color number ${colorIndex}`}
-                                                />
-                                                <button
-                                                  type="button"
-                                                  className="remove-img-button"
-                                                  onClick={() =>
-                                                    handleRemoveSecondaryImage(
-                                                      colorIndex,
-                                                      secImgIndex,
-                                                      color,
-                                                      values.colors,
-                                                      setFieldValue
-                                                    )
-                                                  }
+                                        </div>
+                                        <div>
+                                          <label
+                                            htmlFor={`primaryImage${colorIndex}`}
+                                          >
+                                            {primaryImageStatus ===
+                                            'loading' ? (
+                                              'Loading...'
+                                            ) : (
+                                              <>
+                                                <svg
+                                                  xmlns="http://www.w3.org/2000/svg"
+                                                  fill="none"
+                                                  viewBox="0 0 24 24"
+                                                  stroke="currentColor"
                                                 >
-                                                  <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
+                                                  <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                                                  />
+                                                </svg>
+                                                {primaryImages[colorIndex]
+                                                  ? 'Upload a different image'
+                                                  : 'Upload an image'}
+                                              </>
+                                            )}
+                                          </label>
+                                          <input
+                                            type="file"
+                                            accept="image/png, image/jpeg"
+                                            name={`primaryImage${colorIndex}`}
+                                            id={`primaryImage${colorIndex}`}
+                                            className="sr-only"
+                                            onChange={e =>
+                                              handlePrimaryImageChange(
+                                                colorIndex,
+                                                values.id,
+                                                color,
+                                                values.colors,
+                                                setFieldValue,
+                                                e
+                                              )
+                                            }
+                                          />
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="item secondary-images-item">
+                                      <h5>Secondary image</h5>
+                                      <div className="row">
+                                        <div>
+                                          <label
+                                            htmlFor={`secondaryImages${colorIndex}`}
+                                          >
+                                            {secondaryImageStatus ===
+                                            'loading' ? (
+                                              'Loading...'
+                                            ) : (
+                                              <>
+                                                <svg
+                                                  xmlns="http://www.w3.org/2000/svg"
+                                                  fill="none"
+                                                  viewBox="0 0 24 24"
+                                                  stroke="currentColor"
+                                                >
+                                                  <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                                                  />
+                                                </svg>
+                                                Upload images
+                                              </>
+                                            )}
+                                          </label>
+                                          <input
+                                            type="file"
+                                            multiple
+                                            accept="image/png, image/jpeg"
+                                            name={`secondaryImages${colorIndex}`}
+                                            id={`secondaryImages${colorIndex}`}
+                                            className="sr-only"
+                                            onChange={e =>
+                                              handleSecondaryImagesChange(
+                                                colorIndex,
+                                                values.id,
+                                                color,
+                                                values.colors,
+                                                setFieldValue,
+                                                e
+                                              )
+                                            }
+                                          />
+                                        </div>
+                                      </div>
+                                      <div className="secondary-thumbnails">
+                                        {secondaryImages[colorIndex] &&
+                                          secondaryImages[colorIndex].map(
+                                            (secImg, secImgIndex) => {
+                                              return (
+                                                <div
+                                                  key={secImgIndex}
+                                                  className="thumbnail"
+                                                >
+                                                  <img
+                                                    src={secImg}
+                                                    alt={`Secondary number ${secImgIndex} for color number ${colorIndex}`}
+                                                  />
+                                                  <button
+                                                    type="button"
+                                                    className="remove-img-button"
+                                                    onClick={() =>
+                                                      handleRemoveSecondaryImage(
+                                                        colorIndex,
+                                                        secImgIndex,
+                                                        color,
+                                                        values.colors,
+                                                        setFieldValue
+                                                      )
+                                                    }
                                                   >
-                                                    <path
-                                                      strokeLinecap="round"
-                                                      strokeLinejoin="round"
-                                                      strokeWidth={2}
-                                                      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                                    />
-                                                  </svg>
-                                                  <span className="sr-only">
-                                                    Remove Image
-                                                  </span>
-                                                </button>
-                                              </div>
-                                            );
-                                          }
-                                        )}
+                                                    <svg
+                                                      xmlns="http://www.w3.org/2000/svg"
+                                                      fill="none"
+                                                      viewBox="0 0 24 24"
+                                                      stroke="currentColor"
+                                                    >
+                                                      <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                      />
+                                                    </svg>
+                                                    <span className="sr-only">
+                                                      Remove Image
+                                                    </span>
+                                                  </button>
+                                                </div>
+                                              );
+                                            }
+                                          )}
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
-                              </div>
-                            ))}
-                        </>
-                      )}
-                    />
-                  </div>
-                </Form>
-              )}
-            </Formik>
+                              ))}
+                          </>
+                        )}
+                      />
+                    </div>
+                  </Form>
+                )}
+              </Formik>
+            )}
           </div>
         </div>
       </UpdateProductStyles>

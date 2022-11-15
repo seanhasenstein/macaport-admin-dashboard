@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import { InventorySize } from '../../../interfaces';
-import { createId } from '../../../utils';
+import { createId, getQueryParameter } from '../../../utils';
 import {
   updateInventoryProductSkus,
   UpdateFormValues,
@@ -15,7 +15,9 @@ import LoadingSpinner from '../../../components/LoadingSpinner';
 
 export default function UpdateInventoryProduct() {
   const router = useRouter();
-  const inventoryProductQuery = useInventoryProductQuery();
+  const inventoryProductQuery = useInventoryProductQuery(
+    getQueryParameter(router.query.id)
+  );
   const { updateProductIncludingSkus } = useInventoryProductMutations(
     inventoryProductQuery.data
   );

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import { useInventoryProductQuery } from '../../../hooks/useInventoryProductQuery';
 import { useInventoryProductMutations } from '../../../hooks/useInventoryProductMutations';
@@ -10,10 +11,14 @@ import InventoryProductMenu from '../../../components/inventoryProduct/Inventory
 import InventoryProductDetails from '../../../components/inventoryProduct/InventoryProductDetails';
 import Notes from '../../../components/Notes';
 import LoadingSpinner from '../../../components/LoadingSpinner';
+import { getQueryParameter } from '../../../utils';
 
 export default function InventoryProduct() {
+  const router = useRouter();
   const [showInventoryModal, setShowInventoryModal] = React.useState(false);
-  const invProdQuery = useInventoryProductQuery();
+  const invProdQuery = useInventoryProductQuery(
+    getQueryParameter(router.query.id)
+  );
   const { addNote, updateNote, deleteNote } = useInventoryProductMutations(
     invProdQuery.data
   );
