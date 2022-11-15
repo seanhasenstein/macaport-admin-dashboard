@@ -55,19 +55,54 @@ export function useStoreMutations({ store, stores }: Props = {}) {
     }
   );
 
-  const updateStoreProducts = useMutation(
-    async (updatedProducts: StoreProduct[]) => {
-      const response = await fetch(`/api/stores/update?id=${store?._id}`, {
-        method: 'post',
-        body: JSON.stringify({ products: updatedProducts }),
+  // const updateStoreProducts = useMutation(
+  //   async (updatedProducts: StoreProduct[]) => {
+  //     const response = await fetch(`/api/stores/update?id=${store?._id}`, {
+  //       method: 'post',
+  //       body: JSON.stringify({ products: updatedProducts }),
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //     });
+  //     if (!response.ok) {
+  //       throw new Error('Failed to update the products.');
+  //     }
+  //     const data = await response.json();
+  //     return data.store;
+  //   },
+  //   {
+  //     onMutate: async updatedProducts => {
+  //       await queryClient.cancelQueries(['stores']);
+  //       queryClient.setQueryData(['stores', 'store', store?._id], {
+  //         ...store,
+  //         products: updatedProducts,
+  //       });
+  //     },
+  //     onError: () => {
+  //       queryClient.setQueryData(['stores', 'store', store?._id], store);
+  //     },
+  //     onSuccess: () => {
+  //       return queryClient.invalidateQueries('stores');
+  //     },
+  //   }
+  // );
+
+  const updateStoreProductsOrder = useMutation(
+    async (storeProducts: StoreProduct[]) => {
+      const productIds = storeProducts.map(product => product.id);
+      const response = await fetch('/api/stores/update-products-order', {
+        method: 'POST',
+        body: JSON.stringify({ storeId: store?._id, productIds }),
         headers: {
           'Content-Type': 'application/json',
         },
       });
+
       if (!response.ok) {
-        throw new Error('Failed to update the products.');
+        throw new Error('Failed to update the products order');
       }
-      const data = await response.json();
+
+      const data: { store: Store } = await response.json();
       return data.store;
     },
     {
@@ -296,7 +331,8 @@ export function useStoreMutations({ store, stores }: Props = {}) {
   return {
     createStore,
     updateStoreForm,
-    updateStoreProducts,
+    // updateStoreProducts,
+    updateStoreProductsOrder,
     deleteStore,
     addNote,
     updateNote,

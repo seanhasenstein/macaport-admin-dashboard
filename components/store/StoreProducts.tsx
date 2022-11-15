@@ -13,11 +13,11 @@ type Props = {
 
 export default function StoreProducts({ store }: Props) {
   const router = useRouter();
-  const { updateStoreProducts } = useStoreMutations({ store });
+  const { updateStoreProductsOrder } = useStoreMutations({ store });
   const dnd = useDragNDrop(
     store.products,
     'product',
-    updateStoreProducts.mutate
+    updateStoreProductsOrder.mutate
   );
 
   return (

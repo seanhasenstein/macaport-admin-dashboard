@@ -13,7 +13,7 @@ import { paginatedStoresReducer } from '../utils/store';
 export async function getStoreById(db: Db, id: string) {
   const result = await db
     .collection('stores')
-    .findOne({ _id: new ObjectID(id) });
+    .findOne<Store>({ _id: new ObjectID(id) });
   if (!result) throw new Error('Invalid store ID provided.');
   return result;
 }
