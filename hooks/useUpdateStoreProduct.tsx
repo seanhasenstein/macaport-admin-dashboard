@@ -44,8 +44,6 @@ type Props = {
 export function useUpdateStoreProduct(props: Props) {
   const router = useRouter();
   const [product, setProduct] = React.useState<StoreProduct>();
-  const [primaryImages, setPrimaryImages] = React.useState<string[]>([]);
-  const [secondaryImages, setSecondaryImages] = React.useState<string[][]>([]);
   const [primaryImageStatus, setPrimaryImageStatus] =
     React.useState<CloudinaryStatus>('idle');
   const [secondaryImageStatus, setSecondaryImageStatus] =
@@ -114,18 +112,10 @@ export function useUpdateStoreProduct(props: Props) {
         productSkus: product.productSkus,
         notes: product.notes,
       });
-
-      const primaryImages = colors.map((c: Color) => c.primaryImage);
-
-      const secondaryImages = colors.map((c: Color) => c.secondaryImages);
-
-      setPrimaryImages(primaryImages);
-      setSecondaryImages(secondaryImages);
     }
   }, [product, props.inventoryProductQuery.data]);
 
   const handlePrimaryImageChange = async (
-    index: number,
     productId: string,
     color: Color,
     colors: Color[],
@@ -160,11 +150,6 @@ export function useUpdateStoreProduct(props: Props) {
 
     const data = await response.json();
 
-    const primeImgCopy = [...primaryImages];
-    primeImgCopy[index] = data.secure_url;
-    // TODO: can we just use formik state?
-    setPrimaryImages(primeImgCopy);
-
     const updatedColors = colors.map(c => {
       if (c.id == color.id) {
         return { ...color, primaryImage: data.secure_url };
@@ -177,8 +162,7 @@ export function useUpdateStoreProduct(props: Props) {
     setPrimaryImageStatus('idle');
   };
 
-  const handleSecondaryImagesChange = async (
-    index: number,
+  const handleAddSecondaryImages = async (
     productId: string,
     color: Color,
     colors: Color[],
@@ -194,7 +178,7 @@ export function useUpdateStoreProduct(props: Props) {
     }
 
     setSecondaryImageStatus('loading');
-    const secImgsCopy = [...secondaryImages];
+    const secondaryImagesCopy = [...color.secondaryImages];
 
     for (let i = 0; i < e.target.files.length; i++) {
       const publicId = `stores/${router.query.id}/${productId}/${
@@ -217,24 +201,21 @@ export function useUpdateStoreProduct(props: Props) {
 
       const data = await response.json();
 
-      secImgsCopy[index] = [...(secImgsCopy[index] || []), data.secure_url];
+      secondaryImagesCopy.push(data.secure_url);
     }
-
-    // TODO: can we just use formik state?
-    setSecondaryImages(secImgsCopy);
 
     const updatedColors = colors.map(c => {
       if (c.id === color.id) {
-        return { ...color, secondaryImages: secImgsCopy[index] };
+        return { ...color, secondaryImages: secondaryImagesCopy };
       }
       return c;
     });
+
     setFieldValue('colors', updatedColors);
     setSecondaryImageStatus('idle');
   };
 
   const handleRemoveSecondaryImage = (
-    colorIndex: number,
     secImgIndex: number,
     color: Color,
     colors: Color[],
@@ -244,15 +225,12 @@ export function useUpdateStoreProduct(props: Props) {
       shouldValidate?: boolean | undefined
     ) => void
   ) => {
-    const secImgsCopy = [...secondaryImages];
-    const secImgIndexCopy = [...secondaryImages[colorIndex]];
-    secImgIndexCopy.splice(secImgIndex, 1);
-    secImgsCopy[colorIndex] = secImgIndexCopy;
-    setSecondaryImages(secImgsCopy);
+    const secondaryImagesCopy = [...color.secondaryImages];
+    secondaryImagesCopy.splice(secImgIndex, 1);
 
     const updatedColors = colors.map(c => {
       if (c.id === color.id) {
-        return { ...color, secondaryImages: secImgsCopy[colorIndex] };
+        return { ...color, secondaryImages: secondaryImagesCopy };
       }
       return c;
     });
@@ -267,13 +245,11 @@ export function useUpdateStoreProduct(props: Props) {
 
   return {
     initialValues,
-    primaryImages,
-    secondaryImages,
     product,
     primaryImageStatus,
     secondaryImageStatus,
     handlePrimaryImageChange,
-    handleSecondaryImagesChange,
+    handleAddSecondaryImages,
     handleRemoveSecondaryImage,
     handleAddClick,
   };

@@ -81,13 +81,11 @@ export default function UpdateProduct() {
   });
   const {
     initialValues,
-    primaryImages,
-    secondaryImages,
     product,
     primaryImageStatus,
     secondaryImageStatus,
     handlePrimaryImageChange,
-    handleSecondaryImagesChange,
+    handleAddSecondaryImages,
     handleRemoveSecondaryImage,
     handleAddClick,
   } = useUpdateStoreProduct({ inventoryProductQuery, storeQuery });
@@ -885,10 +883,9 @@ export default function UpdateProduct() {
                                       <h5>Primary image</h5>
                                       <div className="row">
                                         <div className="primary-thumbnail">
-                                          {primaryImages &&
-                                          primaryImages[colorIndex] ? (
+                                          {color.primaryImage ? (
                                             <img
-                                              src={primaryImages[colorIndex]}
+                                              src={color.primaryImage}
                                               alt={`${values.name} - ${values.colors[colorIndex].label}`}
                                             />
                                           ) : (
@@ -932,7 +929,7 @@ export default function UpdateProduct() {
                                                     d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
                                                   />
                                                 </svg>
-                                                {primaryImages[colorIndex]
+                                                {color.primaryImage
                                                   ? 'Upload a different image'
                                                   : 'Upload an image'}
                                               </>
@@ -946,7 +943,6 @@ export default function UpdateProduct() {
                                             className="sr-only"
                                             onChange={e =>
                                               handlePrimaryImageChange(
-                                                colorIndex,
                                                 values.id,
                                                 color,
                                                 values.colors,
@@ -995,8 +991,7 @@ export default function UpdateProduct() {
                                             id={`secondaryImages${colorIndex}`}
                                             className="sr-only"
                                             onChange={e =>
-                                              handleSecondaryImagesChange(
-                                                colorIndex,
+                                              handleAddSecondaryImages(
                                                 values.id,
                                                 color,
                                                 values.colors,
@@ -1008,52 +1003,50 @@ export default function UpdateProduct() {
                                         </div>
                                       </div>
                                       <div className="secondary-thumbnails">
-                                        {secondaryImages[colorIndex] &&
-                                          secondaryImages[colorIndex].map(
-                                            (secImg, secImgIndex) => {
-                                              return (
-                                                <div
-                                                  key={secImgIndex}
-                                                  className="thumbnail"
+                                        {color.secondaryImages.map(
+                                          (secImg, secImgIndex) => {
+                                            return (
+                                              <div
+                                                key={secImgIndex}
+                                                className="thumbnail"
+                                              >
+                                                <img
+                                                  src={secImg}
+                                                  alt={`Secondary number ${secImgIndex} for color number ${colorIndex}`}
+                                                />
+                                                <button
+                                                  type="button"
+                                                  className="remove-img-button"
+                                                  onClick={() =>
+                                                    handleRemoveSecondaryImage(
+                                                      secImgIndex,
+                                                      color,
+                                                      values.colors,
+                                                      setFieldValue
+                                                    )
+                                                  }
                                                 >
-                                                  <img
-                                                    src={secImg}
-                                                    alt={`Secondary number ${secImgIndex} for color number ${colorIndex}`}
-                                                  />
-                                                  <button
-                                                    type="button"
-                                                    className="remove-img-button"
-                                                    onClick={() =>
-                                                      handleRemoveSecondaryImage(
-                                                        colorIndex,
-                                                        secImgIndex,
-                                                        color,
-                                                        values.colors,
-                                                        setFieldValue
-                                                      )
-                                                    }
+                                                  <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
                                                   >
-                                                    <svg
-                                                      xmlns="http://www.w3.org/2000/svg"
-                                                      fill="none"
-                                                      viewBox="0 0 24 24"
-                                                      stroke="currentColor"
-                                                    >
-                                                      <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        strokeWidth={2}
-                                                        d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                                      />
-                                                    </svg>
-                                                    <span className="sr-only">
-                                                      Remove Image
-                                                    </span>
-                                                  </button>
-                                                </div>
-                                              );
-                                            }
-                                          )}
+                                                    <path
+                                                      strokeLinecap="round"
+                                                      strokeLinejoin="round"
+                                                      strokeWidth={2}
+                                                      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                    />
+                                                  </svg>
+                                                  <span className="sr-only">
+                                                    Remove Image
+                                                  </span>
+                                                </button>
+                                              </div>
+                                            );
+                                          }
+                                        )}
                                       </div>
                                     </div>
                                   </div>
