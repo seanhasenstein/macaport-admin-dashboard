@@ -886,7 +886,7 @@ export default function UpdateProduct() {
                                           {color.primaryImage ? (
                                             <img
                                               src={color.primaryImage}
-                                              alt={`${values.name} - ${values.colors[colorIndex].label}`}
+                                              alt={`${values.name} - ${color.label}`}
                                             />
                                           ) : (
                                             <div className="placeholder">

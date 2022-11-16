@@ -148,6 +148,10 @@ export function useUpdateStoreProduct(props: Props) {
       body: formData,
     });
 
+    if (!response.ok) {
+      throw new Error('Failed to send primary image to cloudinary.');
+    }
+
     const data = await response.json();
 
     const updatedColors = colors.map(c => {
@@ -178,6 +182,7 @@ export function useUpdateStoreProduct(props: Props) {
     }
 
     setSecondaryImageStatus('loading');
+
     const secondaryImagesCopy = [...color.secondaryImages];
 
     for (let i = 0; i < e.target.files.length; i++) {
@@ -226,6 +231,7 @@ export function useUpdateStoreProduct(props: Props) {
     ) => void
   ) => {
     const secondaryImagesCopy = [...color.secondaryImages];
+
     secondaryImagesCopy.splice(secImgIndex, 1);
 
     const updatedColors = colors.map(c => {
