@@ -42,9 +42,11 @@ export default function StoresTable({ stores, tableLabel }: Props) {
                   <th>Open &amp; Close Dates</th>
                   <th className="text-center">Products</th>
                   <th className="text-center">Orders</th>
-                  <th className="text-center">Unfulfilled</th>
-                  <th className="text-center">Completed</th>
-                  <th className="text-center">Canceled</th>
+                  <th className="text-center">UNFL</th>
+                  <th className="text-center">PRNT</th>
+                  <th className="text-center">FULL</th>
+                  <th className="text-center">COMP</th>
+                  <th className="text-center">CANC</th>
                   <th />
                 </>
               )}
@@ -72,17 +74,11 @@ export default function StoresTable({ stores, tableLabel }: Props) {
                 <td>
                   <div className="store-dates">
                     <div>
-                      {format(
-                        new Date(s.openDate),
-                        "MMM. do, yyyy 'at' h:mmaa"
-                      )}
+                      {format(new Date(s.openDate), "M/d/yy 'at' h:mmaa")}
                     </div>
                     <div>
                       {s.closeDate
-                        ? format(
-                            new Date(s.closeDate),
-                            "MMM. do, yyyy 'at' h:mmaa"
-                          )
+                        ? format(new Date(s.closeDate), "M/d/yy 'at' h:mmaa")
                         : 'Permanently Open'}
                     </div>
                   </div>
@@ -97,6 +93,16 @@ export default function StoresTable({ stores, tableLabel }: Props) {
                   {s.orders
                     ? s.orders.filter(o => o.orderStatus === 'Unfulfilled')
                         .length
+                    : 0}
+                </td>
+                <td className="text-center">
+                  {s.orders
+                    ? s.orders.filter(o => o.orderStatus === 'Printed').length
+                    : 0}
+                </td>
+                <td className="text-center">
+                  {s.orders
+                    ? s.orders.filter(o => o.orderStatus === 'Fulfilled').length
                     : 0}
                 </td>
                 <td className="text-center">

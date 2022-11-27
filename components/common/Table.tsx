@@ -27,11 +27,11 @@ const TableStyles = styled.div`
   th,
   td {
     &:first-of-type {
-      padding-left: 2rem;
+      padding-left: 1.75rem;
     }
 
     &:last-of-type {
-      padding-right: 2rem;
+      padding-right: 1.75rem;
     }
   }
 
