@@ -1,4 +1,5 @@
 import {
+  StoresTableStore,
   ShippingData,
   ShippingDataForm,
   Store,
@@ -17,7 +18,7 @@ export async function fetchAllStores() {
 }
 
 interface FetchHomepageData {
-  stores: Store[];
+  stores: StoresTableStore[];
   shipping: ShippingDataForm;
 }
 
@@ -28,7 +29,7 @@ export async function fetchHomepageData(): Promise<FetchHomepageData> {
     throw new Error('Failed to fetch the stores.');
   }
 
-  const data: { stores: Store[]; shipping: ShippingData } =
+  const data: { stores: StoresTableStore[]; shipping: ShippingData } =
     await response.json();
 
   const shipping: ShippingDataForm = {
@@ -53,6 +54,7 @@ export async function fetchPaginatedStores(
     throw new Error('Failed to fetch the stores.');
   }
 
-  const data: { stores: Store[]; count: number } = await response.json();
+  const data: { stores: StoresTableStore[]; count: number } =
+    await response.json();
   return data;
 }

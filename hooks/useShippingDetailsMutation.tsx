@@ -1,10 +1,14 @@
 import { useMutation, useQueryClient } from 'react-query';
-import { ShippingData, ShippingDataForm, Store } from '../interfaces';
+import {
+  ShippingData,
+  ShippingDataForm,
+  StoresTableStore,
+} from '../interfaces';
 
 type Props =
   | {
       shipping: ShippingDataForm;
-      stores: Store[];
+      stores: StoresTableStore[];
     }
   | undefined;
 
@@ -17,7 +21,7 @@ export default function useShippingDetailsMutation(props: Props) {
       homepageStores,
     }: {
       formValues: ShippingDataForm;
-      homepageStores: Store[];
+      homepageStores: StoresTableStore[];
     }) => {
       const response = await fetch('/api/shipping/update-shipping-details', {
         method: 'POST',

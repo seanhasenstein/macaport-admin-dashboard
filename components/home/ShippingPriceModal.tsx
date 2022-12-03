@@ -5,7 +5,11 @@ import * as Yup from 'yup';
 import styled from 'styled-components';
 import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
 import useOutsideClick from '../../hooks/useOutsideClick';
-import { ShippingData, ShippingDataForm, Store } from '../../interfaces';
+import {
+  StoresTableStore,
+  ShippingData,
+  ShippingDataForm,
+} from '../../interfaces';
 import LoadingSpinner from '../LoadingSpinner';
 
 const validationSchema = Yup.object().shape({
@@ -19,22 +23,22 @@ const validationSchema = Yup.object().shape({
 
 type Props = {
   initialValues: ShippingDataForm;
-  homepageStores: Store[];
+  homepageStores: StoresTableStore[];
   showModal: boolean;
   setShowModal: React.Dispatch<React.SetStateAction<boolean>>;
   updateShippingDetails: UseMutationResult<
     {
       shipping: ShippingData;
-      stores: Store[];
+      stores: StoresTableStore[];
     },
     unknown,
     {
       formValues: ShippingDataForm;
-      homepageStores: Store[];
+      homepageStores: StoresTableStore[];
     },
     {
       shipping: ShippingDataForm;
-      stores: Store[];
+      stores: StoresTableStore[];
     }
   >;
   onSuccess?: () => void;

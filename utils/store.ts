@@ -1,5 +1,6 @@
 import { getStoreStatus } from '.';
-import { Store, StoreStatusFilter } from '../interfaces';
+import { Store, StoresTableStore, StoreStatusFilter } from '../interfaces';
+import { convertStoreToStoresTableStore } from './storesTable';
 
 export function storeStatusMatches(
   storeStatusFilter: StoreStatusFilter,
@@ -19,13 +20,13 @@ export function paginatedStoresReducer(
   storeStatus: StoreStatusFilter,
   onlyUnfulfilled: boolean
 ) {
-  return stores.reduce((acc: Store[], currResult) => {
+  return stores.reduce((acc: StoresTableStore[], currStore) => {
+    // if 'only stores with unfulfilled orders' is checked
     if (onlyUnfulfilled) {
-      if (
-        currResult.orders.some(order => order.orderStatus === 'Unfulfilled')
-      ) {
-        if (storeStatusMatches(storeStatus, currResult)) {
-          return [...acc, currResult];
+      if (currStore.orders.some(order => order.orderStatus === 'Unfulfilled')) {
+        if (storeStatusMatches(storeStatus, currStore)) {
+          const storesTableStore = convertStoreToStoresTableStore(currStore);
+          return [...acc, storesTableStore];
         } else {
           return acc;
         }
@@ -33,8 +34,9 @@ export function paginatedStoresReducer(
         return acc;
       }
     } else {
-      if (storeStatusMatches(storeStatus, currResult)) {
-        return [...acc, currResult];
+      if (storeStatusMatches(storeStatus, currStore)) {
+        const storesTableStore = convertStoreToStoresTableStore(currStore);
+        return [...acc, storesTableStore];
       } else {
         return acc;
       }

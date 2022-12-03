@@ -184,6 +184,20 @@ export interface Store {
   updatedAt: string;
 }
 
+export interface StoresTableOrders {
+  unfulfilled: number;
+  printed: number;
+  fulfilled: number;
+  completed: number;
+  canceled: number;
+  total: number;
+}
+
+export interface StoresTableStore extends Omit<Store, 'products' | 'orders'> {
+  products: number;
+  orders: StoresTableOrders;
+}
+
 export interface PersonalizationAddon {
   id: string;
   itemId: string;

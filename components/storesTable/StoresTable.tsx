@@ -2,14 +2,14 @@ import React from 'react';
 import Link from 'next/link';
 import styled from 'styled-components';
 import { format } from 'date-fns';
-import { Store } from '../../interfaces';
+import { StoresTableStore } from '../../interfaces';
 import StoresTableMenu from './StoresTableMenu';
 import Notification from '../Notification';
 import StoreStatus from './StoreStatus';
 import Table from '../common/Table';
 
 type Props = {
-  stores: Store[];
+  stores: StoresTableStore[];
   tableLabel?: string;
 };
 
@@ -83,38 +83,13 @@ export default function StoresTable({ stores, tableLabel }: Props) {
                     </div>
                   </div>
                 </td>
-                <td className="text-center">
-                  {s.products ? s.products.length : 0}
-                </td>
-                <td className="text-center">
-                  {s.orders ? s.orders.length : 0}
-                </td>
-                <td className="text-center">
-                  {s.orders
-                    ? s.orders.filter(o => o.orderStatus === 'Unfulfilled')
-                        .length
-                    : 0}
-                </td>
-                <td className="text-center">
-                  {s.orders
-                    ? s.orders.filter(o => o.orderStatus === 'Printed').length
-                    : 0}
-                </td>
-                <td className="text-center">
-                  {s.orders
-                    ? s.orders.filter(o => o.orderStatus === 'Fulfilled').length
-                    : 0}
-                </td>
-                <td className="text-center">
-                  {s.orders
-                    ? s.orders.filter(o => o.orderStatus === 'Completed').length
-                    : 0}
-                </td>
-                <td className="text-center">
-                  {s.orders
-                    ? s.orders.filter(o => o.orderStatus === 'Canceled').length
-                    : 0}
-                </td>
+                <td className="text-center">{s.products}</td>
+                <td className="text-center">{s.orders.total}</td>
+                <td className="text-center">{s.orders.unfulfilled}</td>
+                <td className="text-center">{s.orders.printed}</td>
+                <td className="text-center">{s.orders.fulfilled}</td>
+                <td className="text-center">{s.orders.completed}</td>
+                <td className="text-center">{s.orders.canceled}</td>
                 <td className="store-actions">
                   <StoresTableMenu
                     storeId={s._id}
