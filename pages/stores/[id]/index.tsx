@@ -18,6 +18,7 @@ import Notification from '../../../components/Notification';
 import CSVDownloadModal from '../../../components/store/CSVDownloadModal';
 import PrintableOrder from '../../../components/PrintableOrder';
 import DeleteStoreModal from '../../../components/store/DeleteStoreModal';
+import TableLoadingSpinner from '../../../components/TableLoadingSpinner';
 
 type StoreStatus = 'upcoming' | 'open' | 'closed';
 
@@ -60,9 +61,7 @@ export default function Store() {
     >
       <StoreStyles>
         <div className="container">
-          {storeQuery.isLoading && (
-            <LoadingSpinner isLoading={storeQuery.isLoading} />
-          )}
+          {storeQuery.isLoading && <TableLoadingSpinner />}
 
           {storeQuery.isError && storeQuery.error instanceof Error && (
             <div>Error: {storeQuery.error}</div>
