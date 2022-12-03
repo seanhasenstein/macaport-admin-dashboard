@@ -108,6 +108,7 @@ export interface PersonalizationForm extends Omit<Personalization, 'addons'> {
 export interface StoreProduct {
   id: string;
   inventoryProductId: string;
+  artworkId?: string;
   merchandiseCode: string;
   name: string;
   description: string;
