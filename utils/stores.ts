@@ -1,4 +1,5 @@
 import { getStoreStatus } from '.';
+
 import { Store } from '../interfaces';
 
 export function sortStoresByOpenDate(stores: Store[], isDescending: boolean) {
@@ -70,11 +71,12 @@ export function homepageStoresReducer(stores: Store[]) {
         return { ...accumulator, upcomingStores: sortedUpcomingStores };
       }
 
-      const storeHasUnfulfilledOrders = currentStore.orders.some(
-        order => order.orderStatus === 'Unfulfilled'
+      const storeHasOrdersNotCompletedOrCanceled = currentStore.orders.some(
+        order =>
+          order.orderStatus !== 'Completed' && order.orderStatus !== 'Canceled'
       );
 
-      if (storeStatus === 'closed' && storeHasUnfulfilledOrders) {
+      if (storeStatus === 'closed' && storeHasOrdersNotCompletedOrCanceled) {
         const sortedClosedStores = sortStoresByCloseDate(
           [...accumulator.closedStores, currentStore],
           false

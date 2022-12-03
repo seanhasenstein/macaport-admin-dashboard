@@ -1,10 +1,13 @@
 import { NextApiResponse } from 'next';
 import nc from 'next-connect';
-import { withAuth } from '../../../utils/withAuth';
-import { Request, Store } from '../../../interfaces';
+
 import database from '../../../middleware/db';
 import { shipping, store } from '../../../db';
+
+import { withAuth } from '../../../utils/withAuth';
 import { homepageStoresReducer } from '../../../utils/stores';
+
+import { Request, Store } from '../../../interfaces';
 
 const handler = nc<Request, NextApiResponse>()
   .use(database)
