@@ -48,51 +48,46 @@ interface StoreAccumulator {
 }
 
 export function homepageStoresReducer(stores: Store[]) {
-  try {
-    const { closedStores, openStores, upcomingStores } = stores.reduce(
-      (accumulator: StoreAccumulator, currentStore) => {
-        const storeStatus = getStoreStatus(
-          currentStore.openDate,
-          currentStore.closeDate
+  const { closedStores, openStores, upcomingStores } = stores.reduce(
+    (accumulator: StoreAccumulator, currentStore) => {
+      const storeStatus = getStoreStatus(
+        currentStore.openDate,
+        currentStore.closeDate
+      );
+
+      if (storeStatus === 'open') {
+        const sortedOpenStores = sortStoresByCloseDate(
+          [...accumulator.openStores, currentStore],
+          false
         );
+        return { ...accumulator, openStores: sortedOpenStores };
+      }
 
-        if (storeStatus === 'open') {
-          const sortedOpenStores = sortStoresByCloseDate(
-            [...accumulator.openStores, currentStore],
-            false
-          );
-          return { ...accumulator, openStores: sortedOpenStores };
-        }
-
-        if (storeStatus === 'upcoming') {
-          const sortedUpcomingStores = sortStoresByOpenDate(
-            [...accumulator.upcomingStores, currentStore],
-            false
-          );
-          return { ...accumulator, upcomingStores: sortedUpcomingStores };
-        }
-
-        const storeHasOrdersNotCompletedOrCanceled = currentStore.orders.some(
-          order =>
-            order.orderStatus !== 'Completed' &&
-            order.orderStatus !== 'Canceled'
+      if (storeStatus === 'upcoming') {
+        const sortedUpcomingStores = sortStoresByOpenDate(
+          [...accumulator.upcomingStores, currentStore],
+          false
         );
+        return { ...accumulator, upcomingStores: sortedUpcomingStores };
+      }
 
-        if (storeStatus === 'closed' && storeHasOrdersNotCompletedOrCanceled) {
-          const sortedClosedStores = sortStoresByCloseDate(
-            [...accumulator.closedStores, currentStore],
-            false
-          );
-          return { ...accumulator, closedStores: sortedClosedStores };
-        }
+      const storeHasOrdersNotCompletedOrCanceled = currentStore.orders.some(
+        order =>
+          order.orderStatus !== 'Completed' && order.orderStatus !== 'Canceled'
+      );
 
-        return accumulator;
-      },
-      { upcomingStores: [], openStores: [], closedStores: [] }
-    );
+      if (storeStatus === 'closed' && storeHasOrdersNotCompletedOrCanceled) {
+        const sortedClosedStores = sortStoresByCloseDate(
+          [...accumulator.closedStores, currentStore],
+          false
+        );
+        return { ...accumulator, closedStores: sortedClosedStores };
+      }
 
-    return [...closedStores, ...openStores, ...upcomingStores];
-  } catch (err) {
-    console.log(err);
-  }
+      return accumulator;
+    },
+    { upcomingStores: [], openStores: [], closedStores: [] }
+  );
+
+  return [...closedStores, ...openStores, ...upcomingStores];
 }
