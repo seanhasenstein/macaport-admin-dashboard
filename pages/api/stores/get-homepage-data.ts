@@ -12,7 +12,6 @@ import { Request, Store } from '../../../interfaces';
 const handler = nc<Request, NextApiResponse>()
   .use(database)
   .get(async (req, res) => {
-    throw new Error('blahhhh');
     const storesData: Store[] = await store.getStores(req.db);
     const shippingData = await shipping.getShippingData(req.db);
     const homepageStores = homepageStoresReducer(storesData);
