@@ -47,7 +47,6 @@ export default function ShippingPriceModal(props: Props) {
   useEscapeKeydownClose(props.showModal, props.setShowModal);
 
   const handleSubmit = (formValues: ShippingDataForm) => {
-    console.log('hello?');
     props.updateShippingDetails.mutate(
       { formValues, homepageStores: props.homepageStores },
       {

@@ -25,7 +25,6 @@ export async function fetchHomepageData(): Promise<FetchHomepageData> {
   const response = await fetch('/api/stores/get-homepage-data');
 
   if (!response.ok) {
-    console.log(await response.text());
     throw new Error('Failed to fetch the stores.');
   }
 

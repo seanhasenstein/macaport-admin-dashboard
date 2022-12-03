@@ -2,7 +2,10 @@ import { getStoreStatus } from '.';
 
 import { Store } from '../interfaces';
 
-export function sortStoresByOpenDate(stores: Store[], isDescending: boolean) {
+export function sortStoresByOpenDate(
+  stores: HomepageStore[],
+  isDescending: boolean
+) {
   return stores.sort((storeA, storeB) => {
     const result = () => {
       if (storeA.openDate > storeB.openDate) {
@@ -18,7 +21,10 @@ export function sortStoresByOpenDate(stores: Store[], isDescending: boolean) {
   });
 }
 
-export function sortStoresByCloseDate(stores: Store[], isDescending: boolean) {
+export function sortStoresByCloseDate(
+  stores: HomepageStore[],
+  isDescending: boolean
+) {
   return stores.sort((storeA, storeB) => {
     const storeACloseDate = storeA.closeDate
       ? storeA.closeDate
@@ -41,15 +47,19 @@ export function sortStoresByCloseDate(stores: Store[], isDescending: boolean) {
   });
 }
 
+type HomepageStore = Omit<Store, 'products'>;
+
 interface StoreAccumulator {
-  upcomingStores: Store[];
-  openStores: Store[];
-  closedStores: Store[];
+  upcomingStores: HomepageStore[];
+  openStores: HomepageStore[];
+  closedStores: HomepageStore[];
 }
 
 export function homepageStoresReducer(stores: Store[]) {
   const { closedStores, openStores, upcomingStores } = stores.reduce(
     (accumulator: StoreAccumulator, currentStore) => {
+      const { products, ...store } = currentStore;
+
       const storeStatus = getStoreStatus(
         currentStore.openDate,
         currentStore.closeDate
@@ -57,7 +67,7 @@ export function homepageStoresReducer(stores: Store[]) {
 
       if (storeStatus === 'open') {
         const sortedOpenStores = sortStoresByCloseDate(
-          [...accumulator.openStores, currentStore],
+          [...accumulator.openStores, store],
           false
         );
         return { ...accumulator, openStores: sortedOpenStores };
@@ -65,7 +75,7 @@ export function homepageStoresReducer(stores: Store[]) {
 
       if (storeStatus === 'upcoming') {
         const sortedUpcomingStores = sortStoresByOpenDate(
-          [...accumulator.upcomingStores, currentStore],
+          [...accumulator.upcomingStores, store],
           false
         );
         return { ...accumulator, upcomingStores: sortedUpcomingStores };
@@ -78,7 +88,7 @@ export function homepageStoresReducer(stores: Store[]) {
 
       if (storeStatus === 'closed' && storeHasOrdersNotCompletedOrCanceled) {
         const sortedClosedStores = sortStoresByCloseDate(
-          [...accumulator.closedStores, currentStore],
+          [...accumulator.closedStores, store],
           false
         );
         return { ...accumulator, closedStores: sortedClosedStores };

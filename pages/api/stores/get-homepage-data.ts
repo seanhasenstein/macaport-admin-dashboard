@@ -15,7 +15,6 @@ const handler = nc<Request, NextApiResponse>()
     const storesData: Store[] = await store.getStores(req.db);
     const shippingData = await shipping.getShippingData(req.db);
     const homepageStores = homepageStoresReducer(storesData);
-    console.log('homepageStores', homepageStores);
     res.json({ stores: homepageStores, shipping: shippingData });
   });
 
