@@ -289,12 +289,12 @@ export default function AddProduct() {
               throw new Error('Failed to find the requested inventoryProduct.');
             }
 
-            const skus = createStoreProductSkus(
+            const skus = createStoreProductSkus({
               sizes,
               colors,
-              values.id,
-              inventoryProduct.skus
-            );
+              storeProductId: values.id,
+              inventoryProductSkus: inventoryProduct.skus,
+            });
 
             const personalization = formatPersonalizationValues(
               values.personalization

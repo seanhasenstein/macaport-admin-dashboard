@@ -5,7 +5,6 @@ import {
   InventorySku,
   Note,
   ProductSku,
-  Store,
   StoreProduct,
 } from '../interfaces';
 import { createId, formatHexColors } from '.';
@@ -89,7 +88,6 @@ export function updateInventoryProductSkus(
 }
 
 export function updateStoreProductSkus(
-  store: Store,
   previousStoreProduct: StoreProduct,
   formValues: UpdateFormValues
 ) {
