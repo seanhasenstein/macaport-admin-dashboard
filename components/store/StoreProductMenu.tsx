@@ -105,6 +105,7 @@ const StoreProductMenuStyles = styled.div`
   .menu-button {
     padding: 0 0.5rem;
     margin-left: auto;
+    margin-right: 0.5rem;
     height: 1.5rem;
     width: 2rem;
     display: flex;
@@ -131,8 +132,8 @@ const StoreProductMenuStyles = styled.div`
     margin: 0.25rem 0 0;
     padding: 0 1rem;
     position: absolute;
-    top: 2.25rem;
-    right: 0.875rem;
+    top: 3.25rem;
+    right: 2.25rem;
     display: none;
     flex-direction: column;
     align-items: flex-start;

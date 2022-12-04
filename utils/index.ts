@@ -175,12 +175,19 @@ export function createInventoryProductSkus(
   return skus;
 }
 
-export function createStoreProductSkus(
-  sizes: Size[],
-  colors: Color[],
-  storeProductId: string,
-  inventoryProductSkus: InventorySku[]
-) {
+interface CreateStoreProductSkus {
+  sizes: Size[];
+  colors: Color[];
+  storeProductId: string;
+  inventoryProductSkus: InventorySku[];
+}
+
+export function createStoreProductSkus({
+  sizes,
+  colors,
+  storeProductId,
+  inventoryProductSkus,
+}: CreateStoreProductSkus) {
   let skus: ProductSku[] = [];
 
   colors.forEach(c => {

@@ -29,8 +29,9 @@ import Notification from '../../../../components/Notification';
 import LoadingSpinner from '../../../../components/LoadingSpinner';
 
 type InitialValues = {
-  inventoryProductId: string;
   id: string;
+  inventoryProductId: string;
+  artworkId: string;
   name: string;
   description: string;
   tag: string;
@@ -234,8 +235,9 @@ export default function AddProduct() {
 
   const initialValues: InitialValues = React.useMemo(() => {
     return {
-      inventoryProductId: inventoryProduct?.inventoryProductId || '',
       id: createId('str_prod'),
+      inventoryProductId: inventoryProduct?.inventoryProductId || '',
+      artworkId: '',
       name: inventoryProduct?.name || '',
       description: inventoryProduct?.description || '',
       tag: inventoryProduct?.tag || '',
@@ -287,12 +289,12 @@ export default function AddProduct() {
               throw new Error('Failed to find the requested inventoryProduct.');
             }
 
-            const skus = createStoreProductSkus(
+            const skus = createStoreProductSkus({
               sizes,
               colors,
-              values.id,
-              inventoryProduct.skus
-            );
+              storeProductId: values.id,
+              inventoryProductSkus: inventoryProduct.skus,
+            });
 
             const personalization = formatPersonalizationValues(
               values.personalization
@@ -389,6 +391,11 @@ export default function AddProduct() {
                             component="div"
                             className="validation-error"
                           />
+                        </div>
+
+                        <div className="item">
+                          <label htmlFor="artworkId">Artwork ID</label>
+                          <Field name="artworkId" id="artworkId" />
                         </div>
 
                         <div className="item">

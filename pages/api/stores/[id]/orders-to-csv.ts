@@ -131,9 +131,13 @@ const handler = nc<Request, NextApiResponse>()
               [header[7].id]: `${formatToMoney(item.itemTotal, true)}`,
             };
 
-            let addonRows: Record<string, any>[] = [];
+            let personalizationAddonRows: Record<string, any>[] = [];
+            const artworkId = {
+              [header[0].id]: '',
+              [header[1].id]: `Artwork ID: ${item.artworkId || 'Not provided'}`,
+            };
             if (item.personalizationAddons.length > 0) {
-              addonRows = item.personalizationAddons.reduce(
+              personalizationAddonRows = item.personalizationAddons.reduce(
                 (accumulator: Record<string, any>[], currentAddon) => {
                   const baseAddonRow = {
                     [header[0].id]: '',
@@ -157,7 +161,7 @@ const handler = nc<Request, NextApiResponse>()
               );
             }
 
-            rows = [...rows, itemRow, ...addonRows];
+            rows = [...rows, itemRow, artworkId, ...personalizationAddonRows];
           });
           return [...orderItemsRowsAcc, rows];
         },

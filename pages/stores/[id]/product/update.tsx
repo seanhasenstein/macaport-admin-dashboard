@@ -204,6 +204,12 @@ export default function UpdateProduct() {
                           className="validation-error"
                         />
                       </div>
+
+                      <div className="item">
+                        <label htmlFor="artworkId">Artwork ID</label>
+                        <Field name="artworkId" id="artworkId" />
+                      </div>
+
                       <div className="item">
                         <label htmlFor="description">Product description</label>
                         <Field
@@ -212,6 +218,7 @@ export default function UpdateProduct() {
                           id="description"
                         />
                       </div>
+
                       <div className="item">
                         <label htmlFor="tag">Product tag</label>
                         <Field
