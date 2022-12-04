@@ -38,17 +38,19 @@ export default function OrderItems({ order }: Props) {
                       {item.name}
                     </Link>
                   </div>
+                  <div className="meta-item">
+                    <span className="label">Artwork ID:</span>
+                    <span className="value">
+                      {item.artworkId || 'Not provided'}
+                    </span>
+                  </div>
                   {item.personalizationAddons.length > 0 && (
                     <div className="addon-items">
                       {item.personalizationAddons.map(addonItem => (
-                        <div key={addonItem.id} className="addon-item">
+                        <div key={addonItem.id} className="meta-item">
                           <div className="flex-row-center">
-                            <span className="addon-label">
-                              {addonItem.addon}:
-                            </span>
-                            <span className="addon-value">
-                              {addonItem.value}
-                            </span>
+                            <span className="label">{addonItem.addon}:</span>
+                            <span className="value">{addonItem.value}</span>
                             <span className="addon-location">
                               [{addonItem.location.toLowerCase()}]
                             </span>
@@ -56,14 +58,10 @@ export default function OrderItems({ order }: Props) {
                           {addonItem.subItems.map(subitem => (
                             <div
                               key={subitem.id}
-                              className="addon-item flex-row-center"
+                              className="meta-item flex-row-center"
                             >
-                              <span className="addon-label">
-                                {subitem.addon}:
-                              </span>
-                              <span className="addon-value">
-                                {subitem.value}
-                              </span>
+                              <span className="label">{subitem.addon}:</span>
+                              <span className="value">{subitem.value}</span>
                               <span className="addon-location">
                                 [{subitem.location.toLowerCase()}]
                               </span>
@@ -110,10 +108,8 @@ const OrderItemsStyles = styled.div`
     margin: 0.3125rem 0 0 0;
   }
 
-  .addon-item {
+  .meta-item {
     margin: 0.25rem 0 0;
-    font-size: 0.8125rem;
-    color: #374151;
   }
 
   .flex-row-center {
@@ -121,15 +117,20 @@ const OrderItemsStyles = styled.div`
     align-items: center;
   }
 
-  .addon-label {
+  .label {
     margin: 0 0.25rem 0 0;
     display: inline-flex;
     color: #6b7280;
   }
 
+  .value {
+    font-size: 0.8125rem;
+    color: #1f2937;
+  }
+
   .addon-location {
     margin: 0 0 0 0.25rem;
-    font-size: 0.625rem;
+    font-size: 0.6875rem;
     color: #6b7280;
   }
 `;
