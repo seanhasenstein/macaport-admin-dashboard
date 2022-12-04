@@ -6,6 +6,7 @@ import { Store } from '../../interfaces';
 import { useStoreMutations } from '../../hooks/useStoreMutations';
 import useDragNDrop from '../../hooks/useDragNDrop';
 import StoreProductMenu from './StoreProductMenu';
+import { getActiveProductColors } from '../../utils/storeProductColors';
 
 type Props = {
   store: Store;
@@ -57,102 +58,134 @@ export default function StoreProducts({ store }: Props) {
 
           {store.products?.length > 0 ? (
             <div className="products">
-              {dnd.list.map((product, index) => (
-                <div
-                  key={product.id}
-                  draggable={dnd.dragging}
-                  onDragStart={e => dnd.handleDragStart(e, index)}
-                  onDragEnter={
-                    dnd.dragging
-                      ? e => dnd.handleDragEnter(e, index)
-                      : undefined
-                  }
-                  onDragOver={e => e.preventDefault()}
-                  onDrop={dnd.handleDrop}
-                  className={dnd.dragging ? dnd.getStyles(index) : 'product'}
-                >
-                  <button
-                    type="button"
-                    onMouseDown={dnd.handleMouseDown}
-                    onMouseUp={dnd.handleMouseUp}
-                    className="drag-button"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
-                      />
-                    </svg>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
-                      />
-                    </svg>
-                  </button>
-                  <div className="product-primary-img">
-                    {product.colors[0].primaryImage ? (
-                      <img
-                        src={product.colors[0].primaryImage}
-                        alt={product.name}
-                      />
-                    ) : (
-                      <div className="no-img">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth={1.5}
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
-                          />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                  <div className="product-item">
-                    <div className="product-name">
-                      <Link
-                        href={`/stores/${store._id}/product?pid=${product.id}`}
-                      >
-                        <a className="primary-link">{product.name}</a>
-                      </Link>
-                    </div>
-                    <div className="secondary-item merch-code">
-                      <span className="mobile-label">Merch. Code:</span>
-                      {product.merchandiseCode}
-                    </div>
-                    <div className="secondary-item artwork-id">
-                      <span className="mobile-label">Artwork ID:</span>
-                      {product.artworkId || ''}
-                    </div>
-                  </div>
+              {dnd.list.map((product, index) => {
+                const activeColors = getActiveProductColors(product);
+                const firstActiveColorWithPrimaryImg = activeColors.find(
+                  activeColor =>
+                    product.productSkus.find(
+                      prodSku =>
+                        prodSku.color.id === activeColor.id &&
+                        prodSku.active &&
+                        prodSku.inventorySkuActive
+                    )
+                );
 
-                  <StoreProductMenu
-                    storeId={store._id}
-                    productId={product.id}
-                    inventoryProductId={product.inventoryProductId}
-                  />
-                </div>
-              ))}
+                return (
+                  <div
+                    key={product.id}
+                    draggable={dnd.dragging}
+                    onDragStart={e => dnd.handleDragStart(e, index)}
+                    onDragEnter={
+                      dnd.dragging
+                        ? e => dnd.handleDragEnter(e, index)
+                        : undefined
+                    }
+                    onDragOver={e => e.preventDefault()}
+                    onDrop={dnd.handleDrop}
+                    className={dnd.dragging ? dnd.getStyles(index) : 'product'}
+                  >
+                    <button
+                      type="button"
+                      onMouseDown={dnd.handleMouseDown}
+                      onMouseUp={dnd.handleMouseUp}
+                      className="drag-button"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
+                        />
+                      </svg>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
+                        />
+                      </svg>
+                    </button>
+                    <div className="product-primary-img">
+                      {firstActiveColorWithPrimaryImg ? (
+                        <img
+                          src={firstActiveColorWithPrimaryImg.primaryImage}
+                          alt={product.name}
+                        />
+                      ) : (
+                        <div className="no-img">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={1.5}
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div className="product-item">
+                      <div>
+                        <div className="product-name">
+                          <Link
+                            href={`/stores/${store._id}/product?pid=${product.id}`}
+                          >
+                            <a className="primary-link">{product.name}</a>
+                          </Link>
+                        </div>
+                        <div className="product-colors">
+                          {activeColors.length > 0 ? (
+                            <>
+                              {activeColors.map(color => (
+                                <ProductColor
+                                  key={color.id}
+                                  hex={color.hex}
+                                  title={color.hex}
+                                />
+                              ))}
+                            </>
+                          ) : (
+                            <div className="no-active-colors">
+                              No active colors
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="secondary-item merch-code">
+                        <span className="mobile-label">Merch. Code:</span>
+                        {product.merchandiseCode}
+                      </div>
+                      <div className="secondary-item artwork-id">
+                        <span className="mobile-label">Artwork ID:</span>
+                        {product.artworkId || ''}
+                      </div>
+                    </div>
+
+                    <StoreProductMenu
+                      storeId={store._id}
+                      productId={product.id}
+                      inventoryProductId={product.inventoryProductId}
+                    />
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="empty">
@@ -323,7 +356,7 @@ const StoreProductsStyles = styled.div`
     }
 
     .no-img {
-      padding: 0.375rem 0.25rem 0.25rem;
+      padding: 0.625rem 0.25rem 0.375rem;
 
       svg {
         height: 1.125rem;
@@ -362,6 +395,23 @@ const StoreProductsStyles = styled.div`
       font-weight: 500;
       color: #4b5563;
     }
+  }
+
+  .product-colors {
+    margin: 0.375rem 0 0;
+    display: flex;
+    gap: 0.3125rem;
+  }
+
+  .no-active-colors {
+    margin: 0.125rem 0 0;
+    padding: 0.25rem 0.875rem;
+    background-color: #f9fafb;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+    border-radius: 9999px;
   }
 
   .mobile-label {
@@ -422,4 +472,13 @@ const StoreProductsStyles = styled.div`
       display: block;
     }
   }
+`;
+
+const ProductColor = styled.div<{ hex: string }>`
+  background-color: ${props => props.hex};
+  height: 1rem;
+  width: 1rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 `;
