@@ -5,6 +5,7 @@ import { Color, StoreProduct } from '../../interfaces';
 import { useStoreProductMutations } from '../../hooks/useStoreProductMutations';
 import useDragNDrop from '../../hooks/useDragNDrop';
 import StoreProductSecondaryImages from './StoreProductSecondaryImages';
+import { getActiveProductColors } from '../../utils/storeProductColors';
 
 type Props = {
   product: StoreProduct;
@@ -23,28 +24,9 @@ export default function StoreProductColors({ product }: Props) {
   );
 
   React.useEffect(() => {
-    const includedColorsArray = product.productSkus.reduce(
-      (accumulator: string[], currentSku) => {
-        if (accumulator.includes(currentSku.color.id)) {
-          return accumulator;
-        } else if (
-          currentSku.active === true &&
-          currentSku.inventorySkuActive === true
-        ) {
-          return [...accumulator, currentSku.color.id];
-        } else {
-          return accumulator;
-        }
-      },
-      []
-    );
-
-    const updatedActiveColors = product.colors.filter(color =>
-      includedColorsArray.includes(color.id)
-    );
-
+    const updatedActiveColors = getActiveProductColors(product);
     setActiveColors(updatedActiveColors);
-  }, [product.colors, product.productSkus]);
+  }, [product]);
 
   return (
     <StoreProductColorStyles>
