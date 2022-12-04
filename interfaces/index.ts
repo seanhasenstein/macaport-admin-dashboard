@@ -108,6 +108,7 @@ export interface PersonalizationForm extends Omit<Personalization, 'addons'> {
 export interface StoreProduct {
   id: string;
   inventoryProductId: string;
+  artworkId?: string;
   merchandiseCode: string;
   name: string;
   description: string;
@@ -212,6 +213,7 @@ export interface PersonalizationAddon {
 export interface OrderItem {
   sku: ProductSku;
   merchandiseCode: string;
+  artworkId?: string;
   name: string;
   image: string;
   price: number;

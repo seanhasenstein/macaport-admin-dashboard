@@ -23,8 +23,9 @@ const url = `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINAR
 
 type InitialValues = {
   id: string;
-  merchandiseCode: string;
   inventoryProductId: string;
+  artworkId: string;
+  merchandiseCode: string;
   name: string;
   description: string;
   tag: string;
@@ -51,6 +52,7 @@ export function useUpdateStoreProduct(props: Props) {
   const [initialValues, setInitialValues] = React.useState<InitialValues>({
     id: '',
     inventoryProductId: '',
+    artworkId: '',
     merchandiseCode: '',
     name: '',
     description: '',
@@ -95,6 +97,7 @@ export function useUpdateStoreProduct(props: Props) {
       setInitialValues({
         id: product.id,
         inventoryProductId: product.inventoryProductId,
+        artworkId: product.artworkId || '',
         merchandiseCode: product.merchandiseCode,
         name: product.name,
         description: product.description,

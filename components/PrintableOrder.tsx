@@ -134,6 +134,14 @@ export default function PrintableOrder({ order, store }: Props) {
                     <tr key={`${item.sku.id}-${index}`}>
                       <td>
                         <div className="order-item-name">{item.name}</div>
+                        {item.artworkId ? (
+                          <div className="addon-item">
+                            <span className="addon-label">Artwork ID:</span>
+                            <span className="addon-value">
+                              {item.artworkId}
+                            </span>
+                          </div>
+                        ) : null}
                         {item.personalizationAddons.length > 0 && (
                           <div className="addon-items">
                             {item.personalizationAddons.map(addon => (
@@ -386,6 +394,10 @@ const PrintableOrderStyles = styled.div`
 
       &.addon-label {
         margin: 0 0.25rem 0 0;
+      }
+
+      &.addon-value {
+        color: #18181b;
       }
 
       &.location {

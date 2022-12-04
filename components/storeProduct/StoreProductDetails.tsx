@@ -9,6 +9,12 @@ export default function StoreProductDetails({ storeProduct }: Props) {
   return (
     <StoreProductDetailsStyles>
       <h3 className="section-title">Store product details</h3>
+
+      <div className="detail-item">
+        <div className="label">Artwork ID</div>
+        <div className="value">{storeProduct.artworkId || 'Not provided'}</div>
+      </div>
+
       <div className="detail-item">
         <div className="label">Merchandise code</div>
         <div className="value">{storeProduct.merchandiseCode}</div>

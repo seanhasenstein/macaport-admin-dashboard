@@ -5,6 +5,7 @@ import { Color, StoreProduct } from '../../interfaces';
 import { useStoreProductMutations } from '../../hooks/useStoreProductMutations';
 import useDragNDrop from '../../hooks/useDragNDrop';
 import StoreProductSecondaryImages from './StoreProductSecondaryImages';
+import { getActiveProductColors } from '../../utils/storeProductColors';
 
 type Props = {
   product: StoreProduct;
@@ -23,117 +24,108 @@ export default function StoreProductColors({ product }: Props) {
   );
 
   React.useEffect(() => {
-    const includedColorsArray = product.productSkus.reduce(
-      (accumulator: string[], currentSku) => {
-        if (accumulator.includes(currentSku.color.id)) {
-          return accumulator;
-        } else if (
-          currentSku.active === true &&
-          currentSku.inventorySkuActive === true
-        ) {
-          return [...accumulator, currentSku.color.id];
-        } else {
-          return accumulator;
-        }
-      },
-      []
-    );
-
-    const updatedActiveColors = product.colors.filter(color =>
-      includedColorsArray.includes(color.id)
-    );
-
+    const updatedActiveColors = getActiveProductColors(product);
     setActiveColors(updatedActiveColors);
-  }, [product.colors, product.productSkus]);
+  }, [product]);
 
   return (
     <StoreProductColorStyles>
       <h3>Product colors</h3>
       {router.query.id ? (
-        <div className="colors-container">
-          {dnd.list.map((color, index) => (
-            <div
-              key={color.id}
-              draggable={dnd.dragging}
-              onDragStart={e => dnd.handleDragStart(e, index)}
-              onDragEnter={
-                dnd.dragging ? e => dnd.handleDragEnter(e, index) : undefined
-              }
-              onDragOver={e => e.preventDefault()}
-              onDrop={dnd.handleDrop}
-              className={dnd.dragging ? dnd.getStyles(index) : 'prod-color'}
-            >
-              {dnd.list.length > 1 && (
-                <button
-                  type="button"
-                  onMouseDown={dnd.handleMouseDown}
-                  onMouseUp={dnd.handleMouseUp}
-                  className="drag-button"
+        <>
+          {dnd.list.length > 0 ? (
+            <div className="colors-container">
+              {dnd.list.map((color, index) => (
+                <div
+                  key={color.id}
+                  draggable={dnd.dragging}
+                  onDragStart={e => dnd.handleDragStart(e, index)}
+                  onDragEnter={
+                    dnd.dragging
+                      ? e => dnd.handleDragEnter(e, index)
+                      : undefined
+                  }
+                  onDragOver={e => e.preventDefault()}
+                  onDrop={dnd.handleDrop}
+                  className={dnd.dragging ? dnd.getStyles(index) : 'prod-color'}
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
-                    />
-                  </svg>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
-                    />
-                  </svg>
-                </button>
-              )}
-              <div className="color-details">
-                <div className="color-item">
-                  <div className="color-label">Label</div>
-                  <div className="color-value">{color.label}</div>
-                </div>
-                <div className="color-item">
-                  <div className="color-label">Hex</div>
-                  <div className="color-value">
-                    <ColorSpan hex={color.hex} />
-                    {color.hex}
+                  {dnd.list.length > 1 && (
+                    <button
+                      type="button"
+                      onMouseDown={dnd.handleMouseDown}
+                      onMouseUp={dnd.handleMouseUp}
+                      className="drag-button"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
+                        />
+                      </svg>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                  <div className="color-details">
+                    <div className="color-item">
+                      <div className="color-label">Label</div>
+                      <div className="color-value">{color.label}</div>
+                    </div>
+                    <div className="color-item">
+                      <div className="color-label">Hex</div>
+                      <div className="color-value">
+                        <ColorSpan hex={color.hex} />
+                        {color.hex}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-              <div className="color-imgs">
-                <div className="primary-img">
-                  <div className="color-label">Primary Image</div>
-                  {color.primaryImage ? (
-                    <div className="color-value">
-                      <img
-                        src={color.primaryImage}
-                        alt={`${color.label} primary`}
+                  <div className="color-imgs">
+                    <div className="primary-img">
+                      <div className="color-label">Primary Image</div>
+                      {color.primaryImage ? (
+                        <div className="color-value">
+                          <img
+                            src={color.primaryImage}
+                            alt={`${color.label} primary`}
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className="secondary-imgs">
+                      <div className="color-label">Secondary Images</div>
+                      <StoreProductSecondaryImages
+                        color={color}
+                        product={product}
                       />
                     </div>
-                  ) : null}
+                  </div>
                 </div>
-                <div className="secondary-imgs">
-                  <div className="color-label">Secondary Images</div>
-                  <StoreProductSecondaryImages
-                    color={color}
-                    product={product}
-                  />
-                </div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
+          ) : (
+            <div className="no-active-colors">
+              This product currently has no active colors.
+            </div>
+          )}
+        </>
       ) : (
         <div>A store ID is required.</div>
       )}
@@ -245,6 +237,12 @@ const StoreProductColorStyles = styled.div`
     display: flex;
     align-items: center;
     color: #374151;
+  }
+
+  .no-active-colors {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #6b7280;
   }
 `;
 

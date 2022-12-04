@@ -27,7 +27,7 @@ const handler = nc<Request, NextApiResponse>()
       ) {
         const updatedStoreProducts = store.products.map(p => {
           if (p.inventoryProductId === update.inventoryProductId) {
-            const updatedProductSkus = updateStoreProductSkus(store, p, update);
+            const updatedProductSkus = updateStoreProductSkus(p, update);
             const sizes = update.sizes.map(s => {
               const prevSize = p.sizes.find(ps => ps.id === s.id);
               return { ...prevSize, ...s, price: prevSize?.price || 0 };

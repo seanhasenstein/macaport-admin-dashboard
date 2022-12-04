@@ -12,7 +12,7 @@ export async function getInventoryProductById(db: Db, id: string) {
 
 export async function getAllInventoryProducts(db: Db) {
   const result = await db
-    .collection('inventoryProducts')
+    .collection<InventoryProduct>('inventoryProducts')
     .aggregate([{ $sort: { updatedAt: -1 } }])
     .toArray();
   return result;
