@@ -70,7 +70,7 @@ const GlobalStyles = createGlobalStyle`
   height: 100%;
   font-size: 16px;
   letter-spacing: -0.011em;
-  background-color: #f3f4f6;
+  background-color: #f4f4f5;
   -webkit-font-smoothing: antialiased;
   font-feature-settings: "cv02","cv03","cv04","cv09", "cv11";
 }
