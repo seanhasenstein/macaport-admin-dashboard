@@ -12,6 +12,7 @@ import {
   formatPhoneNumber,
   formatToMoney,
 } from '../../../../utils';
+import { hydrateOrderItemsWithArtworkId } from '../../../../utils/orderItem';
 
 type Field = {
   id: number;
@@ -22,12 +23,15 @@ type Field = {
 const handler = nc<Request, NextApiResponse>()
   .use(database)
   .post(async (req, res) => {
-    const data: Store = await store.getStoreById(req.db, req.query.id);
+    const queriedStore: Store = await store.getStoreById(req.db, req.query.id);
 
     const headerFields = [
       { id: 'orderId', title: 'ORDER ID' },
       { id: 'date', title: 'DATE' },
-      { id: data.groupTerm, title: data.groupTerm.toUpperCase() },
+      {
+        id: queriedStore.groupTerm,
+        title: queriedStore.groupTerm.toUpperCase(),
+      },
       { id: 'customer.firstName', title: 'FIRST NAME' },
       { id: 'customer.lastName', title: 'LAST NAME' },
       { id: 'customer.email', title: 'EMAIL' },
@@ -64,10 +68,10 @@ const handler = nc<Request, NextApiResponse>()
     });
 
     let records: any[];
-    if (!data.orders || data.orders.length === 0) {
+    if (!queriedStore.orders || queriedStore.orders.length === 0) {
       records = [];
     } else {
-      records = data.orders.map(order => {
+      records = queriedStore.orders.map(order => {
         const zonedDate = utcToZonedTime(
           new Date(order.createdAt),
           'America/Chicago'
@@ -79,7 +83,7 @@ const handler = nc<Request, NextApiResponse>()
         return {
           orderId: order.orderId,
           date: createdAt,
-          [data.groupTerm]: order.group,
+          [queriedStore.groupTerm]: order.group,
           ['customer.firstName']: order.customer.firstName,
           ['customer.lastName']: order.customer.lastName,
           ['customer.email']: order.customer.email,
@@ -116,10 +120,16 @@ const handler = nc<Request, NextApiResponse>()
       req.body.fields.some((f: Field) => f.field === 'orderItems' && f.checked)
     ) {
       // format rows of orderItems for every order
-      orderItemsRows = data.orders.reduce(
+      orderItemsRows = queriedStore.orders.reduce(
         (orderItemsRowsAcc: Record<string, unknown>[][], currentOrder) => {
           let rows: Record<string, unknown>[] = [];
-          currentOrder.items.forEach((item, i) => {
+
+          const hydratedOrderItems = hydrateOrderItemsWithArtworkId(
+            currentOrder.items,
+            queriedStore.products
+          );
+
+          hydratedOrderItems.forEach((item, i) => {
             const itemRow = {
               [header[0].id]: `${i + 1}`,
               [header[1].id]: item.name,

@@ -275,7 +275,7 @@ const StoreProductsStyles = styled.div`
   .product-details,
   .product-item {
     display: grid;
-    grid-template-columns: 1fr 11.5rem 11.5rem;
+    grid-template-columns: 1fr 10rem 15rem;
     align-items: center;
   }
 
