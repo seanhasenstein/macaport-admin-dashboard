@@ -4,6 +4,7 @@ import { withAuth } from '../../../../utils/withAuth';
 import { Request, Store } from '../../../../interfaces';
 import database from '../../../../middleware/db';
 import { inventoryProduct, store } from '../../../../db';
+import { hydrateOrderItemsWithArtworkId } from '../../../../utils/orderItem';
 
 const handler = nc<Request, NextApiResponse>()
   .use(database)
@@ -36,7 +37,20 @@ const handler = nc<Request, NextApiResponse>()
       return { ...storeProduct, productSkus: updatedProductSkus };
     });
 
-    const result: Store = { ...queriedStore, products: updatedStoreProducts };
+    // add artworkId from the storeProduct to every orderItem
+    const updatedOrders = queriedStore.orders.map(order => {
+      const updatedOrderItems = hydrateOrderItemsWithArtworkId(
+        order.items,
+        queriedStore.products
+      );
+      return { ...order, items: updatedOrderItems };
+    });
+
+    const result: Store = {
+      ...queriedStore,
+      products: updatedStoreProducts,
+      orders: updatedOrders,
+    };
 
     res.json({ store: result });
   });
