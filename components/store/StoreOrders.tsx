@@ -20,7 +20,7 @@ export default function StoreOrders(props: Props) {
 }
 
 const StoreOrdersStyles = styled.div`
-  margin: 4.5rem 0 0;
+  margin: 4.25rem 0 0;
 
   .empty {
     margin: 2rem 0 0;

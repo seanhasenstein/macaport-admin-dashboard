@@ -121,6 +121,8 @@ export interface StoreProduct {
   notes: Note[];
 }
 
+export type StoreStatus = 'upcoming' | 'open' | 'closed';
+
 export type StoreStatusFilter = 'all' | 'upcoming' | 'open' | 'closed';
 
 export interface StoreForm {
