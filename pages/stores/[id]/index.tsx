@@ -107,8 +107,8 @@ export default function Store() {
               <div className="main-content">
                 <FetchingSpinner isLoading={storeQuery.isFetching} />
                 <StoreDetails store={storeQuery.data} />
-                <StoreProducts store={storeQuery.data} />
                 <StoreOrders store={storeQuery.data} />
+                <StoreProducts store={storeQuery.data} />
                 <Notes
                   label="Store"
                   notes={storeQuery.data.notes}

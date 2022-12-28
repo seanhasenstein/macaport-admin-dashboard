@@ -203,7 +203,7 @@ export default function StoreProducts({ store }: Props) {
 }
 
 const StoreProductsStyles = styled.div`
-  margin: 4.5rem 0 0;
+  margin: 5rem 0 0;
 
   .products-header {
     margin: 0 0 1.5rem;
