@@ -2,6 +2,7 @@ import React from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import { getStoreStatus } from '../../../utils';
+import { StoreStatus } from '../../../interfaces';
 import { useStoreQuery } from '../../../hooks/useStoreQuery';
 import { useStoreMutations } from '../../../hooks/useStoreMutations';
 import useOutsideClick from '../../../hooks/useOutsideClick';
@@ -19,8 +20,6 @@ import CSVDownloadModal from '../../../components/store/CSVDownloadModal';
 import PrintableOrder from '../../../components/PrintableOrder';
 import DeleteStoreModal from '../../../components/store/DeleteStoreModal';
 import TableLoadingSpinner from '../../../components/TableLoadingSpinner';
-
-type StoreStatus = 'upcoming' | 'open' | 'closed';
 
 export default function Store() {
   const router = useRouter();
@@ -98,6 +97,8 @@ export default function Store() {
                   <p>{storeQuery.data.storeId}</p>
                 </div>
                 <StoreMenu
+                  storeId={storeQuery.data._id}
+                  storeStatus={storeStatus}
                   setShowDeleteModal={setShowDeleteStoreModal}
                   setShowCSVModal={setShowCSVModal}
                 />

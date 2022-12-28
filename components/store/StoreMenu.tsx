@@ -4,8 +4,11 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import useOutsideClick from '../../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
+import { StoreStatus } from '../../interfaces';
 
 type Props = {
+  storeId: string;
+  storeStatus: StoreStatus | undefined;
   setShowDeleteModal: React.Dispatch<React.SetStateAction<boolean>>;
   setShowCSVModal: React.Dispatch<React.SetStateAction<boolean>>;
 };
@@ -95,7 +98,51 @@ export default function StoreMenu(props: Props) {
           </svg>
           Download orders to csv
         </button>
-
+        {props.storeStatus === 'open' ? (
+          <a
+            href={`${process.env.NEXT_PUBLIC_DOMAIN}/store/${props.storeId}`}
+            target="_blank"
+            rel="noreferrer"
+            className="menu-link"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
+              />
+            </svg>
+            Go to live store
+          </a>
+        ) : (
+          <a
+            href={`${process.env.NEXT_PUBLIC_DOMAIN}/store/${props.storeId}/demo`}
+            target="_blank"
+            rel="noreferrer"
+            className="menu-link"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
+              />
+            </svg>
+            Go to demo store
+          </a>
+        )}
         <Link href={`/stores/update?id=${router.query.id}`}>
           <a className="menu-link">
             <svg
@@ -174,7 +221,7 @@ const StoreMenuStyles = styled.div`
     margin: 0.25rem 0 0;
     padding: 0 1rem;
     position: absolute;
-    right: 0;
+    right: 1rem;
     white-space: nowrap;
     display: none;
     flex-direction: column;
