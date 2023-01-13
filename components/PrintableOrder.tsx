@@ -115,6 +115,12 @@ export default function PrintableOrder({ order, store }: Props) {
               </div>
             </div>
           </div>
+          {order.note ? (
+            <div className="section order-note">
+              <h3>Order Note</h3>
+              <p>{order.note}</p>
+            </div>
+          ) : null}
           <div className="order-items section">
             <h3>Order Items</h3>
             <div className="table-container">
@@ -432,6 +438,16 @@ const PrintableOrderStyles = styled.div`
         font-weight: 600;
         color: #18181b;
       }
+    }
+  }
+
+  .order-note {
+    margin: 28px 0 0;
+
+    p {
+      font-size: 13px;
+      font-weight: 500;
+      color: #18181b;
     }
   }
 `;
