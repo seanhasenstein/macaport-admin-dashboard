@@ -98,6 +98,11 @@ export default function OrderDetails({ order, store }: Props) {
               {formatPhoneNumber(order.customer.phone)}
             </div>
           </div>
+
+          <div className="detail-item">
+            <div className="label">Order note</div>
+            <div className="value">{order.note ?? ''}</div>
+          </div>
         </div>
       </div>
     </OrderDetailsStyles>
