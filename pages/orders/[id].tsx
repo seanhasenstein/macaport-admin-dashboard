@@ -7,7 +7,7 @@ import { useOrderQuery } from '../../hooks/useOrderQuery';
 import { useOrderMutation } from '../../hooks/useOrderMutations';
 import Layout from '../../components/Layout';
 import OrderStatusButton from '../../components/order/OrderStatusButton';
-import Notes from '../../components/Notes';
+// import Notes from '../../components/Notes';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PrintableOrder from '../../components/PrintableOrder';
 import OrderMenu from '../../components/order/OrderMenu';
@@ -20,7 +20,7 @@ export default function Order() {
   const router = useRouter();
   const [showCancelOrderModal, setShowCancelOrderModal] = React.useState(false);
   const { isLoading, isFetching, isError, error, data } = useOrderQuery();
-  const { addNote, updateNote, deleteNote, cancelOrder } = useOrderMutation({
+  const { cancelOrder } = useOrderMutation({
     order: data?.order,
     store: data?.store,
   });
@@ -110,13 +110,13 @@ export default function Order() {
                   />
                   <OrderItems order={data.order} />
                   <OrderSummary orderSummary={data.order.summary} />
-                  <Notes
+                  {/* <Notes
                     label="Order"
                     notes={data.order.notes}
                     addNote={addNote}
                     updateNote={updateNote}
                     deleteNote={deleteNote}
-                  />
+                  /> */}
                 </div>
               </>
             )}
