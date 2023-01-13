@@ -269,7 +269,8 @@ export interface Order {
     status: 'None' | 'Partial' | 'Full';
     amount: number;
   };
-  notes: Note[];
+  notes: Note[]; // admin notes
+  note?: string; // customer note
   createdAt: string;
   updatedAt: string;
 }
