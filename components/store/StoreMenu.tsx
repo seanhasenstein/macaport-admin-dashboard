@@ -1,10 +1,11 @@
 import React from 'react';
 import styled from 'styled-components';
-import { useRouter } from 'next/router';
 import Link from 'next/link';
+
+import { StoreStatus } from '../../interfaces';
+
 import useOutsideClick from '../../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
-import { StoreStatus } from '../../interfaces';
 
 type Props = {
   storeId: string;
@@ -13,8 +14,12 @@ type Props = {
   setShowCSVModal: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-export default function StoreMenu(props: Props) {
-  const router = useRouter();
+export default function StoreMenu({
+  storeId,
+  storeStatus,
+  setShowDeleteModal,
+  setShowCSVModal,
+}: Props) {
   const menuRef = React.useRef<HTMLDivElement>(null);
   const [showMenu, setShowMenu] = React.useState(false);
   useOutsideClick(showMenu, setShowMenu, menuRef);
@@ -22,7 +27,7 @@ export default function StoreMenu(props: Props) {
 
   const handleDeleteStoreMenuClick = () => {
     setShowMenu(false);
-    props.setShowDeleteModal(true);
+    setShowDeleteModal(true);
   };
 
   const handlePrintUnfulfilledOrders = () => {
@@ -78,7 +83,7 @@ export default function StoreMenu(props: Props) {
         <button
           type="button"
           onClick={() => {
-            props.setShowCSVModal(true);
+            setShowCSVModal(true);
             setShowMenu(false);
           }}
           className="menu-link"
@@ -98,9 +103,9 @@ export default function StoreMenu(props: Props) {
           </svg>
           Download orders to csv
         </button>
-        {props.storeStatus === 'open' ? (
+        {storeStatus === 'open' ? (
           <a
-            href={`${process.env.NEXT_PUBLIC_DOMAIN}/store/${props.storeId}`}
+            href={`${process.env.NEXT_PUBLIC_DOMAIN}/store/${storeId}`}
             target="_blank"
             rel="noreferrer"
             className="menu-link"
@@ -122,7 +127,7 @@ export default function StoreMenu(props: Props) {
           </a>
         ) : (
           <a
-            href={`${process.env.NEXT_PUBLIC_DOMAIN}/store/${props.storeId}/demo`}
+            href={`${process.env.NEXT_PUBLIC_DOMAIN}/store/${storeId}/demo`}
             target="_blank"
             rel="noreferrer"
             className="menu-link"
@@ -143,7 +148,25 @@ export default function StoreMenu(props: Props) {
             Go to demo store
           </a>
         )}
-        <Link href={`/stores/update?id=${router.query.id}`}>
+        <Link href={`/stores/${storeId}/product/add`}>
+          <a className="menu-link">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            Add a store product
+          </a>
+        </Link>
+        <Link href={`/stores/update?id=${storeId}`}>
           <a className="menu-link">
             <svg
               xmlns="http://www.w3.org/2000/svg"
