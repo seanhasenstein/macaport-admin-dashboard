@@ -1,14 +1,17 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
+
 import { getStoreStatus } from '../../../utils';
+
 import { StoreStatus } from '../../../interfaces';
+
 import { useStoreQuery } from '../../../hooks/useStoreQuery';
 import { useStoreMutations } from '../../../hooks/useStoreMutations';
 import useOutsideClick from '../../../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../../../hooks/useEscapeKeydownClose';
+
 import Layout from '../../../components/Layout';
-import Notes from '../../../components/Notes';
 import PageNavButtons from '../../../components/PageNavButtons';
 import StoreMenu from '../../../components/store/StoreMenu';
 import StoreDetails from '../../../components/store/StoreDetails';
@@ -20,23 +23,30 @@ import CSVDownloadModal from '../../../components/store/CSVDownloadModal';
 import PrintableOrder from '../../../components/PrintableOrder';
 import DeleteStoreModal from '../../../components/store/DeleteStoreModal';
 import TableLoadingSpinner from '../../../components/TableLoadingSpinner';
+import Notes from '../../../components/Notes';
 
 export default function Store() {
   const router = useRouter();
+
   const deleteProductRef = React.useRef<HTMLDivElement>(null);
   const csvModalRef = React.useRef<HTMLDivElement>(null);
+
   const [storeStatus, setStoreStatus] = React.useState<StoreStatus>();
   const [showDeleteProductModal, setShowDeleteProductModal] =
     React.useState(false);
   const [showDeleteStoreModal, setShowDeleteStoreModal] = React.useState(false);
   const [showCSVModal, setShowCSVModal] = React.useState(false);
+
   useOutsideClick(
     showDeleteProductModal,
     setShowDeleteProductModal,
     deleteProductRef
   );
+
   useEscapeKeydownClose(showDeleteProductModal, setShowDeleteProductModal);
+
   const storeQuery = useStoreQuery();
+
   const { addNote, updateNote, deleteNote } = useStoreMutations({
     store: storeQuery.data,
   });
