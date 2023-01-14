@@ -192,8 +192,9 @@ const OrdersTableStyles = styled.div`
         width: 1.25rem;
         background-color: #d1d5dd;
         font-size: 0.625rem;
+        font-weight: 600;
         border-radius: 9999px;
-        color: #101216;
+        color: #323843;
       }
 
       &:hover {
