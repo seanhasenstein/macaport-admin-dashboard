@@ -27,7 +27,7 @@ const TableStyles = styled.div`
   th,
   td {
     &:first-of-type {
-      padding-left: 1.75rem;
+      padding-left: 2.25rem;
     }
 
     &:last-of-type {
@@ -69,7 +69,7 @@ const TableStyles = styled.div`
     font-size: 0.875rem;
     font-weight: 500;
     color: #374151;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 
     a {
       &:hover {
