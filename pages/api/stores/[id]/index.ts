@@ -1,9 +1,18 @@
 import { NextApiResponse } from 'next';
 import nc from 'next-connect';
+
+import {
+  OrderStatusKey,
+  Request,
+  Store,
+  StoreWithOrderStatusTotals,
+} from '../../../../interfaces';
+
 import { withAuth } from '../../../../utils/withAuth';
-import { Request, Store } from '../../../../interfaces';
+
 import database from '../../../../middleware/db';
 import { inventoryProduct, store } from '../../../../db';
+
 import { hydrateOrderItemsWithArtworkId } from '../../../../utils/orderItem';
 
 const handler = nc<Request, NextApiResponse>()
@@ -46,10 +55,30 @@ const handler = nc<Request, NextApiResponse>()
       return { ...order, items: updatedOrderItems };
     });
 
-    const result: Store = {
+    type OrderStatusNumbersAccumulator = Record<OrderStatusKey, number>;
+
+    const orderStatusTotals = queriedStore.orders.reduce(
+      (accumulator: OrderStatusNumbersAccumulator, currentOrder) => {
+        return {
+          ...accumulator,
+          [currentOrder.orderStatus]: accumulator[currentOrder.orderStatus] + 1,
+        };
+      },
+      {
+        All: queriedStore.orders.length,
+        Unfulfilled: 0,
+        Printed: 0,
+        Fulfilled: 0,
+        Completed: 0,
+        Canceled: 0,
+      }
+    );
+
+    const result: StoreWithOrderStatusTotals = {
       ...queriedStore,
       products: updatedStoreProducts,
       orders: updatedOrders,
+      orderStatusTotals,
     };
 
     res.json({ store: result });

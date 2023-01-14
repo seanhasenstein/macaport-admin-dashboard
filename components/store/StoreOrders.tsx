@@ -1,9 +1,11 @@
 import styled from 'styled-components';
-import { Store } from '../../interfaces';
+
+import { StoreWithOrderStatusTotals } from '../../interfaces';
+
 import OrdersTable from '../order/OrdersTable';
 
 type Props = {
-  store: Store;
+  store: StoreWithOrderStatusTotals;
 };
 
 export default function StoreOrders(props: Props) {

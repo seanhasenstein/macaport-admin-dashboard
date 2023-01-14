@@ -1,6 +1,7 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import { UseQueryResult } from 'react-query';
+
 import {
   CloudinaryStatus,
   Color,
@@ -9,9 +10,10 @@ import {
   Note,
   PersonalizationForm,
   ProductSku,
-  Store,
+  StoreWithOrderStatusTotals,
   StoreProduct,
 } from '../interfaces';
+
 import {
   createId,
   formatFromStripeToPrice,
@@ -39,7 +41,7 @@ type InitialValues = {
 
 type Props = {
   inventoryProductQuery: UseQueryResult<InventoryProduct, unknown>;
-  storeQuery: UseQueryResult<Store, unknown>;
+  storeQuery: UseQueryResult<StoreWithOrderStatusTotals | undefined, unknown>;
 };
 
 export function useUpdateStoreProduct(props: Props) {
