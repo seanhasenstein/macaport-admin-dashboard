@@ -2,8 +2,10 @@ import React from 'react';
 import Link from 'next/link';
 import styled from 'styled-components';
 import { format } from 'date-fns';
+
+import { OrderStatus, StoreWithOrderStatusTotals } from '../../interfaces';
 import { calculateTotalItems, formatToMoney } from '../../utils';
-import { OrderStatus, Store } from '../../interfaces';
+
 import OrdersTableMenu from './OrdersTableMenu';
 import OrderStatusButton from './OrderStatusButton';
 import Table from '../common/Table';
@@ -11,7 +13,7 @@ import Table from '../common/Table';
 type OrderViewOptions = OrderStatus | 'All';
 
 type Props = {
-  store: Store;
+  store: StoreWithOrderStatusTotals;
 };
 
 interface OrderFilterItem {
@@ -57,7 +59,10 @@ export default function OrdersTable({ store }: Props) {
                   className={orderViewOption === item.option ? 'active' : ''}
                   onClick={() => setOrderViewOption(item.option)}
                 >
-                  {item.option}
+                  {item.option}{' '}
+                  <span className="status-total">
+                    {store.orderStatusTotals[item.option]}
+                  </span>
                 </button>
               ))}
             </div>
@@ -167,6 +172,10 @@ const OrdersTableStyles = styled.div`
 
     button {
       padding: 0.625rem 1.25rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.375rem;
       background-color: transparent;
       border: 1px solid transparent;
       font-size: 0.875rem;
@@ -174,6 +183,18 @@ const OrdersTableStyles = styled.div`
       color: #1f2937;
       border-radius: 0.375rem;
       cursor: pointer;
+
+      .status-total {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        height: 1.25rem;
+        width: 1.25rem;
+        background-color: #d1d5dd;
+        font-size: 0.625rem;
+        border-radius: 9999px;
+        color: #101216;
+      }
 
       &:hover {
         color: #1f2937;
