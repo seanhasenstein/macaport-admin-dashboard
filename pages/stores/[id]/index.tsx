@@ -61,11 +61,9 @@ export default function Store() {
 
   return (
     <Layout
-      title={
-        storeQuery.data?.name
-          ? `${storeQuery.data.name} | Macaport Dashboard`
-          : 'Macaport Dashboard'
-      }
+      title={`${
+        storeQuery.data?.name ? `${storeQuery.data.name} | ` : ''
+      }Macaport Dashboard`}
       requiresAuth={true}
     >
       <StoreStyles>
