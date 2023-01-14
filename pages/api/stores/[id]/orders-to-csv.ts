@@ -207,10 +207,12 @@ const handler = nc<Request, NextApiResponse>()
       const blankRow = header.map(h => ({ [h.id]: '' }));
 
       const updatedRecords = records.reduce((acc, currentRecord, i) => {
+        const noteRowData = notesRows[i][header[1].id];
+
         return [
           ...acc,
           currentRecord,
-          notesRows[i],
+          noteRowData ? notesRows[i] : undefined,
           orderItemsHeaderRow,
           ...orderItemsRows[i],
           { ...blankRow },
@@ -218,15 +220,16 @@ const handler = nc<Request, NextApiResponse>()
         ];
       }, []);
 
-      records = updatedRecords;
+      records = updatedRecords.filter((r: unknown) => !!r);
     }
+
+    const encodedCSVData = encodeURIComponent(
+      csvStringifier.stringifyRecords(records)
+    );
 
     res.json({
       success: true,
-      test: orderItemsRows,
-      csv: `${csvStringifier.getHeaderString()} ${csvStringifier.stringifyRecords(
-        records
-      )}`,
+      csv: `${csvStringifier.getHeaderString()} ${encodedCSVData}`,
     });
   });
 
