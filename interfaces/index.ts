@@ -187,6 +187,12 @@ export interface Store {
   updatedAt: string;
 }
 
+export type OrderStatusKey = OrderStatus | 'All';
+
+export interface StoreWithOrderStatusTotals extends Store {
+  orderStatusTotals: Record<OrderStatusKey, number>;
+}
+
 export interface StoresTableOrders {
   unfulfilled: number;
   printed: number;
