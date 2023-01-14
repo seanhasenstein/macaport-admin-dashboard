@@ -2,11 +2,15 @@ import React from 'react';
 import Link from 'next/link';
 import styled from 'styled-components';
 import { format } from 'date-fns';
+import classNames from 'classnames';
+
 import { StoresTableStore } from '../../interfaces';
+
 import StoresTableMenu from './StoresTableMenu';
 import Notification from '../Notification';
 import StoreStatus from './StoreStatus';
 import Table from '../common/Table';
+import { getStoreStatus } from '../../utils';
 
 type Props = {
   stores: StoresTableStore[];
@@ -58,47 +62,83 @@ export default function StoresTable({ stores, tableLabel }: Props) {
                 <td>0 stores match your filter settings</td>
               </tr>
             )}
-            {stores.map(s => (
-              <tr key={s._id}>
-                <td>
-                  <StoreStatus openDate={s.openDate} closeDate={s.closeDate} />
-                </td>
-                <td>
-                  <div className="store-name">
-                    <Link href={`/stores/${s._id}`}>
-                      <a>{s.name}</a>
-                    </Link>
-                  </div>
-                  <div className="store-id">{s.storeId}</div>
-                </td>
-                <td>
-                  <div className="store-dates">
-                    <div>
-                      {format(new Date(s.openDate), "M/d/yy 'at' h:mmaa")}
+            {stores.map(s => {
+              const hasUnfulfilled =
+                s.orders.unfulfilled > 0 ? 'hasUnfulfilled' : '';
+              const hasPrinted = s.orders.printed > 0 ? 'hasPrinted' : '';
+              const hasFulfilled = s.orders.fulfilled > 0 ? 'hasFulfilled' : '';
+              const allCompleted =
+                s.orders.completed + s.orders.canceled === s.orders.total
+                  ? 'allCompleted'
+                  : '';
+              const storeStatus = getStoreStatus(s.openDate, s.closeDate);
+              const storeOpenWithNoProducts =
+                storeStatus === 'open' && s.products === 0 ? 'warning' : '';
+
+              return (
+                <tr key={s._id}>
+                  <td>
+                    <StoreStatus
+                      openDate={s.openDate}
+                      closeDate={s.closeDate}
+                    />
+                  </td>
+                  <td>
+                    <div className="store-name">
+                      <Link href={`/stores/${s._id}`}>
+                        <a>{s.name}</a>
+                      </Link>
                     </div>
-                    <div>
-                      {s.closeDate
-                        ? format(new Date(s.closeDate), "M/d/yy 'at' h:mmaa")
-                        : 'Permanently Open'}
+                    <div className="store-id">{s.storeId}</div>
+                  </td>
+                  <td>
+                    <div className="store-dates">
+                      <div>
+                        {format(new Date(s.openDate), "M/d/yy 'at' h:mmaa")}
+                      </div>
+                      <div>
+                        {s.closeDate
+                          ? format(new Date(s.closeDate), "M/d/yy 'at' h:mmaa")
+                          : 'Permanently Open'}
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="text-center">{s.products}</td>
-                <td className="text-center">{s.orders.total}</td>
-                <td className="text-center">{s.orders.unfulfilled}</td>
-                <td className="text-center">{s.orders.printed}</td>
-                <td className="text-center">{s.orders.fulfilled}</td>
-                <td className="text-center">{s.orders.completed}</td>
-                <td className="text-center">{s.orders.canceled}</td>
-                <td className="store-actions">
-                  <StoresTableMenu
-                    storeId={s._id}
-                    openDate={s.openDate}
-                    closeDate={s.closeDate}
-                  />
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td
+                    className={classNames(
+                      storeOpenWithNoProducts,
+                      'text-center'
+                    )}
+                  >
+                    {s.products}
+                  </td>
+                  <td className={classNames('notify-td')}>
+                    <span>{s.orders.total}</span>
+                  </td>
+                  <td className={classNames('notify-td', hasUnfulfilled)}>
+                    <span>{s.orders.unfulfilled}</span>
+                  </td>
+                  <td className={classNames('notify-td', hasPrinted)}>
+                    <span>{s.orders.printed}</span>
+                  </td>
+                  <td className={classNames('notify-td', hasFulfilled)}>
+                    <span>{s.orders.fulfilled}</span>
+                  </td>
+                  <td className={classNames('notify-td', allCompleted)}>
+                    <span>{s.orders.completed}</span>
+                  </td>
+                  <td className={classNames('notify-td')}>
+                    <span>{s.orders.canceled}</span>
+                  </td>
+                  <td className="store-actions">
+                    <StoresTableMenu
+                      storeId={s._id}
+                      openDate={s.openDate}
+                      closeDate={s.closeDate}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </Table>
@@ -140,5 +180,42 @@ const StoresTableStyles = styled.div`
 
   td.store-actions {
     position: relative;
+  }
+
+  .notify-td {
+    span {
+      width: 100%;
+      display: block;
+      text-align: center;
+    }
+  }
+
+  .hasUnfulfilled,
+  .hasPrinted,
+  .hasFulfilled,
+  .allCompleted,
+  .warning {
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  .hasUnfulfilled,
+  .warning {
+    background-color: #fee2e2;
+    color: #5f1616;
+  }
+
+  .hasPrinted {
+    background-color: #ffedd5;
+    color: #5a210d;
+  }
+
+  .hasFulfilled {
+    background-color: #fef9c3;
+    color: #4f2c0d;
+  }
+
+  .allCompleted {
+    background-color: #d1fae5;
+    color: #032a1f;
   }
 `;
