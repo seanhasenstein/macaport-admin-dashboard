@@ -114,6 +114,21 @@ const handler = nc<Request, NextApiResponse>()
       });
     }
 
+    let notesRows: Record<string, unknown>[] = [];
+
+    if (req.body.fields.some((f: Field) => f.field === 'note' && f.checked)) {
+      notesRows = queriedStore.orders.reduce(
+        (notesRowsAcc: Record<string, unknown>[], currentOrder) => {
+          const row = {
+            [header[0].id]: 'ORDER NOTE',
+            [header[1].id]: currentOrder.note ? `${currentOrder.note}` : '',
+          };
+          return [...notesRowsAcc, row];
+        },
+        []
+      );
+    }
+
     let orderItemsRows: Record<string, unknown>[][] = [];
 
     if (
@@ -195,6 +210,7 @@ const handler = nc<Request, NextApiResponse>()
         return [
           ...acc,
           currentRecord,
+          notesRows[i],
           orderItemsHeaderRow,
           ...orderItemsRows[i],
           { ...blankRow },
