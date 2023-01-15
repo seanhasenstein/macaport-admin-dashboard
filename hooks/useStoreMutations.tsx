@@ -1,7 +1,6 @@
 import { useRouter } from 'next/router';
 import { useMutation, useQueryClient } from 'react-query';
 import { Note, Store, StoreForm, StoreProduct } from '../interfaces';
-import { createId } from '../utils';
 import { formatDataForDb } from '../utils/storeForm';
 
 type Props = {
@@ -9,7 +8,7 @@ type Props = {
   stores?: Store[];
 };
 
-export function useStoreMutations({ store, stores }: Props = {}) {
+export function useStoreMutations({ store }: Props = {}) {
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -31,23 +30,8 @@ export function useStoreMutations({ store, stores }: Props = {}) {
       return data.store;
     },
     {
-      onMutate: async newStore => {
-        await queryClient.cancelQueries(['stores']);
-        const formattedNewStore = formatDataForDb(newStore);
-        const previousStores = stores || [];
-        const updatedStores = [
-          ...previousStores,
-          { ...formattedNewStore, _id: createId() },
-        ];
-        queryClient.setQueryData(['stores'], updatedStores);
-        return { previousStores, newStore };
-      },
-      onError: () => {
-        // TODO: trigger a notification
-        queryClient.setQueryData(['stores'], stores);
-      },
       onSettled: () => {
-        return queryClient.invalidateQueries(['stores']);
+        queryClient.invalidateQueries(['stores']);
       },
       onSuccess: data => {
         router.push(`/stores/${data._id}?createStore=true`);
