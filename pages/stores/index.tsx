@@ -66,8 +66,8 @@ export default function Stores() {
       title="All stores | Macaport Dashboard"
     >
       <StoresStyles unfulfilledChecked={unfulfilledChecked}>
-        {query.isLoading && <TableLoadingSpinner />}
-        {query.data && (
+        {(query.isLoading || query.isFetching) && <TableLoadingSpinner />}
+        {query.data && !query.isFetching && (
           <div className="container">
             <PageNavButtons />
             <div className="header">
