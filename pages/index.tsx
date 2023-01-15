@@ -22,8 +22,8 @@ export default function Index() {
       title="Dashboard home"
     >
       <IndexStyles>
-        {query.isLoading && <TableLoadingSpinner />}
-        {query.data && (
+        {(query.isLoading || query.isFetching) && <TableLoadingSpinner />}
+        {query.data && !query.isFetching && (
           <>
             <div className="container">
               <div className="homepage-actions">
