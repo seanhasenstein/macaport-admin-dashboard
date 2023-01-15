@@ -1,31 +1,17 @@
 import React from 'react';
 import { useRouter } from 'next/router';
-import { useQuery, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import { Formik, Form } from 'formik';
-import { Store } from '../../interfaces';
 import { createStoreInitialValues } from '../../utils/storeForm';
 import { useStoreMutations } from '../../hooks/useStoreMutations';
-import { fetchAllStores } from '../../queries/stores';
 import BasicLayout from '../../components/BasicLayout';
 import StoreForm from '../../components/store/StoreForm';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 export default function CreateStore() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const storesQuery = useQuery<Store[]>(['stores'], fetchAllStores, {
-    initialData: () => {
-      return queryClient.getQueryData(['stores']);
-    },
-    initialDataUpdatedAt: () => {
-      return queryClient.getQueryState(['stores'])?.dataUpdatedAt;
-    },
-    staleTime: 1000 * 60 * 10,
-  });
-  const { createStore } = useStoreMutations({
-    stores: storesQuery.data,
-  });
+
+  const { createStore } = useStoreMutations();
 
   return (
     <BasicLayout
