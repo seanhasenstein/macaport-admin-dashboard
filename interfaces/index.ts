@@ -154,6 +154,8 @@ export interface StoreForm {
   redirectTo?: 'store' | 'add_product';
 }
 
+export type OrderStatusKey = OrderStatus | 'All';
+
 export interface Store {
   _id: string;
   storeId: string;
@@ -187,10 +189,8 @@ export interface Store {
   updatedAt: string;
 }
 
-export type OrderStatusKey = OrderStatus | 'All';
-
 export interface StoreWithOrderStatusTotals extends Store {
-  orderStatusTotals: Record<OrderStatusKey, number>;
+  orderStatusTotals: Record<OrderStatusKey, number>; // added on query
 }
 
 export interface StoresTableOrders {

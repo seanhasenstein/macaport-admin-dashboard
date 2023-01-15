@@ -10,7 +10,7 @@ import {
   Note,
   PersonalizationForm,
   ProductSku,
-  StoreWithOrderStatusTotals,
+  Store,
   StoreProduct,
 } from '../interfaces';
 
@@ -41,7 +41,7 @@ type InitialValues = {
 
 type Props = {
   inventoryProductQuery: UseQueryResult<InventoryProduct, unknown>;
-  storeQuery: UseQueryResult<StoreWithOrderStatusTotals | undefined, unknown>;
+  storeQuery: UseQueryResult<Store | undefined, unknown>;
 };
 
 export function useUpdateStoreProduct(props: Props) {
