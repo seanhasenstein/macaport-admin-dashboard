@@ -2,20 +2,8 @@ import {
   StoresTableStore,
   ShippingData,
   ShippingDataForm,
-  Store,
   StoreStatusFilter,
 } from '../interfaces';
-
-export async function fetchAllStores() {
-  const response = await fetch('/api/stores/get-all-stores');
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch the stores.');
-  }
-
-  const data: { stores: Store[] } = await response.json();
-  return data.stores;
-}
 
 interface FetchHomepageData {
   stores: StoresTableStore[];
