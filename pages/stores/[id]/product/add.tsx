@@ -272,7 +272,7 @@ export default function AddProduct() {
 
   return (
     <BasicLayout
-      title="Add a store product | Macaport Dashboard"
+      title="Add store product | Macaport Dashboard"
       requiresAuth={true}
     >
       <AddProductStyles>
