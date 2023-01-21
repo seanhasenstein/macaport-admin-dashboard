@@ -107,18 +107,30 @@ export interface PersonalizationForm extends Omit<Personalization, 'addons'> {
 
 export interface StoreProduct {
   id: string;
-  inventoryProductId: string;
-  artworkId?: string;
-  merchandiseCode: string;
+  products: {
+    inventoryProductId: string;
+    artworkId?: string;
+    merchandiseCode: string;
+    sizes: Size[];
+    colors: Color[];
+    personalization: Personalization;
+    name: string;
+    description: string;
+    tag: string;
+    details: string[];
+  };
+  // inventoryProductId: string;
+  // artworkId?: string;
+  // merchandiseCode: string;
   name: string;
   description: string;
   tag: string;
   details: string[];
   productSkus: ProductSku[];
-  sizes: Size[];
-  colors: Color[];
-  personalization: Personalization;
-  notes: Note[];
+  // sizes: Size[];
+  // colors: Color[];
+  // personalization: Personalization;
+  // notes: Note[];
 }
 
 export type StoreStatus = 'upcoming' | 'open' | 'closed';
