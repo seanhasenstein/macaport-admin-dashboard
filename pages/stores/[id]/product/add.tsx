@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
+
 import {
   CloudinaryStatus,
   Color,
@@ -11,6 +12,7 @@ import {
   PersonalizationForm,
   Size,
 } from '../../../../interfaces';
+
 import {
   createId,
   getCloudinarySignature,
@@ -21,9 +23,13 @@ import {
   createBlankPersonalizedItem,
   formatPersonalizationValues,
 } from '../../../../utils/storeProduct';
+import { cloudinaryUrl } from '../../../../constants';
+
 import { useStoreQuery } from '../../../../hooks/useStoreQuery';
 import { useStoreProductMutations } from '../../../../hooks/useStoreProductMutations';
+
 import { fetchAllInventoryProducts } from '../../../../queries/inventory-products';
+
 import BasicLayout from '../../../../components/BasicLayout';
 import Notification from '../../../../components/Notification';
 import LoadingSpinner from '../../../../components/LoadingSpinner';
@@ -71,12 +77,14 @@ const validationSchema = Yup.object().shape({
 export default function AddProduct() {
   const router = useRouter();
   const queryClient = useQueryClient();
+
   const [primaryImageStatus, setPrimaryImageStatus] =
     React.useState<CloudinaryStatus>('idle');
   const [secondaryImageStatus, setSecondaryImageStatus] =
     React.useState<CloudinaryStatus>('idle');
   const [inventoryProduct, setInventoryProduct] =
     React.useState<InventoryProduct>();
+
   const inventoryProductsQuery = useQuery<InventoryProduct[]>(
     ['inventory-products'],
     fetchAllInventoryProducts,
@@ -90,10 +98,10 @@ export default function AddProduct() {
       staleTime: 1000 * 60 * 10,
     }
   );
-  const storeQuery = useStoreQuery();
-  const { addProduct } = useStoreProductMutations({ store: storeQuery.data });
 
-  const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_NAME}/image/upload`;
+  const storeQuery = useStoreQuery();
+
+  const { addProduct } = useStoreProductMutations({ store: storeQuery.data });
 
   const handleInventoryProductChange = (
     e: React.ChangeEvent<HTMLSelectElement>
