@@ -220,10 +220,12 @@ export default function UpdateProduct() {
                       </div>
 
                       <div className="item">
-                        <label htmlFor="tag">Product tag</label>
+                        <label htmlFor="sizeCategory">
+                          Product size category
+                        </label>
                         <Field
-                          name="tag"
-                          id="tag"
+                          name="sizeCategory"
+                          id="sizeCategory"
                           placeholder="i.e. Adult Sizes"
                         />
                       </div>

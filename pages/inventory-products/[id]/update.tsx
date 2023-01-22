@@ -27,7 +27,7 @@ export default function UpdateInventoryProduct() {
     merchandiseCode: '',
     name: '',
     description: '',
-    tag: '',
+    sizeCategory: '',
     details: [],
     sizes: [],
     colors: [],
@@ -45,7 +45,7 @@ export default function UpdateInventoryProduct() {
         merchandiseCode: ip.merchandiseCode,
         name: ip.name,
         description: ip.description,
-        tag: ip.tag,
+        sizeCategory: ip.sizeCategory,
         details: ip.details,
         sizes: ip.sizes,
         colors: ip.colors,
@@ -126,9 +126,9 @@ export default function UpdateInventoryProduct() {
                 <div className="form-container">
                   <h3>Update Inventory Product</h3>
                   <p>
-                    Updating the name, description, tag, or details will not
-                    cause any changes to current store products that use this
-                    inventory product.
+                    Updating the name, description, size category, or details
+                    will not cause any changes to current store products that
+                    use this inventory product.
                   </p>
                   <p>
                     Updates to the merchandise code, sizes, or colors will cause
@@ -168,10 +168,12 @@ export default function UpdateInventoryProduct() {
                       />
                     </div>
                     <div className="item">
-                      <label htmlFor="tag">Inventory Product Tag</label>
+                      <label htmlFor="sizeCategory">
+                        Inventory Product Size Category
+                      </label>
                       <Field
-                        name="tag"
-                        id="tag"
+                        name="sizeCategory"
+                        id="sizeCategory"
                         placeholder="i.e. Adult Sizes"
                       />
                     </div>

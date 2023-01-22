@@ -30,7 +30,7 @@ type InitialValues = {
   merchandiseCode: string;
   name: string;
   description: string;
-  tag: string;
+  sizeCategory: string;
   details: string[];
   personalization: PersonalizationForm;
   sizes: FormSize[];
@@ -58,7 +58,7 @@ export function useUpdateStoreProduct(props: Props) {
     merchandiseCode: '',
     name: '',
     description: '',
-    tag: '',
+    sizeCategory: '',
     details: [],
     personalization: {
       active: false,
@@ -103,7 +103,7 @@ export function useUpdateStoreProduct(props: Props) {
         merchandiseCode: product.merchandiseCode,
         name: product.name,
         description: product.description,
-        tag: product.tag,
+        sizeCategory: product.sizeCategory,
         details: product.details,
         personalization: {
           ...product.personalization,
