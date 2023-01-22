@@ -34,6 +34,7 @@ export interface InventoryProduct {
   name: string;
   description: string;
   sizeCategory: string;
+  tags: string[];
   details: string[];
   sizes: InventorySize[];
   colors: InventoryColor[];
