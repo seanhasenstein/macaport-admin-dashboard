@@ -33,7 +33,7 @@ export interface InventoryProduct {
   merchandiseCode: string;
   name: string;
   description: string;
-  tag: string;
+  sizeCategory: string;
   details: string[];
   sizes: InventorySize[];
   colors: InventoryColor[];
@@ -112,7 +112,7 @@ export interface StoreProduct {
   merchandiseCode: string;
   name: string;
   description: string;
-  tag: string;
+  sizeCategory: string;
   details: string[];
   productSkus: ProductSku[];
   sizes: Size[];
