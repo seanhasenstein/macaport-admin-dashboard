@@ -27,10 +27,10 @@ export default function StoreProductDetails({ storeProduct }: Props) {
         </div>
       )}
 
-      {storeProduct.tag && (
+      {storeProduct.sizeCategory && (
         <div className="detail-item">
-          <div className="label">Tag</div>
-          <div className="value">{storeProduct.tag}</div>
+          <div className="label">Size category</div>
+          <div className="value">{storeProduct.sizeCategory}</div>
         </div>
       )}
 
