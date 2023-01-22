@@ -27,7 +27,7 @@ export default function CreateInventoryProduct() {
             merchandiseCode: '',
             name: '',
             description: '',
-            tag: '',
+            sizeCategory: '',
             details: [],
             sizes: [],
             colors: [],
@@ -121,10 +121,12 @@ export default function CreateInventoryProduct() {
                       />
                     </div>
                     <div className="item">
-                      <label htmlFor="tag">Inventory Product Tag</label>
+                      <label htmlFor="sizeCategory">
+                        Inventory Product Size Category
+                      </label>
                       <Field
-                        name="tag"
-                        id="tag"
+                        name="sizeCategory"
+                        id="sizeCategory"
                         placeholder="i.e. Adult Sizes"
                       />
                     </div>

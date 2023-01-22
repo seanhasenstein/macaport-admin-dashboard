@@ -15,7 +15,7 @@ export type UpdateFormValues = {
   merchandiseCode: string;
   name: string;
   description: string;
-  tag: string;
+  sizeCategory: string;
   details: string[];
   sizes: InventorySize[];
   colors: InventoryColor[];

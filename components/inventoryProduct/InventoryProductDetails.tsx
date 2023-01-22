@@ -41,8 +41,8 @@ export default function InventoryProductDetails(props: Props) {
             <div className="value">{props.inventoryProduct.description}</div>
           </div>
           <div className="detail-item">
-            <div className="label">Tag</div>
-            <div className="value">{props.inventoryProduct.tag}</div>
+            <div className="label">Size Category</div>
+            <div className="value">{props.inventoryProduct.sizeCategory}</div>
           </div>
           <div className="detail-item">
             <div className="label">Details</div>
