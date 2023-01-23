@@ -32,6 +32,7 @@ export interface InventoryProduct {
   inventoryProductId: string;
   merchandiseCode: string;
   name: string;
+  brand: string;
   description: string;
   sizeCategory: string;
   tags: string[];
