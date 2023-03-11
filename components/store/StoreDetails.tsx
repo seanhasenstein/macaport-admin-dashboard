@@ -78,6 +78,10 @@ export default function StoreDetails({ store }: Props) {
               {formatPhoneNumber(store.contact.phone)}
             </div>
           </div>
+          <div className="detail-item">
+            <div className="label">Show on stores page</div>
+            <div className="value">{store.showOnStoresPage ? 'Yes' : 'No'}</div>
+          </div>
         </div>
 
         <div>
@@ -120,7 +124,7 @@ const StoreDetailsStyles = styled.div`
   .detail-item {
     margin: 0 0 0.75rem;
     display: grid;
-    grid-template-columns: 10rem 1fr;
+    grid-template-columns: 12rem 1fr;
   }
 
   .label {
