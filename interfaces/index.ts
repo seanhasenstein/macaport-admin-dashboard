@@ -151,6 +151,7 @@ export interface StoreForm {
   requireGroupSelection: boolean;
   groupTerm: string;
   groups: string[];
+  showOnStoresPage: boolean;
   redirectTo?: 'store' | 'add_product';
 }
 
@@ -185,6 +186,7 @@ export interface Store {
   products: StoreProduct[];
   orders: Order[];
   notes: Note[];
+  showOnStoresPage: boolean;
   createdAt: string;
   updatedAt: string;
 }

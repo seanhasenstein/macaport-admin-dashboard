@@ -34,6 +34,7 @@ export const createStoreInitialValues: StoreForm = {
   requireGroupSelection: false,
   groupTerm: '',
   groups: [''],
+  showOnStoresPage: true,
   redirectTo: 'store',
 };
 
@@ -59,6 +60,7 @@ export function formatUpdateInitialValues(store: Store): StoreForm {
     requireGroupSelection: store.requireGroupSelection,
     groupTerm: store.groupTerm,
     groups: store.groups,
+    showOnStoresPage: store.showOnStoresPage,
   };
 }
 
@@ -89,5 +91,6 @@ export function formatDataForDb(data: StoreForm) {
     requireGroupSelection: data.requireGroupSelection,
     groupTerm: formatGroupTerm(data.requireGroupSelection, data.groupTerm),
     groups: formatGroups(data.requireGroupSelection, data.groups),
+    showOnStoresPage: data.showOnStoresPage,
   };
 }

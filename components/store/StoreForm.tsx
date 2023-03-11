@@ -123,6 +123,19 @@ export default function StoreForm({ values, setFieldValue }: Props) {
           )}
         </div>
         <div className="section">
+          <h4>Show on stores page</h4>
+          <div className="checkbox-item">
+            <Field
+              type="checkbox"
+              name="showOnStoresPage"
+              id="showOnStoresPage"
+            />
+            <label htmlFor="showOnStoresPage">
+              Do you want this store on the stores page?
+            </label>
+          </div>
+        </div>
+        <div className="section">
           <h4>Order Shipping Options</h4>
           <div className="checkbox-item">
             <Field
