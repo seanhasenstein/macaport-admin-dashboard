@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router';
 import { useMutation, useQueryClient } from 'react-query';
-import { Color, Note, ProductSku, Store, StoreProduct } from '../interfaces';
+
+import { Color, ProductSku, Store, StoreProduct } from '../interfaces';
 
 type Props = {
   color?: Color;
@@ -301,168 +302,6 @@ export function useStoreProductMutations({
     }
   );
 
-  const addNote = useMutation(
-    async (newNote: Note) => {
-      const prevNotes = storeProduct?.notes || [];
-      const notes = [...prevNotes, newNote];
-
-      const response = await fetch(
-        `/api/stores/update-product?sid=${router.query.id}&pid=${router.query.pid}`,
-        {
-          method: 'post',
-          body: JSON.stringify({ ...storeProduct, notes }),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to add the store product note.');
-      }
-
-      const data: { store: Store } = await response.json();
-      return data.store;
-    },
-    {
-      onMutate: async newNote => {
-        await queryClient.cancelQueries([
-          'stores',
-          'store',
-          'product',
-          storeProduct?.id,
-        ]);
-        const previousNotes = storeProduct?.notes || [];
-        const notes = [...previousNotes, newNote];
-        queryClient.setQueryData(
-          ['stores', 'store', 'product', storeProduct?.id],
-          { ...storeProduct, notes }
-        );
-        return { previousNotes, newNote };
-      },
-      onError: () => {
-        queryClient.setQueryData(
-          ['stores', 'store', 'product', storeProduct?.id],
-          storeProduct
-        );
-      },
-      onSettled: () => {
-        return queryClient.invalidateQueries(['stores']);
-      },
-    }
-  );
-
-  const updateNote = useMutation(
-    async (updatedNote: Note) => {
-      const notes = storeProduct?.notes.map(n => {
-        if (n.id === updatedNote.id) {
-          return updatedNote;
-        }
-        return n;
-      });
-
-      const response = await fetch(
-        `/api/stores/update-product?sid=${router.query.id}&pid=${router.query.pid}`,
-        {
-          method: 'post',
-          body: JSON.stringify({ ...storeProduct, notes }),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to update the note.');
-      }
-
-      const data: { store: Store } = await response.json();
-      return data.store;
-    },
-    {
-      onMutate: async updatedNote => {
-        await queryClient.cancelQueries([
-          'stores',
-          'store',
-          'product',
-          storeProduct?.id,
-        ]);
-        const previousNotes = storeProduct?.notes;
-        const notes = storeProduct?.notes.map(n => {
-          if (n.id === updatedNote.id) {
-            return updatedNote;
-          }
-          return n;
-        });
-        queryClient.setQueryData(
-          ['stores', 'store', 'product', storeProduct?.id],
-          { ...storeProduct, notes }
-        );
-        return { previousNotes, updatedNote };
-      },
-      onError: () => {
-        queryClient.setQueryData(
-          ['stores', 'store', 'product', storeProduct?.id],
-          storeProduct
-        );
-      },
-      onSettled: () => {
-        return queryClient.invalidateQueries(['stores']);
-      },
-    }
-  );
-
-  const deleteNote = useMutation(
-    async (id: string) => {
-      const notes = storeProduct?.notes.filter(n => n.id !== id);
-
-      const response = await fetch(
-        `/api/stores/update-product?sid=${router.query.id}&pid=${router.query.pid}`,
-        {
-          method: 'post',
-          body: JSON.stringify({ ...storeProduct, notes }),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to delete the note.');
-      }
-
-      const data: { store: Store } = await response.json();
-      return data.store;
-    },
-    {
-      onMutate: async id => {
-        await queryClient.cancelQueries([
-          'stores',
-          'store',
-          'product',
-          storeProduct?.id,
-        ]);
-
-        const previousNotes = storeProduct?.notes;
-        const notes = previousNotes?.filter(n => n.id !== id);
-        queryClient.setQueryData(
-          ['stores', 'store', 'product', storeProduct?.id],
-          { ...storeProduct, notes }
-        );
-        return { previousNotes };
-      },
-      onError: () => {
-        queryClient.setQueryData(
-          ['stores', 'store', 'product', storeProduct?.id],
-          storeProduct
-        );
-      },
-      onSettled: () => {
-        return queryClient.invalidateQueries(['stores']);
-      },
-    }
-  );
-
   return {
     addProduct,
     updateProduct,
@@ -471,8 +310,5 @@ export function useStoreProductMutations({
     updateColorsOrder,
     updateSecondaryImgOrder,
     deleteProduct,
-    addNote,
-    updateNote,
-    deleteNote,
   };
 }

@@ -1,14 +1,15 @@
 import { useRouter } from 'next/router';
 import { useMutation, useQueryClient } from 'react-query';
+
 import {
   InventoryColor,
   InventoryProduct,
   InventorySize,
   InventorySku,
-  Note,
 } from '../interfaces';
-import { UpdateFormValues } from '../utils/inventoryProduct';
+
 import { formatHexColors } from '../utils';
+import { UpdateFormValues } from '../utils/inventoryProduct';
 
 export type InitialValues = {
   inventoryProductId: string;
@@ -20,7 +21,6 @@ export type InitialValues = {
   sizes: InventorySize[];
   colors: InventoryColor[];
   skus?: InventorySku[];
-  notes: Note[];
 };
 
 export function useInventoryProductMutations(
@@ -254,196 +254,11 @@ export function useInventoryProductMutations(
     return data.inventoryProduct;
   });
 
-  const addNote = useMutation(
-    async (newNote: Note) => {
-      if (!inventoryProduct) return;
-      const prevNotes = inventoryProduct.notes || [];
-      const notes = [...prevNotes, newNote];
-
-      const response = await fetch('/api/inventory-products/update', {
-        method: 'post',
-        body: JSON.stringify({ id: inventoryProduct._id, update: { notes } }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to add the note.');
-      }
-
-      const data: { inventoryProduct: InventoryProduct } =
-        await response.json();
-      return data.inventoryProduct;
-    },
-    {
-      onMutate: async newNote => {
-        await queryClient.cancelQueries([
-          'inventory-products',
-          'inventory-product',
-          inventoryProduct?.inventoryProductId,
-        ]);
-        const previousNotes = inventoryProduct?.notes || [];
-        const updatedInvProd = {
-          ...inventoryProduct,
-          notes: [...previousNotes, newNote],
-        };
-        queryClient.setQueryData(
-          [
-            'inventory-products',
-            'inventory-product',
-            inventoryProduct?.inventoryProductId,
-          ],
-          updatedInvProd
-        );
-        return { previousNotes, newNote };
-      },
-      onError: () => {
-        queryClient.setQueryData(
-          [
-            'inventory-products',
-            'inventory-product',
-            inventoryProduct?.inventoryProductId,
-          ],
-          inventoryProduct
-        );
-      },
-      onSettled: () => {
-        return queryClient.invalidateQueries('inventory-products');
-      },
-    }
-  );
-
-  const updateNote = useMutation(
-    async (updatedNote: Note) => {
-      const notes = inventoryProduct?.notes.map(n => {
-        if (n.id === updatedNote.id) {
-          return updatedNote;
-        }
-        return n;
-      });
-
-      const response = await fetch('/api/inventory-products/update', {
-        method: 'post',
-        body: JSON.stringify({ id: inventoryProduct?._id, update: { notes } }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update the note.');
-      }
-
-      const data: { inventoryProduct: InventoryProduct } =
-        await response.json();
-      return data.inventoryProduct;
-    },
-    {
-      onMutate: async updatedNote => {
-        await queryClient.cancelQueries([
-          'inventory-products',
-          'inventory-product',
-          inventoryProduct?.inventoryProductId,
-        ]);
-        const notes = inventoryProduct?.notes.map(n => {
-          if (n.id === updatedNote.id) {
-            return updatedNote;
-          }
-          return n;
-        });
-        const updatedInvProd = { ...inventoryProduct, notes };
-
-        queryClient.setQueryData(
-          [
-            'inventory-products',
-            'inventory-product',
-            inventoryProduct?.inventoryProductId,
-          ],
-          updatedInvProd
-        );
-
-        return { previousNotes: inventoryProduct?.notes, updatedNote };
-      },
-      onError: () => {
-        queryClient.setQueryData(
-          [
-            'inventory-products',
-            'inventory-product',
-            inventoryProduct?.inventoryProductId,
-          ],
-          inventoryProduct
-        );
-      },
-      onSettled: () => {
-        return queryClient.invalidateQueries(['inventory-products']);
-      },
-    }
-  );
-
-  const deleteNote = useMutation(
-    async (id: string) => {
-      const notes = inventoryProduct?.notes.filter(n => n.id !== id);
-
-      const response = await fetch('/api/inventory-products/update', {
-        method: 'post',
-        body: JSON.stringify({ id: inventoryProduct?._id, update: { notes } }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete the note.');
-      }
-
-      const data: { inventoryProduct: InventoryProduct } =
-        await response.json();
-      return data.inventoryProduct;
-    },
-    {
-      onMutate: async id => {
-        await queryClient.cancelQueries([
-          'inventory-products',
-          'inventory-product',
-          inventoryProduct?.inventoryProductId,
-        ]);
-        const notes = inventoryProduct?.notes.filter(n => n.id !== id);
-        const updatedInvProd = { ...inventoryProduct, notes };
-        queryClient.setQueryData(
-          [
-            'inventory-products',
-            'inventory-product',
-            inventoryProduct?.inventoryProductId,
-          ],
-          updatedInvProd
-        );
-        return { previousNotes: notes };
-      },
-      onError: () => {
-        queryClient.setQueryData(
-          [
-            'inventory-products',
-            'inventory-product',
-            inventoryProduct?.inventoryProductId,
-          ],
-          inventoryProduct
-        );
-      },
-      onSettled: () => {
-        return queryClient.invalidateQueries(['inventory-products']);
-      },
-    }
-  );
-
   return {
     createProduct,
     updateProduct,
     updateProductIncludingSkus,
     updateSkuActiveStatus,
     updateSkuOrder,
-    addNote,
-    updateNote,
-    deleteNote,
   };
 }

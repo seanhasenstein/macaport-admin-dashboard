@@ -1,12 +1,6 @@
 import { NextApiRequest } from 'next';
 import { Db, MongoClient } from 'mongodb';
 
-export interface Note {
-  id: string;
-  text: string;
-  createdAt: string;
-}
-
 export interface InventoryColor {
   id: string;
   label: string;
@@ -38,7 +32,6 @@ export interface InventoryProduct {
   sizes: InventorySize[];
   colors: InventoryColor[];
   skus: InventorySku[];
-  notes: Note[];
   createdAt: string;
   updatedAt: string;
 }
@@ -118,7 +111,6 @@ export interface StoreProduct {
   sizes: Size[];
   colors: Color[];
   personalization: Personalization;
-  notes: Note[];
 }
 
 export type StoreStatus = 'upcoming' | 'open' | 'closed';
@@ -185,7 +177,6 @@ export interface Store {
   groups: string[];
   products: StoreProduct[];
   orders: Order[];
-  notes: Note[];
   showOnStoresPage: boolean;
   createdAt: string;
   updatedAt: string;
@@ -277,8 +268,7 @@ export interface Order {
     status: 'None' | 'Partial' | 'Full';
     amount: number;
   };
-  notes: Note[]; // admin notes
-  note?: string; // customer note
+  note?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,26 +1,24 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
+
+import { getQueryParameter } from '../../../utils';
+
 import { useInventoryProductQuery } from '../../../hooks/useInventoryProductQuery';
-import { useInventoryProductMutations } from '../../../hooks/useInventoryProductMutations';
+
 import Layout from '../../../components/Layout';
 import InventoryProductSkus from '../../../components/inventoryProduct/InventoryProductSkus';
 import PageNavButtons from '../../../components/PageNavButtons';
 import InventoryModal from '../../../components/inventoryProduct/InventoryModal';
 import InventoryProductMenu from '../../../components/inventoryProduct/InventoryProductMenu';
 import InventoryProductDetails from '../../../components/inventoryProduct/InventoryProductDetails';
-import Notes from '../../../components/Notes';
 import LoadingSpinner from '../../../components/LoadingSpinner';
-import { getQueryParameter } from '../../../utils';
 
 export default function InventoryProduct() {
   const router = useRouter();
   const [showInventoryModal, setShowInventoryModal] = React.useState(false);
   const invProdQuery = useInventoryProductQuery(
     getQueryParameter(router.query.id)
-  );
-  const { addNote, updateNote, deleteNote } = useInventoryProductMutations(
-    invProdQuery.data
   );
 
   return (
@@ -64,13 +62,6 @@ export default function InventoryProduct() {
                   productName={invProdQuery.data.name}
                   inventoryProduct={invProdQuery.data}
                   setShowInventoryModal={setShowInventoryModal}
-                />
-                <Notes
-                  label="Inventory product"
-                  notes={invProdQuery.data.notes}
-                  addNote={addNote}
-                  updateNote={updateNote}
-                  deleteNote={deleteNote}
                 />
               </div>
             </>

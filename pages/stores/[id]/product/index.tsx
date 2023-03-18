@@ -2,13 +2,15 @@ import React from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import styled from 'styled-components';
+
 import { getQueryParameter } from '../../../../utils';
+
 import { useStoreProductQuery } from '../../../../hooks/useStoreProductQuery';
 import { useStoreProductMutations } from '../../../../hooks/useStoreProductMutations';
+
 import Layout from '../../../../components/Layout';
 import StoreProductColors from '../../../../components/storeProduct/StoreProductColors';
 import StoreProductSkusTable from '../../../../components/storeProduct/StoreProductSkusTable';
-import Notes from '../../../../components/Notes';
 import LoadingSpinner from '../../../../components/LoadingSpinner';
 import Notification from '../../../../components/Notification';
 import StoreProductMenu from '../../../../components/storeProduct/StoreProductMenu';
@@ -25,8 +27,7 @@ export default function Product() {
     error,
     data: storeProduct,
   } = useStoreProductQuery();
-  const { deleteProduct, addNote, updateNote, deleteNote } =
-    useStoreProductMutations({ storeProduct });
+  const { deleteProduct } = useStoreProductMutations({ storeProduct });
   const [showDeleteProductModal, setShowDeleteProductModal] =
     React.useState(false);
 
@@ -86,13 +87,6 @@ export default function Product() {
                   inventoryProductId={storeProduct.inventoryProductId}
                 />
                 <StoreProductColors product={storeProduct} />
-                <Notes
-                  label="Store product"
-                  notes={storeProduct.notes}
-                  addNote={addNote}
-                  updateNote={updateNote}
-                  deleteNote={deleteNote}
-                />
               </div>
             </>
           )}

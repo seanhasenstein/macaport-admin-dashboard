@@ -1,5 +1,6 @@
 import { Db, ObjectID } from 'mongodb';
-import { Store, Note, OrderStatus, Order } from '../interfaces';
+
+import { Store, OrderStatus, Order } from '../interfaces';
 
 export async function getOrderById(db: Db, storeId: string, orderId: string) {
   try {
@@ -37,24 +38,6 @@ export async function updateOrderStatus(
     console.error(error);
     throw new Error('An error occurred updating the order status.');
   }
-}
-
-export async function updateOrderNotes(
-  db: Db,
-  storeId: string,
-  orderId: string,
-  notes: Note[]
-) {
-  const result = await db.collection('stores').findOneAndUpdate(
-    { _id: new ObjectID(storeId) },
-    { $set: { 'orders.$[order].notes': notes } },
-    {
-      arrayFilters: [{ 'order.orderId': orderId }],
-      upsert: true,
-      returnDocument: 'after',
-    }
-  );
-  return result.value;
 }
 
 export async function cancelOrder(
