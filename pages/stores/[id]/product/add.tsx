@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
+
 import {
   CloudinaryStatus,
   Color,
@@ -11,6 +12,7 @@ import {
   PersonalizationForm,
   Size,
 } from '../../../../interfaces';
+
 import {
   createId,
   getCloudinarySignature,
@@ -21,9 +23,12 @@ import {
   createBlankPersonalizedItem,
   formatPersonalizationValues,
 } from '../../../../utils/storeProduct';
+
 import { useStoreQuery } from '../../../../hooks/useStoreQuery';
 import { useStoreProductMutations } from '../../../../hooks/useStoreProductMutations';
+
 import { fetchAllInventoryProducts } from '../../../../queries/inventory-products';
+
 import BasicLayout from '../../../../components/BasicLayout';
 import Notification from '../../../../components/Notification';
 import LoadingSpinner from '../../../../components/LoadingSpinner';
@@ -311,7 +316,6 @@ export default function AddProduct() {
             addProduct.mutate({
               ...product,
               merchandiseCode: inventoryProduct.merchandiseCode,
-              notes: [],
             });
           }}
         >

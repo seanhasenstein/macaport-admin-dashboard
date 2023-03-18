@@ -2,14 +2,18 @@ import React from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
+
 import { InventorySize } from '../../../interfaces';
+
 import { createId, getQueryParameter } from '../../../utils';
 import {
   updateInventoryProductSkus,
   UpdateFormValues,
 } from '../../../utils/inventoryProduct';
+
 import { useInventoryProductQuery } from '../../../hooks/useInventoryProductQuery';
 import { useInventoryProductMutations } from '../../../hooks/useInventoryProductMutations';
+
 import BasicLayout from '../../../components/BasicLayout';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 
@@ -32,7 +36,6 @@ export default function UpdateInventoryProduct() {
     sizes: [],
     colors: [],
     skus: [],
-    notes: [],
   });
 
   React.useEffect(() => {
@@ -50,7 +53,6 @@ export default function UpdateInventoryProduct() {
         sizes: ip.sizes,
         colors: ip.colors,
         skus: ip.skus,
-        notes: ip.notes,
       });
     }
   }, [inventoryProductQuery.data]);

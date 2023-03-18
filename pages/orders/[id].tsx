@@ -7,7 +7,6 @@ import { useOrderQuery } from '../../hooks/useOrderQuery';
 import { useOrderMutation } from '../../hooks/useOrderMutations';
 import Layout from '../../components/Layout';
 import OrderStatusButton from '../../components/order/OrderStatusButton';
-// import Notes from '../../components/Notes';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PrintableOrder from '../../components/PrintableOrder';
 import OrderMenu from '../../components/order/OrderMenu';
@@ -110,13 +109,6 @@ export default function Order() {
                   />
                   <OrderItems order={data.order} />
                   <OrderSummary orderSummary={data.order.summary} />
-                  {/* <Notes
-                    label="Order"
-                    notes={data.order.notes}
-                    addNote={addNote}
-                    updateNote={updateNote}
-                    deleteNote={deleteNote}
-                  /> */}
                 </div>
               </>
             )}
