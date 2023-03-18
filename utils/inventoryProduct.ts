@@ -3,7 +3,6 @@ import {
   InventoryProduct,
   InventorySize,
   InventorySku,
-  Note,
   ProductSku,
   StoreProduct,
 } from '../interfaces';
@@ -20,7 +19,6 @@ export type UpdateFormValues = {
   sizes: InventorySize[];
   colors: InventoryColor[];
   skus?: InventorySku[];
-  notes: Note[];
 };
 
 export function updateInventoryProductSkus(

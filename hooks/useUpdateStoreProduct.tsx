@@ -7,7 +7,6 @@ import {
   Color,
   FormSize,
   InventoryProduct,
-  Note,
   PersonalizationForm,
   ProductSku,
   Store,
@@ -36,7 +35,6 @@ type InitialValues = {
   sizes: FormSize[];
   colors: Color[];
   productSkus: ProductSku[];
-  notes: Note[];
 };
 
 type Props = {
@@ -68,7 +66,6 @@ export function useUpdateStoreProduct(props: Props) {
     sizes: [],
     colors: [],
     productSkus: [],
-    notes: [],
   });
 
   React.useEffect(() => {
@@ -115,7 +112,6 @@ export function useUpdateStoreProduct(props: Props) {
         })),
         colors,
         productSkus: product.productSkus,
-        notes: product.notes,
       });
     }
   }, [product, props.inventoryProductQuery.data]);

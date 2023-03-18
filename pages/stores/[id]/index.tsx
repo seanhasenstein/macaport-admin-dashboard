@@ -7,7 +7,6 @@ import { getStoreStatus } from '../../../utils';
 import { StoreStatus } from '../../../interfaces';
 
 import { useStoreQuery } from '../../../hooks/useStoreQuery';
-import { useStoreMutations } from '../../../hooks/useStoreMutations';
 import useOutsideClick from '../../../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../../../hooks/useEscapeKeydownClose';
 
@@ -23,7 +22,6 @@ import CSVDownloadModal from '../../../components/store/CSVDownloadModal';
 import PrintableOrder from '../../../components/PrintableOrder';
 import DeleteStoreModal from '../../../components/store/DeleteStoreModal';
 import TableLoadingSpinner from '../../../components/TableLoadingSpinner';
-import Notes from '../../../components/Notes';
 
 export default function Store() {
   const router = useRouter();
@@ -46,10 +44,6 @@ export default function Store() {
   useEscapeKeydownClose(showDeleteProductModal, setShowDeleteProductModal);
 
   const storeQuery = useStoreQuery();
-
-  const { addNote, updateNote, deleteNote } = useStoreMutations({
-    store: storeQuery.data,
-  });
 
   React.useEffect(() => {
     if (storeQuery.data) {
@@ -117,13 +111,6 @@ export default function Store() {
                 <StoreDetails store={storeQuery.data} />
                 <StoreOrders store={storeQuery.data} />
                 <StoreProducts store={storeQuery.data} />
-                <Notes
-                  label="Store"
-                  notes={storeQuery.data.notes}
-                  addNote={addNote}
-                  updateNote={updateNote}
-                  deleteNote={deleteNote}
-                />
               </div>
             </>
           )}

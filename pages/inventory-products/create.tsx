@@ -31,7 +31,6 @@ export default function CreateInventoryProduct() {
             details: [],
             sizes: [],
             colors: [],
-            notes: [],
           }}
           onSubmit={(values: InitialValues) => {
             const colors = values.colors.map(color => {

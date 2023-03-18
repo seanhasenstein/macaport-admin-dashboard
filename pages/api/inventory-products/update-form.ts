@@ -1,10 +1,13 @@
 import { NextApiResponse } from 'next';
 import nc from 'next-connect';
-import { withAuth } from '../../../utils/withAuth';
+
 import { Request, InventoryProduct } from '../../../interfaces';
+
+import { withAuth } from '../../../utils/withAuth';
+import { updateStoreProductSkus } from '../../../utils/inventoryProduct';
+
 import database from '../../../middleware/db';
 import { inventoryProduct, store as dbStore } from '../../../db';
-import { updateStoreProductSkus } from '../../../utils/inventoryProduct';
 
 const handler = nc<Request, NextApiResponse>()
   .use(database)
