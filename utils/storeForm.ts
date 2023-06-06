@@ -22,6 +22,7 @@ export const createStoreInitialValues: StoreForm = {
   closeDate: format(new Date(), 'yyyy-MM-dd'),
   closeTime: format(new Date(), 'HH:00'),
   allowDirectShipping: false,
+  allowStorePickup: false,
   hasPrimaryShippingLocation: false,
   primaryShippingLocation: {
     name: '',
@@ -55,6 +56,7 @@ export function formatUpdateInitialValues(store: Store): StoreForm {
       ? format(new Date(store.closeDate), 'HH:mm')
       : format(new Date(), 'HH:00'),
     allowDirectShipping: store.allowDirectShipping,
+    allowStorePickup: store.allowStorePickup || false,
     hasPrimaryShippingLocation: store.hasPrimaryShippingLocation,
     primaryShippingLocation: store.primaryShippingLocation,
     requireGroupSelection: store.requireGroupSelection,
@@ -79,6 +81,7 @@ export function formatDataForDb(data: StoreForm) {
       : null,
     permanentlyOpen: data.permanentlyOpen,
     allowDirectShipping: data.allowDirectShipping,
+    allowStorePickup: data.allowStorePickup,
     hasPrimaryShippingLocation: data.hasPrimaryShippingLocation,
     primaryShippingLocation: {
       name: data.primaryShippingLocation.name.trim(),

@@ -57,6 +57,11 @@ export default function StoreDetails({ store }: Props) {
           </div>
 
           <div className="detail-item">
+            <div className="label">Store pickup</div>
+            <div className="value">{store.allowStorePickup ? 'Yes' : 'No'}</div>
+          </div>
+
+          <div className="detail-item">
             <div className="label">Name</div>
             <div className="value">
               {store.contact.firstName} {store.contact.lastName}
