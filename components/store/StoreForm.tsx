@@ -150,6 +150,16 @@ export default function StoreForm({ values, setFieldValue }: Props) {
           <div className="checkbox-item">
             <Field
               type="checkbox"
+              name="allowStorePickup"
+              id="allowStorePickup"
+            />
+            <label htmlFor="allowStorePickup">
+              Include Macaport Store Pickup
+            </label>
+          </div>
+          <div className="checkbox-item">
+            <Field
+              type="checkbox"
               name="hasPrimaryShippingLocation"
               id="hasPrimaryShippingLocation"
             />

@@ -125,6 +125,7 @@ export interface StoreForm {
   closeTime: string;
   permanentlyOpen: boolean;
   allowDirectShipping: boolean;
+  allowStorePickup: boolean;
   hasPrimaryShippingLocation: boolean;
   primaryShippingLocation: {
     name: string;
@@ -157,6 +158,7 @@ export interface Store {
   closeDate: string | null;
   permanentlyOpen: boolean;
   allowDirectShipping: boolean;
+  allowStorePickup?: boolean;
   hasPrimaryShippingLocation: boolean;
   primaryShippingLocation: {
     name: string;
@@ -254,7 +256,7 @@ export interface Order {
   };
   group: string;
   orderStatus: OrderStatus;
-  shippingMethod: 'Primary' | 'Direct' | 'None';
+  shippingMethod: 'Primary' | 'Direct' | 'Store Pickup' | 'None';
   shippingAddress: {
     name?: string;
     street: string;
