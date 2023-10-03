@@ -14,7 +14,7 @@ import Pagination from '../../components/Pagination';
 
 export default function Stores() {
   const router = useRouter();
-  const pageSize = 8;
+  const pageSize = 4;
   const [currentPage, setCurrentPage] = React.useState<number>();
   const [statusFilter, setStatusFilter] =
     React.useState<StoreStatusFilter>('all');
