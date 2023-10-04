@@ -1,72 +1,74 @@
 import React from 'react';
-import { useRouter } from 'next/router';
-import Link from 'next/link';
+// import { useRouter } from 'next/router';
+// import Link from 'next/link';
 import styled from 'styled-components';
-import { useQuery } from 'react-query';
-import { fetchPaginatedStores } from '../../queries/stores';
-import { StoreStatusFilter } from '../../interfaces';
+// import { useQuery } from 'react-query';
+// import { fetchPaginatedStores } from '../../queries/stores';
+// import { StoreStatusFilter } from '../../interfaces';
 import Layout from '../../components/Layout';
-import StoresTable from '../../components/storesTable/StoresTable';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import TableLoadingSpinner from '../../components/TableLoadingSpinner';
-import PageNavButtons from '../../components/PageNavButtons';
-import Pagination from '../../components/Pagination';
+// import StoresTable from '../../components/storesTable/StoresTable';
+// import LoadingSpinner from '../../components/LoadingSpinner';
+// import TableLoadingSpinner from '../../components/TableLoadingSpinner';
+// import PageNavButtons from '../../components/PageNavButtons';
+// import Pagination from '../../components/Pagination';
 
 export default function Stores() {
-  const router = useRouter();
-  const pageSize = 1;
-  const [currentPage, setCurrentPage] = React.useState<number>();
-  const [statusFilter, setStatusFilter] =
-    React.useState<StoreStatusFilter>('all');
-  const [unfulfilledChecked, setUnfulfilledChecked] = React.useState(false);
+  // const router = useRouter();
+  // const pageSize = 1;
+  // const [currentPage, setCurrentPage] = React.useState<number>();
+  // const [statusFilter, setStatusFilter] =
+  //   React.useState<StoreStatusFilter>('all');
+  // const [unfulfilledChecked, setUnfulfilledChecked] = React.useState(false);
 
-  const query = useQuery(
-    ['stores', currentPage, pageSize, statusFilter, unfulfilledChecked],
-    () =>
-      fetchPaginatedStores(
-        currentPage,
-        pageSize,
-        statusFilter,
-        unfulfilledChecked
-      ),
-    {
-      staleTime: 1000 * 60 * 10,
-      enabled: currentPage ? true : false,
-      keepPreviousData: true,
-    }
-  );
+  // const query = useQuery(
+  //   ['stores', currentPage, pageSize, statusFilter, unfulfilledChecked],
+  //   () =>
+  //     fetchPaginatedStores(
+  //       currentPage,
+  //       pageSize,
+  //       statusFilter,
+  //       unfulfilledChecked
+  //     ),
+  //   {
+  //     staleTime: 1000 * 60 * 10,
+  //     enabled: currentPage ? true : false,
+  //     keepPreviousData: true,
+  //   }
+  // );
 
-  React.useEffect(() => {
-    if (
-      router.isReady &&
-      (!router.query.page || isNaN(Number(router.query.page)))
-    ) {
-      router.push('/stores?page=1');
-      setCurrentPage(1);
-    } else if (!currentPage) {
-      setCurrentPage(Number(router.query.page));
-    } else if (currentPage && currentPage !== Number(router.query.page)) {
-      router.push(`/stores?page=${currentPage}`);
-    }
-  }, [router.query.page, currentPage]);
+  // React.useEffect(() => {
+  //   if (
+  //     router.isReady &&
+  //     (!router.query.page || isNaN(Number(router.query.page)))
+  //   ) {
+  //     router.push('/stores?page=1');
+  //     setCurrentPage(1);
+  //   } else if (!currentPage) {
+  //     setCurrentPage(Number(router.query.page));
+  //   } else if (currentPage && currentPage !== Number(router.query.page)) {
+  //     router.push(`/stores?page=${currentPage}`);
+  //   }
+  // }, [router.query.page, currentPage]);
 
-  React.useEffect(() => {
-    router.push('/stores?page=1');
-    setCurrentPage(1);
-  }, [statusFilter, unfulfilledChecked]);
+  // React.useEffect(() => {
+  //   router.push('/stores?page=1');
+  //   setCurrentPage(1);
+  // }, [statusFilter, unfulfilledChecked]);
 
-  const handleStatusFilterClick = (status: StoreStatusFilter) => {
-    setStatusFilter(status);
-  };
+  // const handleStatusFilterClick = (status: StoreStatusFilter) => {
+  //   setStatusFilter(status);
+  // };
 
   return (
     <Layout
-      loading={query.isLoading}
+      // loading={query.isLoading}
       requiresAuth={true}
       title="All stores | Macaport Dashboard"
     >
-      <StoresStyles unfulfilledChecked={unfulfilledChecked}>
-        {(query.isLoading || query.isFetching) && <TableLoadingSpinner />}
+      {/* <StoresStyles unfulfilledChecked={unfulfilledChecked}> */}
+      <StoresStyles unfulfilledChecked={false}>
+        <p>This is a test...</p>
+        {/* {(query.isLoading || query.isFetching) && <TableLoadingSpinner />}
         {query.data && !query.isFetching && (
           <div className="container">
             <PageNavButtons />
@@ -155,7 +157,7 @@ export default function Stores() {
               />
             )}
           </div>
-        )}
+        )}*/}
       </StoresStyles>
     </Layout>
   );
