@@ -26,11 +26,6 @@ const handler = nc<ExtendedRequest, NextApiResponse>()
   .use(database)
   .get(async (req, res) => {
     const { page, pageSize, statusFilter, onlyUnfulfilled } = req.query;
-    console.log({ page, pageSize, statusFilter, onlyUnfulfilled });
-    console.log('page', typeof page);
-    console.log('pageSize', typeof pageSize);
-    console.log('statusFilter', typeof statusFilter);
-    console.log('onlyUnfulfilled', typeof onlyUnfulfilled);
     const result: Result = await store.getPaginatedStores({
       db: req.db,
       currentPage: Number(page),
