@@ -10,10 +10,10 @@ import { store } from '../../../db';
 interface ExtendedRequest {
   db: Db;
   query: {
-    page: number;
-    pageSize: number;
+    page: string;
+    pageSize: string;
     statusFilter: StoreStatusFilter;
-    onlyUnfulfilled: boolean;
+    onlyUnfulfilled: 'true' | 'false';
   };
 }
 
@@ -26,13 +26,17 @@ const handler = nc<ExtendedRequest, NextApiResponse>()
   .use(database)
   .get(async (req, res) => {
     const { page, pageSize, statusFilter, onlyUnfulfilled } = req.query;
-
+    console.log({ page, pageSize, statusFilter, onlyUnfulfilled });
+    console.log('page', typeof page);
+    console.log('pageSize', typeof pageSize);
+    console.log('statusFilter', typeof statusFilter);
+    console.log('onlyUnfulfilled', typeof onlyUnfulfilled);
     const result: Result = await store.getPaginatedStores({
       db: req.db,
-      currentPage: page,
-      pageSize,
+      currentPage: Number(page),
+      pageSize: Number(pageSize),
       statusFilter,
-      onlyUnfulfilled,
+      onlyUnfulfilled: onlyUnfulfilled === 'true' ? true : false,
     });
     res.json(result);
   });
