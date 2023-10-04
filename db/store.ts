@@ -23,15 +23,23 @@ export async function getStores(db: Db) {
   return result;
 }
 
-export async function getPaginatedStores(
-  db: Db,
-  currentPage: string,
-  pageSize: string,
-  statusFilter: StoreStatusFilter,
-  onlyUnfulfilled: string
-) {
-  const limit = Number(pageSize);
-  const skip = (Number(currentPage) - 1) * limit;
+type GetPaginatedStores = {
+  db: Db;
+  currentPage: number;
+  pageSize: number;
+  statusFilter: StoreStatusFilter;
+  onlyUnfulfilled: boolean;
+};
+
+export async function getPaginatedStores({
+  db,
+  currentPage,
+  pageSize,
+  statusFilter,
+  onlyUnfulfilled,
+}: GetPaginatedStores) {
+  const limit = pageSize;
+  const skip = (currentPage - 1) * limit;
   const result = await db
     .collection<Store>('stores')
     .aggregate([{ $sort: { openDate: -1, name: 1 } }])
@@ -39,7 +47,7 @@ export async function getPaginatedStores(
   const filteredResults = paginatedStoresReducer(
     result,
     statusFilter,
-    onlyUnfulfilled === 'true'
+    onlyUnfulfilled
   );
   const count = filteredResults.length;
   const skippedLimitedFilteredResults = filteredResults.slice(

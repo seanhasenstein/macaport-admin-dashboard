@@ -84,29 +84,38 @@ export function storeStatusMatches(
 
 export function paginatedStoresReducer(
   stores: Store[],
-  storeStatus: StoreStatusFilter,
+  selectedStatus: StoreStatusFilter,
   onlyUnfulfilled: boolean
 ) {
   return stores.reduce((acc: StoresTableStore[], currStore) => {
     // if 'only stores with unfulfilled orders' is checked
-    if (onlyUnfulfilled) {
-      if (currStore.orders.some(order => order.orderStatus === 'Unfulfilled')) {
-        if (storeStatusMatches(storeStatus, currStore)) {
+    // if (onlyUnfulfilled) {
+    //   if (currStore.orders.some(order => order.orderStatus === 'Unfulfilled')) {
+    //     if (storeStatusMatches(storeStatus, currStore)) {
+    //       const storesTableStore = convertStoreToStoresTableStore(currStore);
+    //       return [...acc, storesTableStore];
+    //     } else {
+    //       return acc;
+    //     }
+    //   } else {
+    //     return acc;
+    //   }
+    // } else {
+    if (storeStatusMatches(selectedStatus, currStore)) {
+      if (onlyUnfulfilled) {
+        if (
+          currStore.orders.some(order => order.orderStatus === 'Unfulfilled')
+        ) {
           const storesTableStore = convertStoreToStoresTableStore(currStore);
           return [...acc, storesTableStore];
-        } else {
-          return acc;
         }
-      } else {
         return acc;
       }
+      const storesTableStore = convertStoreToStoresTableStore(currStore);
+      return [...acc, storesTableStore];
     } else {
-      if (storeStatusMatches(storeStatus, currStore)) {
-        const storesTableStore = convertStoreToStoresTableStore(currStore);
-        return [...acc, storesTableStore];
-      } else {
-        return acc;
-      }
+      return acc;
+      // }
     }
   }, []);
 }
