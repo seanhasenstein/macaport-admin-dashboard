@@ -23,23 +23,29 @@ export async function getStores(db: Db) {
   return result;
 }
 
-export async function getPaginatedStores(
-  db: Db,
-  currentPage: string,
-  pageSize: string,
-  statusFilter: StoreStatusFilter,
-  onlyUnfulfilled: string
-) {
-  const limit = Number(pageSize);
-  const skip = (Number(currentPage) - 1) * limit;
-  const result = await db
-    .collection<Store>('stores')
-    .aggregate([{ $sort: { openDate: -1, name: 1 } }])
-    .toArray();
+type GetPaginatedStores = {
+  db: Db;
+  currentPage: number;
+  pageSize: number;
+  statusFilter: StoreStatusFilter;
+  onlyUnfulfilled: boolean;
+};
+
+export async function getPaginatedStores({
+  db,
+  currentPage,
+  pageSize,
+  statusFilter,
+  onlyUnfulfilled,
+}: GetPaginatedStores) {
+  const limit = pageSize;
+  const skip = (currentPage - 1) * limit;
+  const result = await db.collection<Store>('stores').aggregate().toArray();
+
   const filteredResults = paginatedStoresReducer(
     result,
     statusFilter,
-    onlyUnfulfilled === 'true'
+    onlyUnfulfilled
   );
   const count = filteredResults.length;
   const skippedLimitedFilteredResults = filteredResults.slice(
@@ -47,8 +53,25 @@ export async function getPaginatedStores(
     skip + limit
   );
 
+  // sort stores first by openDate and then by name
+  const sortedResults = skippedLimitedFilteredResults.sort((storeA, storeB) => {
+    if (storeA.openDate > storeB.openDate) {
+      return -1;
+    } else if (storeA.openDate < storeB.openDate) {
+      return 1;
+    } else {
+      if (storeA.name > storeB.name) {
+        return 1;
+      } else if (storeA.name < storeB.name) {
+        return -1;
+      } else {
+        return 0;
+      }
+    }
+  });
+
   return {
-    stores: skippedLimitedFilteredResults,
+    stores: sortedResults,
     count,
   };
 }
