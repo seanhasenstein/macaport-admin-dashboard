@@ -42,19 +42,9 @@ export async function getPaginatedStores({
   const skip = (currentPage - 1) * limit;
   const result = await db.collection<Store>('stores').aggregate().toArray();
 
-  const filteredResults = paginatedStoresReducer(
-    result,
-    statusFilter,
-    onlyUnfulfilled
-  );
-  const count = filteredResults.length;
-  const skippedLimitedFilteredResults = filteredResults.slice(
-    skip,
-    skip + limit
-  );
-
   // sort stores first by openDate and then by name
-  const sortedResults = skippedLimitedFilteredResults.sort((storeA, storeB) => {
+  const sortedStores = result.sort((storeA, storeB) => {
+    console.log(storeA.openDate, storeB.openDate);
     if (storeA.openDate > storeB.openDate) {
       return -1;
     } else if (storeA.openDate < storeB.openDate) {
@@ -70,8 +60,19 @@ export async function getPaginatedStores({
     }
   });
 
+  const filteredResults = paginatedStoresReducer(
+    sortedStores,
+    statusFilter,
+    onlyUnfulfilled
+  );
+  const count = filteredResults.length;
+  const skippedLimitedFilteredResults = filteredResults.slice(
+    skip,
+    skip + limit
+  );
+
   return {
-    stores: sortedResults,
+    stores: skippedLimitedFilteredResults,
     count,
   };
 }
