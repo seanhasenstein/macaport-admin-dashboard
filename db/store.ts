@@ -44,7 +44,6 @@ export async function getPaginatedStores({
 
   // sort stores first by openDate and then by name
   const sortedStores = result.sort((storeA, storeB) => {
-    console.log(storeA.openDate, storeB.openDate);
     if (storeA.openDate > storeB.openDate) {
       return -1;
     } else if (storeA.openDate < storeB.openDate) {
