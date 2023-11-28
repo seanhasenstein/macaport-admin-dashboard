@@ -15,10 +15,14 @@ export default function StoreProductMenu({
   productId,
   inventoryProductId,
 }: Props) {
-  const menuRef = React.useRef<HTMLDivElement>(null);
   const [showMenu, setShowMenu] = React.useState(false);
-  useOutsideClick(showMenu, setShowMenu, menuRef);
-  useEscapeKeydownClose(showMenu, setShowMenu);
+
+  const menuRef = React.useRef<HTMLDivElement>(null);
+
+  const closeMenu = () => setShowMenu(false);
+
+  useOutsideClick(showMenu, closeMenu, menuRef);
+  useEscapeKeydownClose(showMenu, closeMenu);
 
   return (
     <StoreProductMenuStyles>

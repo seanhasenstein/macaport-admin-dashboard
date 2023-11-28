@@ -4,9 +4,12 @@ import styled from 'styled-components';
 export default function PageNavButtons() {
   return (
     <PageNavButtonstyles>
-      <Link href="/">Dashboard home</Link>
-      <Link href="/stores">All stores</Link>
-      <Link href="/inventory-products">Inventory products</Link>
+      <Link href="/">Home</Link>
+      <Link href="/stores">Stores</Link>
+      <Link href="/inventory-products">Inventory</Link>
+      <Link href="/employees">Employees</Link>
+      <Link href="/equipment">Equipment</Link>
+      <Link href="/calendar-events">Events</Link>
     </PageNavButtonstyles>
   );
 }
@@ -15,7 +18,7 @@ const PageNavButtonstyles = styled.div`
   margin: 0 auto;
   width: 100%;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(6, 1fr);
   background-color: #fff;
   border-radius: 0.375rem;
   box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);

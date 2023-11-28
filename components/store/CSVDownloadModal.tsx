@@ -23,9 +23,7 @@ export default function CSVDownloadModal({
   setShowModal,
 }: Props) {
   const router = useRouter();
-  const csvLinkRef = React.useRef<HTMLAnchorElement>(null);
-  useOutsideClick(showModal, setShowModal, containerRef);
-  useEscapeKeydownClose(showModal, setShowModal);
+
   const [allFields, setAllFields] = React.useState(true);
   const [fields, setFields] = React.useState(() => [
     { id: 1, field: 'orderId', checked: true },
@@ -60,6 +58,14 @@ export default function CSVDownloadModal({
       : []),
     { id: 25, field: 'stripeId', checked: true },
   ]);
+
+  const csvLinkRef = React.useRef<HTMLAnchorElement>(null);
+
+  const closeModal = () => setShowModal(false);
+
+  useOutsideClick(showModal, closeModal, containerRef);
+  useEscapeKeydownClose(showModal, closeModal);
+
   const [enableCsvQuery, csvQuery] = useCsvDownload(
     getQueryParameter(router.query.id),
     fields,

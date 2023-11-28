@@ -1,5 +1,6 @@
 import { NextApiRequest } from 'next';
-import { Db, MongoClient } from 'mongodb';
+import { Db, MongoClient, ObjectId } from 'mongodb';
+import { string } from 'yup';
 
 export interface InventoryColor {
   id: string;
@@ -305,4 +306,152 @@ export interface Request extends NextApiRequest {
     statusFilter: StoreStatusFilter;
     onlyUnfulfilled: string;
   };
+}
+
+// *********************** EMPLOYEES *********************** //
+
+export type Employee = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  meta: {
+    isAdmin: boolean;
+  };
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CreateEmployeeInput = Omit<
+  Employee,
+  'meta' | 'createdAt' | 'updatedAt'
+>;
+
+export interface EmployeeWithId extends Employee {
+  _id: string;
+}
+
+export interface EmployeeWithObjectId extends Employee {
+  _id: ObjectId;
+}
+
+export interface EmployeeEvent extends EmployeeWithId {
+  type: 'leader' | 'worker' | 'volunteer';
+  dates: {
+    startTime: string;
+    endTime: string;
+  }[];
+  locationId: string;
+}
+
+export interface EmployeeEventForDb {
+  _id: ObjectId;
+  type: 'leader' | 'worker' | 'volunteer';
+  dates: {
+    startTime: string;
+    endTime: string;
+  }[];
+  locationId: string;
+}
+
+// *********************** EQUIPMENT *********************** //
+
+export type Equipment = {
+  id: string;
+  name: string;
+  type: string; // todo: add a EquipmentType enum/collection to db
+  description?: string;
+  instructions?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CreateEquipmentInput = Omit<Equipment, 'createdAt' | 'updatedAt'>;
+
+export interface EquipmentWithId extends Equipment {
+  _id: string;
+}
+
+export interface EquipmentWithObjectId extends Equipment {
+  _id: ObjectId;
+}
+
+export interface EquipmentEvent extends EquipmentWithId {
+  dates: {
+    startTime: string;
+    endTime: string;
+  }[];
+  locationId: string;
+}
+
+export interface EquipmentEventForDb {
+  _id: ObjectId;
+  dates: {
+    startTime: string;
+    endTime: string;
+  }[];
+  locationId: string;
+}
+
+// *********************** EVENTS *********************** //
+
+type CalendarEventLocation = {
+  id: string;
+  name: string;
+  address: {
+    street: string;
+    street2: string;
+    city: string;
+    state: string;
+    zip: string;
+  };
+  dates: {
+    startTime: string;
+    endTime: string;
+  }[];
+};
+
+export type CalendarEvent = {
+  name: string;
+  type: 'offsite' | 'instore';
+  // dates: {
+  //   startTime: string;
+  //   endTime: string;
+  // }[];
+  // primaryLocation: Location;
+  // secondaryLocations?: Location[];
+  locations: CalendarEventLocation[];
+  employees: EmployeeEvent[];
+  equipment: EquipmentEvent[];
+  instructions?: string[];
+  onlineStoreId?: string;
+  onlineStoreUrl?: string;
+  eventStoreId?: string;
+  eventStoreUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export interface CreateCalendarEventInput
+  extends Omit<
+    CalendarEvent,
+    'employees' | 'equipment' | 'createdAt' | 'updatedAt'
+  > {
+  employees: EmployeeEventForDb[];
+  equipment: EquipmentEventForDb[];
+}
+
+export interface UpdateCalendarEventInput
+  extends Omit<CalendarEventWithId, '_id' | 'employees' | 'equipment'> {
+  _id: ObjectId;
+  employees: EmployeeEventForDb[];
+  equipment: EquipmentEventForDb[];
+}
+
+export interface CalendarEventWithId extends CalendarEvent {
+  _id: string;
+}
+
+export interface CalendarEventWithObjectId extends CalendarEvent {
+  _id: ObjectId;
 }

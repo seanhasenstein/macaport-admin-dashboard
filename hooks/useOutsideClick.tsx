@@ -1,23 +1,24 @@
 import React from 'react';
 
 export default function useOutsideClick(
-  open: boolean,
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>,
-  ref: React.RefObject<HTMLElement>
+  isOpen: boolean,
+  close: () => void,
+  ref: React.RefObject<HTMLElement>,
+  disable = false
 ) {
   React.useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (!ref.current?.contains(e.target as Node)) {
-        setOpen(false);
+        close();
       }
     };
 
-    if (open) {
+    if (isOpen && !disable) {
       document.addEventListener('click', handleClick);
     }
 
     return () => {
       document.removeEventListener('click', handleClick);
     };
-  }, [open, ref, setOpen]);
+  }, [open, ref, close]);
 }

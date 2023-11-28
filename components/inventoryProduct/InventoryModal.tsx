@@ -17,13 +17,18 @@ export default function InventoryModal({
   showModal,
   setShowModal,
 }: Props) {
-  const modalRef = React.useRef<HTMLDivElement>(null);
-  useOutsideClick(showModal, setShowModal, modalRef);
-  useEscapeKeydownClose(showModal, setShowModal);
   const [updatedProduct, setUpdatedProduct] = React.useState(product);
   const [selectAll, setSelectAll] = React.useState(() =>
     product.skus.every(s => s.active)
   );
+
+  const modalRef = React.useRef<HTMLDivElement>(null);
+
+  const closeModal = () => setShowModal(false);
+
+  useOutsideClick(showModal, closeModal, modalRef);
+  useEscapeKeydownClose(showModal, closeModal);
+
   const { updateProduct } = useInventoryProductMutations(product);
 
   React.useEffect(() => {

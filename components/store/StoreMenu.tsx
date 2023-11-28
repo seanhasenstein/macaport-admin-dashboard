@@ -22,14 +22,17 @@ export default function StoreMenu({
   setShowDeleteModal,
   setShowCSVModal,
 }: Props) {
-  const menuRef = React.useRef<HTMLDivElement>(null);
   const [showMenu, setShowMenu] = React.useState(false);
   const [copyLinkClicked, setCopyLinkClicked] = React.useState<
     'demo' | 'live' | undefined
   >(undefined);
 
-  useOutsideClick(showMenu, setShowMenu, menuRef);
-  useEscapeKeydownClose(showMenu, setShowMenu);
+  const menuRef = React.useRef<HTMLDivElement>(null);
+
+  const closeMenu = () => setShowMenu(false);
+
+  useOutsideClick(showMenu, closeMenu, menuRef);
+  useEscapeKeydownClose(showMenu, closeMenu);
 
   const handleDeleteStoreMenuClick = () => {
     setShowMenu(false);

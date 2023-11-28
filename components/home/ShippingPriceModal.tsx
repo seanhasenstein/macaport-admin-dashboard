@@ -47,8 +47,10 @@ type Props = {
 export default function ShippingPriceModal(props: Props) {
   const deleteStoreRef = React.useRef<HTMLDivElement>(null);
 
-  useOutsideClick(props.showModal, props.setShowModal, deleteStoreRef);
-  useEscapeKeydownClose(props.showModal, props.setShowModal);
+  const closeModal = () => props.setShowModal(false);
+
+  useOutsideClick(props.showModal, closeModal, deleteStoreRef);
+  useEscapeKeydownClose(props.showModal, closeModal);
 
   const handleSubmit = (formValues: ShippingDataForm) => {
     props.updateShippingDetails.mutate(

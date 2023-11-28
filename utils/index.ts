@@ -240,6 +240,37 @@ export function updateProductSkus(
   });
 }
 
+export function validateEmail(email: string) {
+  const re = /\S+@\S+\.\S+/;
+  return re.test(email);
+}
+
+export function validatePhoneNumber(phone: string) {
+  const phoneWithoutNonDigits = removeNonDigits(phone);
+  if (phoneWithoutNonDigits.length !== 10) return false;
+  return true;
+}
+
+export function formatPhoneNumberOnChange(value: string) {
+  if (!value) return value;
+  const phoneNumber = value.replace(/[^\d]/g, '');
+  const phoneNumberLength = phoneNumber.length;
+  if (phoneNumberLength < 4) return phoneNumber;
+  if (phoneNumberLength < 7) {
+    return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
+  }
+  return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(
+    3,
+    6
+  )}-${phoneNumber.slice(6, 10)}`;
+}
+
+export function formatZipcodeOnChange(value: string) {
+  if (!value) return value;
+  const zipcode = value.replace(/[^\d]/g, '');
+  return `${zipcode.slice(0, 5)}`;
+}
+
 export const unitedStates = [
   'Alaska',
   'Alabama',

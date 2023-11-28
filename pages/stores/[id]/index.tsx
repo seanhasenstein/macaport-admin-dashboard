@@ -26,22 +26,18 @@ import TableLoadingSpinner from '../../../components/TableLoadingSpinner';
 export default function Store() {
   const router = useRouter();
 
-  const deleteProductRef = React.useRef<HTMLDivElement>(null);
-  const csvModalRef = React.useRef<HTMLDivElement>(null);
-
   const [storeStatus, setStoreStatus] = React.useState<StoreStatus>();
-  const [showDeleteProductModal, setShowDeleteProductModal] =
-    React.useState(false);
+  const [showModal, setShowModal] = React.useState(false);
   const [showDeleteStoreModal, setShowDeleteStoreModal] = React.useState(false);
   const [showCSVModal, setShowCSVModal] = React.useState(false);
 
-  useOutsideClick(
-    showDeleteProductModal,
-    setShowDeleteProductModal,
-    deleteProductRef
-  );
+  const deleteProductRef = React.useRef<HTMLDivElement>(null);
+  const csvModalRef = React.useRef<HTMLDivElement>(null);
 
-  useEscapeKeydownClose(showDeleteProductModal, setShowDeleteProductModal);
+  const closeModal = () => setShowModal(false);
+
+  useOutsideClick(showModal, closeModal, deleteProductRef);
+  useEscapeKeydownClose(showModal, closeModal);
 
   const storeQuery = useStoreQuery();
 

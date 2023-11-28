@@ -19,8 +19,11 @@ type Props = {
 
 export default function CancelOrderModal(props: Props) {
   const modalRef = React.useRef<HTMLDivElement>(null);
-  useOutsideClick(props.showModal, props.setShowModal, modalRef);
-  useEscapeKeydownClose(props.showModal, props.setShowModal);
+
+  const closeModal = () => props.setShowModal(false);
+
+  useOutsideClick(props.showModal, closeModal, modalRef);
+  useEscapeKeydownClose(props.showModal, closeModal);
 
   const handleCancelOrderClick = () => {
     props.cancelOrder.mutate();

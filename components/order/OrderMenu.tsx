@@ -12,9 +12,13 @@ type Props = {
 
 export default function OrderMenu(props: Props) {
   const [showMenu, setShowMenu] = React.useState(false);
+
   const menuRef = React.useRef<HTMLDivElement>(null);
-  useOutsideClick(showMenu, setShowMenu, menuRef);
-  useEscapeKeydownClose(showMenu, setShowMenu);
+
+  const closeMenu = () => setShowMenu(false);
+
+  useOutsideClick(showMenu, closeMenu, menuRef);
+  useEscapeKeydownClose(showMenu, closeMenu);
 
   return (
     <OrderMenuStyles>

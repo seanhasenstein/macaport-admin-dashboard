@@ -14,10 +14,14 @@ type Props = {
 
 export default function HomepageMenu(props: Props) {
   const menuRef = React.useRef<HTMLDivElement>(null);
-  useOutsideClick(props.showMenu, props.setShowMenu, menuRef);
-  useEscapeKeydownClose(props.showMenu, props.setShowMenu);
+
+  const closeMenu = () => props.setShowMenu(false);
+
+  useOutsideClick(props.showMenu, closeMenu, menuRef);
+  useEscapeKeydownClose(props.showMenu, closeMenu);
 
   const handleShowShippngPriceModal = () => {
+    closeMenu();
     props.setShowShippingModal(true);
   };
 

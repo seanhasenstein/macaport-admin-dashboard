@@ -12,8 +12,11 @@ type Props = {
 
 export default function NavSidebar({ sidebarOpen, setSidebarOpen }: Props) {
   const containerRef = React.useRef<HTMLDivElement>(null);
-  useEscapeKeydownClose(sidebarOpen, setSidebarOpen);
-  useOutsideClick(sidebarOpen, setSidebarOpen, containerRef);
+
+  const closeSidebar = () => setSidebarOpen(false);
+
+  useEscapeKeydownClose(sidebarOpen, closeSidebar);
+  useOutsideClick(sidebarOpen, closeSidebar, containerRef);
 
   return (
     <NavSidebarStyles
@@ -55,11 +58,29 @@ export default function NavSidebar({ sidebarOpen, setSidebarOpen }: Props) {
           <Link href="/inventory-products">
             <a className="nav-link">Inventory products</a>
           </Link>
+          <Link href="/employees">
+            <a className="nav-link">Employees</a>
+          </Link>
+          <Link href="/equipment">
+            <a className="nav-link">Equipment</a>
+          </Link>
+          <Link href="/events">
+            <a className="nav-link">Events</a>
+          </Link>
           <Link href="/stores/create">
             <a className="nav-link">Create a store</a>
           </Link>
           <Link href="/inventory-products/create">
             <a className="nav-link">Create an inventory product</a>
+          </Link>
+          <Link href="/employees/create">
+            <a className="nav-link">Create an employee</a>
+          </Link>
+          <Link href="/equipment/create">
+            <a className="nav-link">Add equipment</a>
+          </Link>
+          <Link href="/event/create">
+            <a className="nav-link">Add an event</a>
           </Link>
           <a
             href="https://dashboard.stripe.com/dashboard"

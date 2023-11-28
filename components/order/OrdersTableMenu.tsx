@@ -12,9 +12,13 @@ type Props = {
 
 export default function OrdersTableMenu({ store, order }: Props) {
   const menuRef = React.useRef<HTMLDivElement>(null);
+
   const [showMenu, setShowMenu] = React.useState(false);
-  useOutsideClick(showMenu, setShowMenu, menuRef);
-  useEscapeKeydownClose(showMenu, setShowMenu);
+
+  const closeMenu = () => setShowMenu(false);
+
+  useOutsideClick(showMenu, closeMenu, menuRef);
+  useEscapeKeydownClose(showMenu, closeMenu);
 
   return (
     <OrdersTableMenuStyles>

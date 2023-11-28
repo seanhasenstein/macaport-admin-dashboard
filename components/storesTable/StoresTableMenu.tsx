@@ -16,11 +16,16 @@ export default function StoresTableMenu({
   openDate,
   closeDate,
 }: Props) {
-  const menuRef = React.useRef<HTMLDivElement>(null);
-  const storeStatus = getStoreStatus(openDate, closeDate);
   const [showMenu, setShowMenu] = React.useState(false);
-  useOutsideClick(showMenu, setShowMenu, menuRef);
-  useEscapeKeydownClose(showMenu, setShowMenu);
+
+  const menuRef = React.useRef<HTMLDivElement>(null);
+
+  const closeMenu = () => setShowMenu(false);
+
+  useOutsideClick(showMenu, closeMenu, menuRef);
+  useEscapeKeydownClose(showMenu, closeMenu);
+
+  const storeStatus = getStoreStatus(openDate, closeDate);
 
   return (
     <StoresTableMenuStyles>

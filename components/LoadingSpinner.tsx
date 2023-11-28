@@ -14,6 +14,7 @@ export default function LoadingSpinner({
   className = '',
   theme = 'light',
 }: Props) {
+  if (!isLoading) return null;
   return (
     <LoadingSpinnerStyles
       className={`${className && `${className} `}${isLoading ? 'show' : ''}`}

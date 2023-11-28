@@ -11,10 +11,15 @@ type Props = {
 
 export default function InventoryProductMenu(props: Props) {
   const router = useRouter();
-  const productMenuRef = React.useRef<HTMLDivElement>(null);
+
   const [showMenu, setShowMenu] = React.useState(false);
-  useOutsideClick(showMenu, setShowMenu, productMenuRef);
-  useEscapeKeydownClose(showMenu, setShowMenu);
+
+  const productMenuRef = React.useRef<HTMLDivElement>(null);
+
+  const closeMenu = () => setShowMenu(false);
+
+  useOutsideClick(showMenu, closeMenu, productMenuRef);
+  useEscapeKeydownClose(showMenu, closeMenu);
 
   return (
     <InventoryProductMenuStyles>

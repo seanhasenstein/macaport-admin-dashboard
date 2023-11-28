@@ -16,9 +16,14 @@ type Props = {
 
 export default function DeleteStoreModal(props: Props) {
   const router = useRouter();
+
   const deleteStoreRef = React.useRef<HTMLDivElement>(null);
-  useOutsideClick(props.showModal, props.setShowModal, deleteStoreRef);
-  useEscapeKeydownClose(props.showModal, props.setShowModal);
+
+  const closeModal = () => props.setShowModal(false);
+
+  useOutsideClick(props.showModal, closeModal, deleteStoreRef);
+  useEscapeKeydownClose(props.showModal, closeModal);
+
   const { deleteStore } = useStoreMutations({ store: props.store });
 
   const handleDeleteStoreClick = () => {
