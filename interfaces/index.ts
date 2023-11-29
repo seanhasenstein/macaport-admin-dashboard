@@ -342,6 +342,7 @@ export interface EmployeeEvent extends EmployeeWithId {
     endTime: string;
   }[];
   locationId: string;
+  instructions: string[];
 }
 
 export interface EmployeeEventForDb {
@@ -352,6 +353,7 @@ export interface EmployeeEventForDb {
     endTime: string;
   }[];
   locationId: string;
+  instructions: string[];
 }
 
 // *********************** EQUIPMENT *********************** //
@@ -361,7 +363,7 @@ export type Equipment = {
   name: string;
   type: string; // todo: add a EquipmentType enum/collection to db
   description?: string;
-  instructions?: string;
+  instructions?: string[];
   createdAt: string;
   updatedAt: string;
 };
@@ -382,6 +384,7 @@ export interface EquipmentEvent extends EquipmentWithId {
     endTime: string;
   }[];
   locationId: string;
+  instructions: string[];
 }
 
 export interface EquipmentEventForDb {
@@ -391,6 +394,7 @@ export interface EquipmentEventForDb {
     endTime: string;
   }[];
   locationId: string;
+  instructions: string[];
 }
 
 // *********************** EVENTS *********************** //
@@ -414,12 +418,6 @@ type CalendarEventLocation = {
 export type CalendarEvent = {
   name: string;
   type: 'offsite' | 'instore';
-  // dates: {
-  //   startTime: string;
-  //   endTime: string;
-  // }[];
-  // primaryLocation: Location;
-  // secondaryLocations?: Location[];
   locations: CalendarEventLocation[];
   employees: EmployeeEvent[];
   equipment: EquipmentEvent[];
