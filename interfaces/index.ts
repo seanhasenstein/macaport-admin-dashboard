@@ -1,6 +1,5 @@
 import { NextApiRequest } from 'next';
 import { Db, MongoClient, ObjectId } from 'mongodb';
-import { string } from 'yup';
 
 export interface InventoryColor {
   id: string;
@@ -418,33 +417,15 @@ type CalendarEventLocation = {
 export type CalendarEvent = {
   name: string;
   type: 'offsite' | 'instore';
-  locations: CalendarEventLocation[];
+  location: CalendarEventLocation;
   employees: EmployeeEvent[];
   equipment: EquipmentEvent[];
   instructions?: string[];
-  onlineStoreId?: string;
-  onlineStoreUrl?: string;
-  eventStoreId?: string;
-  eventStoreUrl?: string;
+  onlineStore?: string;
+  eventStore?: string;
   createdAt: string;
   updatedAt: string;
 };
-
-export interface CreateCalendarEventInput
-  extends Omit<
-    CalendarEvent,
-    'employees' | 'equipment' | 'createdAt' | 'updatedAt'
-  > {
-  employees: EmployeeEventForDb[];
-  equipment: EquipmentEventForDb[];
-}
-
-export interface UpdateCalendarEventInput
-  extends Omit<CalendarEventWithId, '_id' | 'employees' | 'equipment'> {
-  _id: ObjectId;
-  employees: EmployeeEventForDb[];
-  equipment: EquipmentEventForDb[];
-}
 
 export interface CalendarEventWithId extends CalendarEvent {
   _id: string;
@@ -452,4 +433,32 @@ export interface CalendarEventWithId extends CalendarEvent {
 
 export interface CalendarEventWithObjectId extends CalendarEvent {
   _id: ObjectId;
+}
+
+export interface CreateCalendarEventInput
+  extends Omit<
+    CalendarEvent,
+    | 'employees'
+    | 'equipment'
+    | 'onlineStore'
+    | 'eventStore'
+    | 'createdAt'
+    | 'updatedAt'
+  > {
+  employees: EmployeeEventForDb[];
+  equipment: EquipmentEventForDb[];
+  onlineStore?: string;
+  eventStore?: string;
+}
+
+export interface UpdateCalendarEventInput
+  extends Omit<
+    CalendarEventWithId,
+    '_id' | 'onlineStore' | 'eventStore' | 'employees' | 'equipment'
+  > {
+  _id: ObjectId;
+  employees: EmployeeEventForDb[];
+  equipment: EquipmentEventForDb[];
+  onlineStore?: string;
+  eventStore?: string;
 }
