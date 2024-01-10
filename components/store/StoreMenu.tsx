@@ -43,13 +43,11 @@ export default function StoreMenu({
   const handlePrintUnfulfilledOrders = () => {
     setPrintOption('unfulfilled');
     setShowMenu(false);
-    // window.print();
   };
 
   const handlePrintPersonalizedOrders = () => {
     setPrintOption('personalization');
     setShowMenu(false);
-    // window.print();
   };
 
   return (
