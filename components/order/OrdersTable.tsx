@@ -76,6 +76,11 @@ export default function OrdersTable({ store }: Props) {
                   {store.requireGroupSelection && <th>{store.groupTerm}</th>}
                   <th>Shipping</th>
                   <th className="text-center">Unique / Total Items</th>
+                  <th className="text-center">
+                    Includes
+                    <br />
+                    personalization
+                  </th>
                   <th className="text-right">Total</th>
                   <th className="text-center">Order Status</th>
                   <th />
@@ -97,7 +102,12 @@ export default function OrdersTable({ store }: Props) {
                     {filteredOrders.map(o => (
                       <tr key={o.orderId}>
                         <td>
-                          {format(new Date(o.createdAt), 'MM/dd/yyyy h:mmaa')}
+                          <div className="create-at-date">
+                            {format(new Date(o.createdAt), 'MM/dd/yyyy')}
+                          </div>
+                          <div className="create-at-time">
+                            {format(new Date(o.createdAt), 'h:mmaa')}
+                          </div>
                         </td>
                         <td>
                           <div className="customer-name">
@@ -118,6 +128,13 @@ export default function OrdersTable({ store }: Props) {
                           {o.orderStatus === 'Canceled'
                             ? 0
                             : calculateTotalItems(o.items)}
+                        </td>
+                        <td className="text-center personalization">
+                          {o.items.some(
+                            item => item.personalizationAddons.length > 0
+                          )
+                            ? 'P'
+                            : null}
                         </td>
                         <td className="text-right">
                           {formatToMoney(o.summary.total, true)}
@@ -229,6 +246,16 @@ const OrdersTableStyles = styled.div`
         color: #374151;
       }
     }
+  }
+
+  .create-at-date,
+  .create-at-time {
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+
+  .create-at-time {
+    margin-top: 0.125rem;
   }
 
   .customer-name {
