@@ -34,6 +34,9 @@ export default function Store() {
     React.useState(false);
   const [showDeleteStoreModal, setShowDeleteStoreModal] = React.useState(false);
   const [showCSVModal, setShowCSVModal] = React.useState(false);
+  const [printOption, setPrintOption] = React.useState<
+    'unfulfilled' | 'personalization' | undefined
+  >(undefined);
 
   useOutsideClick(
     showDeleteProductModal,
@@ -52,6 +55,13 @@ export default function Store() {
       );
     }
   }, [storeQuery.data]);
+
+  React.useEffect(() => {
+    if (printOption) {
+      window.print();
+      setPrintOption(undefined);
+    }
+  }, [printOption]);
 
   return (
     <Layout
@@ -103,6 +113,7 @@ export default function Store() {
                   storeStatus={storeStatus}
                   setShowDeleteModal={setShowDeleteStoreModal}
                   setShowCSVModal={setShowCSVModal}
+                  setPrintOption={setPrintOption}
                 />
               </div>
 
@@ -158,19 +169,41 @@ export default function Store() {
         />
       )}
 
-      <div className="printable-orders" aria-hidden="true">
-        {storeQuery?.data?.orders?.map(order => {
-          if (order.orderStatus === 'Unfulfilled') {
-            return (
-              <PrintableOrder
-                key={order.orderId}
-                order={order}
-                store={storeQuery.data}
-              />
+      {printOption === 'unfulfilled' ? (
+        <div className="printable-orders" aria-hidden="true">
+          {storeQuery?.data?.orders?.map(order => {
+            if (order.orderStatus === 'Unfulfilled') {
+              return (
+                <PrintableOrder
+                  key={order.orderId}
+                  order={order}
+                  store={storeQuery.data}
+                />
+              );
+            }
+          })}
+        </div>
+      ) : null}
+
+      {printOption === 'personalization' ? (
+        <div className="printable-orders" aria-hidden="true">
+          {storeQuery?.data?.orders?.map(order => {
+            const orderHasAtLeastOnePersonalizationItem = order.items.some(
+              item => item.personalizationAddons.length > 0
             );
-          }
-        })}
-      </div>
+
+            if (orderHasAtLeastOnePersonalizationItem) {
+              return (
+                <PrintableOrder
+                  key={order.orderId}
+                  order={order}
+                  store={storeQuery.data}
+                />
+              );
+            }
+          })}
+        </div>
+      ) : null}
     </Layout>
   );
 }
