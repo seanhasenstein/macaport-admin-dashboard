@@ -10,7 +10,7 @@ import OrdersTableMenu from './OrdersTableMenu';
 import OrderStatusButton from './OrderStatusButton';
 import Table from '../common/Table';
 
-type OrderViewOptions = OrderStatus | 'All';
+type OrderViewOptions = OrderStatus | 'All' | 'Personalized';
 
 type Props = {
   store: StoreWithOrderStatusTotals;
@@ -28,6 +28,7 @@ const orderFilterItems: OrderFilterItem[] = [
   { id: 4, option: 'Fulfilled' },
   { id: 5, option: 'Completed' },
   { id: 6, option: 'Canceled' },
+  { id: 7, option: 'Personalized' },
 ];
 
 export default function OrdersTable({ store }: Props) {
@@ -38,6 +39,13 @@ export default function OrdersTable({ store }: Props) {
   React.useEffect(() => {
     if (orderViewOption === 'All') {
       setFilteredOrders(store.orders);
+      return;
+    }
+    if (orderViewOption === 'Personalized') {
+      const updatedFilteredOrders = store.orders.filter(o =>
+        o.items.some(item => item.personalizationAddons.length > 0)
+      );
+      setFilteredOrders(updatedFilteredOrders);
       return;
     }
     const updatedFilteredOrders = store.orders.filter(
@@ -67,19 +75,20 @@ export default function OrdersTable({ store }: Props) {
               ))}
             </div>
           </div>
-          <Table>
+          <Table className="table-container">
             <table>
               <thead>
                 <tr>
+                  <th />
                   <th>Date</th>
                   <th>Customer</th>
                   {store.requireGroupSelection && <th>{store.groupTerm}</th>}
                   <th>Shipping</th>
                   <th className="text-center">Unique / Total Items</th>
                   <th className="text-center">
-                    Includes
+                    Has at least one
                     <br />
-                    personalization
+                    personalized item
                   </th>
                   <th className="text-right">Total</th>
                   <th className="text-center">Order Status</th>
@@ -99,8 +108,9 @@ export default function OrdersTable({ store }: Props) {
                   </tr>
                 ) : (
                   <>
-                    {filteredOrders.map(o => (
+                    {filteredOrders.map((o, index) => (
                       <tr key={o.orderId}>
+                        <td className="order-number">{index + 1}.</td>
                         <td>
                           <div className="create-at-date">
                             {format(new Date(o.createdAt), 'MM/dd/yyyy')}
@@ -174,6 +184,7 @@ export default function OrdersTable({ store }: Props) {
 }
 
 const OrdersTableStyles = styled.div`
+  overflow-x: auto;
   .buttons {
     margin: 0 0 1.125rem;
     display: inline-flex;
@@ -232,11 +243,19 @@ const OrdersTableStyles = styled.div`
     }
   }
 
+  .table-container {
+    min-width: 67rem;
+  }
+
   td {
     &.empty {
       padding: 1.25rem 2rem;
       color: #1f2937;
       font-size: 0.9375rem;
+    }
+
+    &.order-number {
+      padding-right: 0;
     }
 
     &.note {
