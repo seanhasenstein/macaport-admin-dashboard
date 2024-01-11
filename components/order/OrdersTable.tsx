@@ -2,11 +2,11 @@ import React from 'react';
 import Link from 'next/link';
 import styled from 'styled-components';
 import { format } from 'date-fns';
+import classNames from 'classnames';
 
 import { OrderStatus, StoreWithOrderStatusTotals } from '../../interfaces';
 import { calculateTotalItems, formatToMoney } from '../../utils';
 
-import OrdersTableMenu from './OrdersTableMenu';
 import OrderStatusButton from './OrderStatusButton';
 import Table from '../common/Table';
 
@@ -31,10 +31,50 @@ const orderFilterItems: OrderFilterItem[] = [
   { id: 7, option: 'Personalized' },
 ];
 
+interface ButtonWrapperProps {
+  children: React.ReactNode;
+  customClassName?: string;
+  onClick: () => void;
+}
+
+function ButtonWrapper({
+  children,
+  customClassName,
+  onClick,
+}: ButtonWrapperProps) {
+  return (
+    <ButtonWrapperStyles
+      type="button"
+      onClick={onClick}
+      className={classNames(customClassName)}
+    >
+      {children}
+    </ButtonWrapperStyles>
+  );
+}
+
+const ButtonWrapperStyles = styled.button`
+  padding: 1rem;
+  background-color: transparent;
+  border: none;
+  text-align: inherit;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  font-family: inherit;
+  width: 100%;
+  min-height: 69px;
+  cursor: pointer;
+`;
+
 export default function OrdersTable({ store }: Props) {
   const [orderViewOption, setOrderViewOption] =
     React.useState<OrderViewOptions>('All');
   const [filteredOrders, setFilteredOrders] = React.useState(store.orders);
+
+  const buttonOnClick = () => {
+    console.log('clicked');
+  };
 
   React.useEffect(() => {
     if (orderViewOption === 'All') {
@@ -92,8 +132,10 @@ export default function OrdersTable({ store }: Props) {
                   </th>
                   <th className="text-right">Total</th>
                   <th className="text-center">Order Status</th>
-                  <th />
-                  <th />
+                  <th className="text-right">
+                    Has a<br />
+                    note
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -110,65 +152,95 @@ export default function OrdersTable({ store }: Props) {
                   <>
                     {filteredOrders.map((o, index) => (
                       <tr key={o.orderId}>
-                        <td className="order-number">{index + 1}.</td>
-                        <td>
-                          <div className="create-at-date">
-                            {format(new Date(o.createdAt), 'MM/dd/yyyy')}
-                          </div>
-                          <div className="create-at-time">
-                            {format(new Date(o.createdAt), 'h:mmaa')}
-                          </div>
+                        <td className="order-number">
+                          <ButtonWrapper
+                            onClick={buttonOnClick}
+                            customClassName="order-number-button"
+                          >
+                            {index + 1}.
+                          </ButtonWrapper>
                         </td>
                         <td>
-                          <div className="customer-name">
-                            <Link
-                              href={`/orders/${o.orderId}?sid=${store._id}`}
-                            >
-                              <a>
-                                {o.customer.firstName} {o.customer.lastName}
-                              </a>
-                            </Link>
-                          </div>
-                          <div className="order-id">#{o.orderId}</div>
+                          <ButtonWrapper onClick={buttonOnClick}>
+                            <div className="create-at-date">
+                              {format(new Date(o.createdAt), 'MM/dd/yyyy')}
+                            </div>
+                            <div className="create-at-time">
+                              {format(new Date(o.createdAt), 'h:mmaa')}
+                            </div>
+                          </ButtonWrapper>
                         </td>
-                        {store.requireGroupSelection && <td>{o.group}</td>}
-                        <td>{o.shippingMethod}</td>
+                        <td>
+                          <ButtonWrapper onClick={buttonOnClick}>
+                            <div className="customer-name">
+                              <Link
+                                href={`/orders/${o.orderId}?sid=${store._id}`}
+                              >
+                                <a>
+                                  {o.customer.firstName} {o.customer.lastName}
+                                </a>
+                              </Link>
+                            </div>
+                            <div className="order-id">#{o.orderId}</div>
+                          </ButtonWrapper>
+                        </td>
+                        {store.requireGroupSelection && (
+                          <td>
+                            <ButtonWrapper onClick={buttonOnClick}>
+                              {o.group}
+                            </ButtonWrapper>
+                          </td>
+                        )}
+                        <td>
+                          <ButtonWrapper onClick={buttonOnClick}>
+                            {o.shippingMethod}
+                          </ButtonWrapper>
+                        </td>
                         <td className="text-center total-items">
-                          {o.orderStatus === 'Canceled' ? 0 : o.items.length} /{' '}
-                          {o.orderStatus === 'Canceled'
-                            ? 0
-                            : calculateTotalItems(o.items)}
+                          <ButtonWrapper onClick={buttonOnClick}>
+                            {o.orderStatus === 'Canceled' ? 0 : o.items.length}{' '}
+                            /{' '}
+                            {o.orderStatus === 'Canceled'
+                              ? 0
+                              : calculateTotalItems(o.items)}
+                          </ButtonWrapper>
                         </td>
                         <td className="text-center personalization">
-                          {o.items.some(
-                            item => item.personalizationAddons.length > 0
-                          )
-                            ? 'P'
-                            : null}
+                          <ButtonWrapper onClick={buttonOnClick}>
+                            {o.items.some(
+                              item => item.personalizationAddons.length > 0
+                            )
+                              ? 'P'
+                              : null}
+                          </ButtonWrapper>
                         </td>
                         <td className="text-right">
-                          {formatToMoney(o.summary.total, true)}
+                          <ButtonWrapper onClick={buttonOnClick}>
+                            {formatToMoney(o.summary.total, true)}
+                          </ButtonWrapper>
                         </td>
                         <td className="text-center">
                           <OrderStatusButton store={store} order={o} />
                         </td>
                         <td className="note">
-                          {o.note ? (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M3.43 2.524A41.29 41.29 0 0110 2c2.236 0 4.43.18 6.57.524 1.437.231 2.43 1.49 2.43 2.902v5.148c0 1.413-.993 2.67-2.43 2.902a41.202 41.202 0 01-5.183.501.78.78 0 00-.528.224l-3.579 3.58A.75.75 0 016 17.25v-3.443a41.033 41.033 0 01-2.57-.33C1.993 13.244 1 11.986 1 10.573V5.426c0-1.413.993-2.67 2.43-2.902z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                          ) : null}
-                        </td>
-                        <td className="order-actions">
-                          <OrdersTableMenu store={store} order={o} />
+                          <ButtonWrapper
+                            onClick={buttonOnClick}
+                            customClassName="note-button"
+                          >
+                            {o.note ? (
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M3.43 2.524A41.29 41.29 0 0110 2c2.236 0 4.43.18 6.57.524 1.437.231 2.43 1.49 2.43 2.902v5.148c0 1.413-.993 2.67-2.43 2.902a41.202 41.202 0 01-5.183.501.78.78 0 00-.528.224l-3.579 3.58A.75.75 0 016 17.25v-3.443a41.033 41.033 0 01-2.57-.33C1.993 13.244 1 11.986 1 10.573V5.426c0-1.413.993-2.67 2.43-2.902z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            ) : null}
+                          </ButtonWrapper>
                         </td>
                       </tr>
                     ))}
@@ -248,6 +320,7 @@ const OrdersTableStyles = styled.div`
   }
 
   td {
+    padding: 0;
     &.empty {
       padding: 1.25rem 2rem;
       color: #1f2937;
@@ -256,13 +329,26 @@ const OrdersTableStyles = styled.div`
 
     &.order-number {
       padding-right: 0;
+      padding-left: 0;
+      .order-number-button {
+        padding-right: 0;
+        padding-left: 2.25rem;
+      }
     }
 
     &.note {
-      svg {
-        height: 0.875rem;
-        width: 0.875rem;
-        color: #374151;
+      padding: 0;
+      .note-button {
+        padding-right: 2rem;
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        svg {
+          height: 0.875rem;
+          width: 0.875rem;
+          color: #374151;
+        }
       }
     }
   }
