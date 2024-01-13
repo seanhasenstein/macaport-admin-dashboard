@@ -1,14 +1,19 @@
 import React from 'react';
-import Link from 'next/link';
 import styled from 'styled-components';
 import { format } from 'date-fns';
 import classNames from 'classnames';
 
-import { OrderStatus, StoreWithOrderStatusTotals } from '../../interfaces';
-import { calculateTotalItems, formatToMoney } from '../../utils';
-
 import OrderStatusButton from './OrderStatusButton';
 import Table from '../common/Table';
+import OrderSidebar from './OrderSidebar';
+
+import { calculateTotalItems, formatToMoney } from '../../utils';
+
+import {
+  Order,
+  OrderStatus,
+  StoreWithOrderStatusTotals,
+} from '../../interfaces';
 
 type OrderViewOptions = OrderStatus | 'All' | 'Personalized';
 
@@ -71,9 +76,15 @@ export default function OrdersTable({ store }: Props) {
   const [orderViewOption, setOrderViewOption] =
     React.useState<OrderViewOptions>('All');
   const [filteredOrders, setFilteredOrders] = React.useState(store.orders);
+  const [selectedOrder, setSelectedOrder] = React.useState<Order | undefined>();
+  const [showSidebar, setShowSidebar] = React.useState(false);
 
-  const buttonOnClick = () => {
-    console.log('clicked');
+  const closeSidebar = () => setShowSidebar(false);
+
+  const buttonOnClick = (orderId: string) => {
+    const order = store.orders.find(o => o.orderId === orderId);
+    setSelectedOrder(order);
+    setShowSidebar(true);
   };
 
   React.useEffect(() => {
@@ -97,159 +108,174 @@ export default function OrdersTable({ store }: Props) {
   return (
     <OrdersTableStyles>
       {store.orders && (
-        <div>
-          <div className="buttons">
-            <div className="container">
-              {orderFilterItems.map(item => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={orderViewOption === item.option ? 'active' : ''}
-                  onClick={() => setOrderViewOption(item.option)}
-                >
-                  {item.option}{' '}
-                  <span className="status-total">
-                    {store.orderStatusTotals[item.option]}
-                  </span>
-                </button>
-              ))}
+        <>
+          <div>
+            <div className="buttons">
+              <div className="container">
+                {orderFilterItems.map(item => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={orderViewOption === item.option ? 'active' : ''}
+                    onClick={() => setOrderViewOption(item.option)}
+                  >
+                    {item.option}{' '}
+                    <span className="status-total">
+                      {store.orderStatusTotals[item.option]}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-          <Table className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th />
-                  <th>Date</th>
-                  <th>Customer</th>
-                  {store.requireGroupSelection && <th>{store.groupTerm}</th>}
-                  <th>Shipping</th>
-                  <th className="text-center">Unique / Total Items</th>
-                  <th className="text-center">
-                    Has at least one
-                    <br />
-                    personalized item
-                  </th>
-                  <th className="text-right">Total</th>
-                  <th className="text-center">Order Status</th>
-                  <th className="text-right">
-                    Has a<br />
-                    note
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOrders.length === 0 ? (
+            <Table className="table-container">
+              <table>
+                <thead>
                   <tr>
-                    <td className="empty">
-                      There are no{' '}
-                      {orderViewOption !== 'All' &&
-                        orderViewOption.toLowerCase()}{' '}
-                      orders
-                    </td>
+                    <th />
+                    <th>Date</th>
+                    <th>Customer</th>
+                    {store.requireGroupSelection && <th>{store.groupTerm}</th>}
+                    <th>Shipping</th>
+                    <th className="text-center">Unique / Total Items</th>
+                    <th className="text-center">
+                      Has at least one
+                      <br />
+                      personalized item
+                    </th>
+                    <th className="text-right">Total</th>
+                    <th className="text-center">Order Status</th>
+                    <th className="text-right">
+                      Has a<br />
+                      note
+                    </th>
                   </tr>
-                ) : (
-                  <>
-                    {filteredOrders.map((o, index) => (
-                      <tr key={o.orderId}>
-                        <td className="order-number">
-                          <ButtonWrapper
-                            onClick={buttonOnClick}
-                            customClassName="order-number-button"
-                          >
-                            {index + 1}.
-                          </ButtonWrapper>
-                        </td>
-                        <td>
-                          <ButtonWrapper onClick={buttonOnClick}>
-                            <div className="create-at-date">
-                              {format(new Date(o.createdAt), 'MM/dd/yyyy')}
-                            </div>
-                            <div className="create-at-time">
-                              {format(new Date(o.createdAt), 'h:mmaa')}
-                            </div>
-                          </ButtonWrapper>
-                        </td>
-                        <td>
-                          <ButtonWrapper onClick={buttonOnClick}>
-                            <div className="customer-name">
-                              <Link
-                                href={`/orders/${o.orderId}?sid=${store._id}`}
-                              >
-                                <a>
-                                  {o.customer.firstName} {o.customer.lastName}
-                                </a>
-                              </Link>
-                            </div>
-                            <div className="order-id">#{o.orderId}</div>
-                          </ButtonWrapper>
-                        </td>
-                        {store.requireGroupSelection && (
-                          <td>
-                            <ButtonWrapper onClick={buttonOnClick}>
-                              {o.group}
+                </thead>
+                <tbody>
+                  {filteredOrders.length === 0 ? (
+                    <tr>
+                      <td className="empty">
+                        There are no{' '}
+                        {orderViewOption !== 'All' &&
+                          orderViewOption.toLowerCase()}{' '}
+                        orders
+                      </td>
+                    </tr>
+                  ) : (
+                    <>
+                      {filteredOrders.map((o, index) => (
+                        <tr key={o.orderId}>
+                          <td className="order-number">
+                            <ButtonWrapper
+                              onClick={() => buttonOnClick(o.orderId)}
+                              customClassName="order-number-button"
+                            >
+                              {index + 1}.
                             </ButtonWrapper>
                           </td>
-                        )}
-                        <td>
-                          <ButtonWrapper onClick={buttonOnClick}>
-                            {o.shippingMethod}
-                          </ButtonWrapper>
-                        </td>
-                        <td className="text-center total-items">
-                          <ButtonWrapper onClick={buttonOnClick}>
-                            {o.orderStatus === 'Canceled' ? 0 : o.items.length}{' '}
-                            /{' '}
-                            {o.orderStatus === 'Canceled'
-                              ? 0
-                              : calculateTotalItems(o.items)}
-                          </ButtonWrapper>
-                        </td>
-                        <td className="text-center personalization">
-                          <ButtonWrapper onClick={buttonOnClick}>
-                            {o.items.some(
-                              item => item.personalizationAddons.length > 0
-                            )
-                              ? 'P'
-                              : null}
-                          </ButtonWrapper>
-                        </td>
-                        <td className="text-right">
-                          <ButtonWrapper onClick={buttonOnClick}>
-                            {formatToMoney(o.summary.total, true)}
-                          </ButtonWrapper>
-                        </td>
-                        <td className="text-center">
-                          <OrderStatusButton store={store} order={o} />
-                        </td>
-                        <td className="note">
-                          <ButtonWrapper
-                            onClick={buttonOnClick}
-                            customClassName="note-button"
-                          >
-                            {o.note ? (
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
+                          <td>
+                            <ButtonWrapper
+                              onClick={() => buttonOnClick(o.orderId)}
+                            >
+                              <div className="create-at-date">
+                                {format(new Date(o.createdAt), 'MM/dd/yyyy')}
+                              </div>
+                              <div className="create-at-time">
+                                {format(new Date(o.createdAt), 'h:mmaa')}
+                              </div>
+                            </ButtonWrapper>
+                          </td>
+                          <td>
+                            <ButtonWrapper
+                              onClick={() => buttonOnClick(o.orderId)}
+                            >
+                              <div className="customer-name">
+                                {o.customer.firstName} {o.customer.lastName}
+                              </div>
+                              <div className="order-id">#{o.orderId}</div>
+                            </ButtonWrapper>
+                          </td>
+                          {store.requireGroupSelection && (
+                            <td>
+                              <ButtonWrapper
+                                onClick={() => buttonOnClick(o.orderId)}
                               >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M3.43 2.524A41.29 41.29 0 0110 2c2.236 0 4.43.18 6.57.524 1.437.231 2.43 1.49 2.43 2.902v5.148c0 1.413-.993 2.67-2.43 2.902a41.202 41.202 0 01-5.183.501.78.78 0 00-.528.224l-3.579 3.58A.75.75 0 016 17.25v-3.443a41.033 41.033 0 01-2.57-.33C1.993 13.244 1 11.986 1 10.573V5.426c0-1.413.993-2.67 2.43-2.902z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                            ) : null}
-                          </ButtonWrapper>
-                        </td>
-                      </tr>
-                    ))}
-                  </>
-                )}
-              </tbody>
-            </table>
-          </Table>
-        </div>
+                                {o.group}
+                              </ButtonWrapper>
+                            </td>
+                          )}
+                          <td>
+                            <ButtonWrapper
+                              onClick={() => buttonOnClick(o.orderId)}
+                            >
+                              {o.shippingMethod}
+                            </ButtonWrapper>
+                          </td>
+                          <td className="text-center total-items">
+                            <ButtonWrapper
+                              onClick={() => buttonOnClick(o.orderId)}
+                            >
+                              {o.orderStatus === 'Canceled'
+                                ? 0
+                                : o.items.length}{' '}
+                              /{' '}
+                              {o.orderStatus === 'Canceled'
+                                ? 0
+                                : calculateTotalItems(o.items)}
+                            </ButtonWrapper>
+                          </td>
+                          <td className="text-center personalization">
+                            <ButtonWrapper
+                              onClick={() => buttonOnClick(o.orderId)}
+                            >
+                              {o.items.some(
+                                item => item.personalizationAddons.length > 0
+                              )
+                                ? 'P'
+                                : null}
+                            </ButtonWrapper>
+                          </td>
+                          <td className="text-right">
+                            <ButtonWrapper
+                              onClick={() => buttonOnClick(o.orderId)}
+                            >
+                              {formatToMoney(o.summary.total, true)}
+                            </ButtonWrapper>
+                          </td>
+                          <td className="text-center">
+                            <OrderStatusButton store={store} order={o} />
+                          </td>
+                          <td className="note">
+                            <ButtonWrapper
+                              onClick={() => buttonOnClick(o.orderId)}
+                              customClassName="note-button"
+                            >
+                              {o.note ? (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 20 20"
+                                  fill="currentColor"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M3.43 2.524A41.29 41.29 0 0110 2c2.236 0 4.43.18 6.57.524 1.437.231 2.43 1.49 2.43 2.902v5.148c0 1.413-.993 2.67-2.43 2.902a41.202 41.202 0 01-5.183.501.78.78 0 00-.528.224l-3.579 3.58A.75.75 0 016 17.25v-3.443a41.033 41.033 0 01-2.57-.33C1.993 13.244 1 11.986 1 10.573V5.426c0-1.413.993-2.67 2.43-2.902z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                              ) : null}
+                            </ButtonWrapper>
+                          </td>
+                        </tr>
+                      ))}
+                    </>
+                  )}
+                </tbody>
+              </table>
+            </Table>
+          </div>
+          <OrderSidebar
+            {...{ closeSidebar, isOpen: showSidebar, selectedOrder, store }}
+          />
+        </>
       )}
     </OrdersTableStyles>
   );
