@@ -1,19 +1,42 @@
 import styled from 'styled-components';
 
-import { StoreWithOrderStatusTotals } from '../../interfaces';
+import { Order, StoreWithOrderStatusTotals } from '../../interfaces';
 
 import OrdersTable from '../order/OrdersTable';
 
 type Props = {
   store: StoreWithOrderStatusTotals;
+  selectedOrder: Order | undefined;
+  setSelectedOrder: React.Dispatch<React.SetStateAction<Order | undefined>>;
+  setPrintOption: React.Dispatch<
+    React.SetStateAction<
+      'unfulfilled' | 'personalization' | 'single' | undefined
+    >
+  >;
+  setShowCancelOrderModal: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 export default function StoreOrders(props: Props) {
+  const {
+    store,
+    selectedOrder,
+    setSelectedOrder,
+    setPrintOption,
+    setShowCancelOrderModal,
+  } = props;
   return (
     <StoreOrdersStyles id="orders">
       <h3>Store orders</h3>
-      {props.store.orders ? (
-        <OrdersTable store={props.store} />
+      {store.orders ? (
+        <OrdersTable
+          {...{
+            store,
+            selectedOrder,
+            setSelectedOrder,
+            setPrintOption,
+            setShowCancelOrderModal,
+          }}
+        />
       ) : (
         <div className="empty">This store has no orders.</div>
       )}

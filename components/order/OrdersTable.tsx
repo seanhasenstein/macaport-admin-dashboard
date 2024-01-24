@@ -17,10 +17,6 @@ import {
 
 type OrderViewOptions = OrderStatus | 'All' | 'Personalized';
 
-type Props = {
-  store: StoreWithOrderStatusTotals;
-};
-
 interface OrderFilterItem {
   id: number;
   option: OrderViewOptions;
@@ -72,18 +68,61 @@ const ButtonWrapperStyles = styled.button`
   cursor: pointer;
 `;
 
-export default function OrdersTable({ store }: Props) {
+type Props = {
+  store: StoreWithOrderStatusTotals;
+  selectedOrder: Order | undefined;
+  setSelectedOrder: React.Dispatch<React.SetStateAction<Order | undefined>>;
+  setPrintOption: React.Dispatch<
+    React.SetStateAction<
+      'unfulfilled' | 'personalization' | 'single' | undefined
+    >
+  >;
+  setShowCancelOrderModal: React.Dispatch<React.SetStateAction<boolean>>;
+};
+
+export default function OrdersTable({
+  store,
+  selectedOrder,
+  setSelectedOrder,
+  setPrintOption,
+  setShowCancelOrderModal,
+}: Props) {
   const [orderViewOption, setOrderViewOption] =
     React.useState<OrderViewOptions>('All');
   const [filteredOrders, setFilteredOrders] = React.useState(store.orders);
-  const [selectedOrder, setSelectedOrder] = React.useState<Order | undefined>();
+
+  const [selectedOrderIndex, setSelectedOrderIndex] = React.useState(0);
+  const [prevOrderId, setPrevOrderId] = React.useState<string | undefined>(
+    undefined
+  );
+  const [nextOrderId, setNextOrderId] = React.useState<string | undefined>(
+    store.orders[1].orderId
+  );
   const [showSidebar, setShowSidebar] = React.useState(false);
 
   const closeSidebar = () => setShowSidebar(false);
 
-  const buttonOnClick = (orderId: string) => {
-    const order = store.orders.find(o => o.orderId === orderId);
+  const updateSelectedOrder = (orderId: string) => {
+    const order = filteredOrders.find(o => o.orderId === orderId);
     setSelectedOrder(order);
+    const newSelectedIndex = filteredOrders.findIndex(
+      o => o.orderId === orderId
+    );
+    const prevOrderId =
+      newSelectedIndex === 0
+        ? undefined
+        : filteredOrders[newSelectedIndex - 1].orderId;
+    const nextOrderId =
+      newSelectedIndex === filteredOrders.length - 1
+        ? undefined
+        : filteredOrders[newSelectedIndex + 1].orderId;
+    setSelectedOrderIndex(newSelectedIndex);
+    setPrevOrderId(prevOrderId);
+    setNextOrderId(nextOrderId);
+  };
+
+  const buttonOnClick = (orderId: string) => {
+    updateSelectedOrder(orderId);
     setShowSidebar(true);
   };
 
@@ -104,6 +143,15 @@ export default function OrdersTable({ store }: Props) {
     );
     setFilteredOrders(updatedFilteredOrders);
   }, [orderViewOption, store.orders]);
+
+  // NOTE: this is needed to update the order status in the sidebar
+  // TODO: find see if there is a better way to do this
+  React.useEffect(() => {
+    const updatedSelectedOrder = store.orders.find(
+      order => order.orderId === selectedOrder?.orderId
+    );
+    setSelectedOrder(updatedSelectedOrder);
+  }, [selectedOrder?.orderId, setSelectedOrder, store]);
 
   return (
     <OrdersTableStyles>
@@ -273,7 +321,18 @@ export default function OrdersTable({ store }: Props) {
             </Table>
           </div>
           <OrderSidebar
-            {...{ closeSidebar, isOpen: showSidebar, selectedOrder, store }}
+            {...{
+              closeSidebar,
+              isOpen: showSidebar,
+              selectedOrder,
+              selectedOrderIndex,
+              prevOrderId,
+              nextOrderId,
+              updateSelectedOrder,
+              store,
+              setPrintOption,
+              setShowCancelOrderModal,
+            }}
           />
         </>
       )}

@@ -4,11 +4,12 @@ import styled from 'styled-components';
 
 import { getStoreStatus } from '../../../utils';
 
-import { StoreStatus } from '../../../interfaces';
+import { Order, StoreStatus } from '../../../interfaces';
 
 import { useStoreQuery } from '../../../hooks/useStoreQuery';
 import useOutsideClick from '../../../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../../../hooks/useEscapeKeydownClose';
+import { useOrderMutation } from '../../../hooks/useOrderMutations';
 
 import Layout from '../../../components/Layout';
 import PageNavButtons from '../../../components/PageNavButtons';
@@ -22,9 +23,11 @@ import CSVDownloadModal from '../../../components/store/CSVDownloadModal';
 import PrintableOrder from '../../../components/PrintableOrder';
 import DeleteStoreModal from '../../../components/store/DeleteStoreModal';
 import TableLoadingSpinner from '../../../components/TableLoadingSpinner';
+import CancelOrderModal from '../../../components/order/CancelOrderModal';
 
 export default function Store() {
   const router = useRouter();
+  const storeQuery = useStoreQuery();
 
   const deleteProductRef = React.useRef<HTMLDivElement>(null);
   const csvModalRef = React.useRef<HTMLDivElement>(null);
@@ -35,8 +38,12 @@ export default function Store() {
   const [showDeleteStoreModal, setShowDeleteStoreModal] = React.useState(false);
   const [showCSVModal, setShowCSVModal] = React.useState(false);
   const [printOption, setPrintOption] = React.useState<
-    'unfulfilled' | 'personalization' | undefined
+    'unfulfilled' | 'personalization' | 'single' | undefined
   >(undefined);
+  const [selectedOrder, setSelectedOrder] = React.useState<Order | undefined>(
+    storeQuery.data?.orders[0]
+  );
+  const [showCancelOrderModal, setShowCancelOrderModal] = React.useState(false);
 
   useOutsideClick(
     showDeleteProductModal,
@@ -46,7 +53,10 @@ export default function Store() {
 
   useEscapeKeydownClose(showDeleteProductModal, setShowDeleteProductModal);
 
-  const storeQuery = useStoreQuery();
+  const { cancelOrder } = useOrderMutation({
+    order: selectedOrder,
+    store: storeQuery.data,
+  });
 
   React.useEffect(() => {
     if (storeQuery.data) {
@@ -120,7 +130,15 @@ export default function Store() {
               <div className="main-content">
                 <FetchingSpinner isLoading={storeQuery.isFetching} />
                 <StoreDetails store={storeQuery.data} />
-                <StoreOrders store={storeQuery.data} />
+                <StoreOrders
+                  store={storeQuery.data}
+                  {...{
+                    selectedOrder,
+                    setSelectedOrder,
+                    setPrintOption,
+                    setShowCancelOrderModal,
+                  }}
+                />
                 <StoreProducts store={storeQuery.data} />
               </div>
             </>
@@ -132,23 +150,26 @@ export default function Store() {
           heading="Store successfully created"
           callbackUrl={`/stores/${router.query.id}`}
         />
-
         <Notification
           query="updateStore"
           heading="Store successfully updated"
           callbackUrl={`/stores/${router.query.id}`}
         />
-
         <Notification
           query="addProduct"
           heading="Product successfully added"
           callbackUrl={`/stores/${router.query.id}`}
         />
-
         <Notification
           query="deleteProduct"
           heading="Product successfully deleted"
           callbackUrl={`/stores/${router.query.id}`}
+        />
+        <CancelOrderModal
+          orderName={`${selectedOrder?.customer.firstName} ${selectedOrder?.customer.lastName}`}
+          showModal={showCancelOrderModal}
+          setShowModal={setShowCancelOrderModal}
+          cancelOrder={cancelOrder}
         />
       </StoreStyles>
 
@@ -203,6 +224,10 @@ export default function Store() {
             }
           })}
         </div>
+      ) : null}
+
+      {printOption === 'single' ? (
+        <PrintableOrder order={selectedOrder} store={storeQuery.data} />
       ) : null}
     </Layout>
   );

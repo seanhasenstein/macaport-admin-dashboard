@@ -15,7 +15,9 @@ type Props = {
   setShowDeleteModal: React.Dispatch<React.SetStateAction<boolean>>;
   setShowCSVModal: React.Dispatch<React.SetStateAction<boolean>>;
   setPrintOption: React.Dispatch<
-    React.SetStateAction<'unfulfilled' | 'personalization' | undefined>
+    React.SetStateAction<
+      'unfulfilled' | 'personalization' | 'single' | undefined
+    >
   >;
 };
 
