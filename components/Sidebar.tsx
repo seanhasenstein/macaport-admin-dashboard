@@ -13,13 +13,15 @@ type Props = {
   customClassName?: string;
   isOpen: boolean;
   closeSidebar: () => void;
-  headerTitle: string;
+  headerTitle?: string;
+  customHeader?: React.ReactNode;
   allowBodyScroll?: boolean;
 };
 
 export default function Sidebar({
   children,
   customClassName,
+  customHeader,
   isOpen,
   closeSidebar,
   headerTitle,
@@ -51,7 +53,7 @@ export default function Sidebar({
           open: isOpen,
         })}
       >
-        {headerTitle && (
+        {!customHeader && headerTitle && (
           <div className="sidebar-header">
             <h3 className="title">{headerTitle}</h3>
             <button
@@ -63,7 +65,8 @@ export default function Sidebar({
             </button>
           </div>
         )}
-        {children}
+        {customHeader ? customHeader : null}
+        <div className="sidebar-body">{children}</div>
       </div>
     </SidebarStyles>
   );
@@ -80,12 +83,11 @@ const SidebarStyles = styled.div`
     z-index: 100;
   }
   .sidebar-container {
-    overflow-y: auto;
     position: fixed;
     top: 10px;
     right: 10px;
     bottom: 10px;
-    max-width: 32rem;
+    max-width: 46.75rem;
     width: 100%;
     background-color: #f9fafb;
     border: 1px solid #d1d5db;
@@ -97,6 +99,14 @@ const SidebarStyles = styled.div`
     z-index: 100;
     &.open {
       transform: translateX(0);
+    }
+    .sidebar-body {
+      position: fixed;
+      top: 0.5rem;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      overflow-y: auto;
     }
     .sidebar-header {
       padding: 1.25rem 1.75rem;
