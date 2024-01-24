@@ -63,6 +63,13 @@ export function useUpdateOrderStatus(store: Store, order: Order) {
       },
       onSettled: () => {
         queryClient.invalidateQueries(['stores']);
+        queryClient.invalidateQueries(['stores', 'store', store._id]);
+        queryClient.invalidateQueries([
+          'stores',
+          'store',
+          'order',
+          order.orderId,
+        ]);
       },
     }
   );
