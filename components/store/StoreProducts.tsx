@@ -419,10 +419,12 @@ const StoreProductsStyles = styled.div`
   }
 
   .empty {
-    margin: 1.5rem 2rem;
+    padding: 1.5rem 2rem;
+    background-color: #fff;
     font-size: 1rem;
     font-weight: 500;
     color: #4b5563;
+    border-radius: 0 0 0.375rem 0.375rem;
 
     a {
       color: #1955a8;
