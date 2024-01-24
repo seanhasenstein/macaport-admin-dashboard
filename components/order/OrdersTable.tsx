@@ -92,12 +92,8 @@ export default function OrdersTable({
   const [filteredOrders, setFilteredOrders] = React.useState(store.orders);
 
   const [selectedOrderIndex, setSelectedOrderIndex] = React.useState(0);
-  const [prevOrderId, setPrevOrderId] = React.useState<string | undefined>(
-    undefined
-  );
-  const [nextOrderId, setNextOrderId] = React.useState<string | undefined>(
-    store.orders[1].orderId
-  );
+  const [prevOrderId, setPrevOrderId] = React.useState<string | undefined>();
+  const [nextOrderId, setNextOrderId] = React.useState<string | undefined>();
   const [showSidebar, setShowSidebar] = React.useState(false);
 
   const closeSidebar = () => setShowSidebar(false);
@@ -401,6 +397,7 @@ const OrdersTableStyles = styled.div`
   }
 
   .table-container {
+    margin-bottom: 0.1875rem;
     min-width: 67rem;
   }
 
