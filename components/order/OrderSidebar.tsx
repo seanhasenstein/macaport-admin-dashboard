@@ -357,7 +357,7 @@ export default function OrderSidebar({
                       {personalizationAddons.length > 0 && (
                         <div className="personalization-details">
                           <p className="title">
-                            <span>Item personalization:</span>
+                            <span>Item personalization</span>
                           </p>
                           <div className="items">
                             {personalizationAddons.map((item, index) => {
