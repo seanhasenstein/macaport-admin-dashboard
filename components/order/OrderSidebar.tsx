@@ -214,7 +214,12 @@ export default function OrderSidebar({
                 </div>
               </div>
               <OrderSidebarMenu
-                {...{ stripeId, setPrintOption, setShowCancelOrderModal }}
+                {...{
+                  stripeId,
+                  setPrintOption,
+                  setShowCancelOrderModal,
+                  orderIsCanceled: selectedOrder.orderStatus === 'Canceled',
+                }}
               />
             </div>
           }

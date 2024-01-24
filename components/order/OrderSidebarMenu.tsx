@@ -9,6 +9,7 @@ import {
 import Menu from '../common/Menu';
 
 type Props = {
+  orderIsCanceled: boolean;
   stripeId: string;
   setPrintOption: React.Dispatch<
     React.SetStateAction<
@@ -19,6 +20,7 @@ type Props = {
 };
 
 export default function OrderSidebarMenu({
+  orderIsCanceled,
   stripeId,
   setPrintOption,
   setShowCancelOrderModal,
@@ -51,14 +53,16 @@ export default function OrderSidebarMenu({
           >
             <PrinterIcon className="icon" /> Print order
           </button>
-          <button
-            type="button"
-            onClick={handleCancelClick}
-            className="menu-button"
-          >
-            <XCircleIcon className="icon" />
-            Cancel order
-          </button>
+          {!orderIsCanceled ? (
+            <button
+              type="button"
+              onClick={handleCancelClick}
+              className="menu-button"
+            >
+              <XCircleIcon className="icon" />
+              Cancel order
+            </button>
+          ) : null}
           <a
             href={`https://dashboard.stripe.com/payments/${stripeId}`}
             target="_blank"
