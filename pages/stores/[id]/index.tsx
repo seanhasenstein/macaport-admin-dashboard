@@ -41,7 +41,7 @@ export default function Store() {
     'unfulfilled' | 'personalization' | 'single' | undefined
   >(undefined);
   const [selectedOrder, setSelectedOrder] = React.useState<Order | undefined>(
-    storeQuery.data?.orders[0]
+    undefined
   );
   const [showCancelOrderModal, setShowCancelOrderModal] = React.useState(false);
 
@@ -63,8 +63,12 @@ export default function Store() {
       setStoreStatus(
         getStoreStatus(storeQuery.data.openDate, storeQuery.data.closeDate)
       );
+
+      if (!selectedOrder) {
+        setSelectedOrder(storeQuery.data.orders[0]);
+      }
     }
-  }, [storeQuery.data]);
+  }, [selectedOrder, storeQuery.data]);
 
   React.useEffect(() => {
     if (printOption) {
