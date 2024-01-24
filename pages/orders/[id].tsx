@@ -118,6 +118,7 @@ export default function Order() {
         <PrintableOrder order={data?.order} store={data?.store} />
 
         <CancelOrderModal
+          orderName={`${data?.order?.customer.firstName} ${data?.order?.customer.lastName}`}
           showModal={showCancelOrderModal}
           setShowModal={setShowCancelOrderModal}
           cancelOrder={cancelOrder}

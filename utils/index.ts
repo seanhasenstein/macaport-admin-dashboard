@@ -240,6 +240,14 @@ export function updateProductSkus(
   });
 }
 
+export function possessiveCheck(name: string) {
+  if (name.toLowerCase().endsWith('s')) {
+    return `${name}'`;
+  } else {
+    return `${name}'s`;
+  }
+}
+
 export const unitedStates = [
   'Alaska',
   'Alabama',

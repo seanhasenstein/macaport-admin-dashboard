@@ -5,8 +5,10 @@ import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
 import useOutsideClick from '../../hooks/useOutsideClick';
 import { Order, Store } from '../../interfaces';
 import LoadingSpinner from '../LoadingSpinner';
+import { possessiveCheck } from '../../utils';
 
 type Props = {
+  orderName: string;
   showModal: boolean;
   setShowModal: React.Dispatch<React.SetStateAction<boolean>>;
   cancelOrder: UseMutationResult<
@@ -32,10 +34,16 @@ export default function CancelOrderModal(props: Props) {
       <CancelOrderModalStyles>
         <div ref={modalRef} className="modal">
           <div>
-            <h3>Cancel order</h3>
+            <h3>
+              Are you sure you want to cancel {possessiveCheck(props.orderName)}{' '}
+              order?
+            </h3>
             <p>
-              Are you sure you want to cancel this order? This will cause the
-              following changes:
+              Canceling{' '}
+              <span className="underline">
+                {possessiveCheck(props.orderName)}
+              </span>{' '}
+              order will do the following:
             </p>
             <ul>
               <li>
@@ -50,7 +58,7 @@ export default function CancelOrderModal(props: Props) {
                     clipRule="evenodd"
                   />
                 </svg>
-                Order status set to 'canceled'.
+                Set the order status set to CANCELED.
               </li>
               <li>
                 <svg
@@ -64,7 +72,7 @@ export default function CancelOrderModal(props: Props) {
                     clipRule="evenodd"
                   />
                 </svg>
-                Order totals to $0.00.
+                Set the order totals to $0.00.
               </li>
               <li>
                 <svg
@@ -78,7 +86,7 @@ export default function CancelOrderModal(props: Props) {
                     clipRule="evenodd"
                   />
                 </svg>
-                All order items quantity to 0 and item total to $0.00.
+                Set all item quantities to 0 and item totals to $0.00.
               </li>
               <li>
                 <svg
@@ -92,8 +100,8 @@ export default function CancelOrderModal(props: Props) {
                     clipRule="evenodd"
                   />
                 </svg>
-                All order items quantity will be added back to inventory
-                products inventory.
+                All item quantities will be added back to inventory products
+                inventory.
               </li>
             </ul>
           </div>
@@ -159,6 +167,9 @@ const CancelOrderModalStyles = styled.div`
       font-size: 1rem;
       color: #1f2937;
       line-height: 1.5;
+      .underline {
+        text-decoration: underline;
+      }
     }
 
     ul {

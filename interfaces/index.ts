@@ -185,7 +185,7 @@ export interface Store {
 }
 
 export interface StoreWithOrderStatusTotals extends Store {
-  orderStatusTotals: Record<OrderStatusKey, number>; // added on query
+  orderStatusTotals: Record<OrderStatusKey | 'Personalized', number>; // added on query
 }
 
 export interface StoresTableOrders {

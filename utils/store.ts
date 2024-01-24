@@ -20,7 +20,10 @@ export function addArtworkIdToStoreOrders(store: Store) {
   });
 }
 
-type OrderStatusNumbersAccumulator = Record<OrderStatusKey, number>;
+type OrderStatusNumbersAccumulator = Record<
+  OrderStatusKey | 'Personalized',
+  number
+>;
 
 export function getStoresOrderStatusNumbers(store: Store) {
   return store.orders.reduce(
@@ -28,6 +31,13 @@ export function getStoresOrderStatusNumbers(store: Store) {
       return {
         ...accumulator,
         [currentOrder.orderStatus]: accumulator[currentOrder.orderStatus] + 1,
+        Personalized:
+          accumulator.Personalized +
+          (currentOrder.items.some(
+            item => item.personalizationAddons.length > 0
+          )
+            ? 1
+            : 0),
       };
     },
     {
@@ -37,6 +47,7 @@ export function getStoresOrderStatusNumbers(store: Store) {
       Fulfilled: 0,
       Completed: 0,
       Canceled: 0,
+      Personalized: 0,
     }
   );
 }
