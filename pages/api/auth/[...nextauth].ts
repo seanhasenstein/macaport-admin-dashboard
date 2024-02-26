@@ -49,6 +49,7 @@ export default NextAuth({
         'seanhasenstein@gmail.com',
         'nick@macaport.com',
         'joe@macaport.com',
+        'ally@macaport.com',
       ];
       if (user.email && allowedEmailAccounts.includes(user.email)) {
         return true;
