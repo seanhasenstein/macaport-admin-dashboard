@@ -45,9 +45,11 @@ export function getStoresOrderStatusNumbers(store: Store) {
       Unfulfilled: 0,
       Printed: 0,
       Fulfilled: 0,
-      Completed: 0,
+      PartiallyShipped: 0,
+      Shipped: 0,
       Canceled: 0,
       Personalized: 0,
+      Completed: 0, // todo: remove this
     }
   );
 }

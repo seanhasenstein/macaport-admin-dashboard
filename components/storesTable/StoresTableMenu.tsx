@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import useOutsideClick from '../../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
 import { getStoreStatus } from '../../utils';
+import { CheckCircleIcon } from '@heroicons/react/24/outline';
 
 type Props = {
   storeId: string;
@@ -143,6 +144,21 @@ export default function StoresTableMenu({
             Go to demo store
           </a>
         )}
+        <button
+          type="button"
+          onClick={() => {
+            console.log('todo');
+          }}
+          className="button"
+        >
+          <CheckCircleIcon strokeWidth={2} />
+          <span>
+            Trigger a shipment
+            <span className="subtitle">
+              Set all fulfilled order items to shipped
+            </span>
+          </span>
+        </button>
       </div>
     </StoresTableMenuStyles>
   );
@@ -195,7 +211,8 @@ const StoresTableMenuStyles = styled.div`
     }
   }
 
-  .link {
+  .link,
+  .button {
     padding: 0.75rem 1.25rem 0.75rem 0;
     width: 100%;
     display: flex;
@@ -211,12 +228,21 @@ const StoresTableMenuStyles = styled.div`
     cursor: pointer;
     border-bottom: 1px solid #e5e7eb;
 
+    .subtitle {
+      margin: 0.1875rem 0 0;
+      display: block;
+      font-size: 0.6875rem;
+      color: #6b7280;
+      text-decoration: none;
+    }
+
     &:last-child {
       border-bottom: none;
     }
 
     &:hover {
       color: #000;
+      text-decoration: none;
 
       svg {
         color: #6b7280;

@@ -56,6 +56,15 @@ export default NextAuth({
         return '/unauthorized';
       }
     },
+    async session(session, userOrToken) {
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: userOrToken.id as string,
+        },
+      };
+    },
   },
   pages: {
     signIn: '/login',

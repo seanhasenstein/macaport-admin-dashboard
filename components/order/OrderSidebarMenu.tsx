@@ -4,7 +4,8 @@ import {
   PrinterIcon,
   XCircleIcon,
   CreditCardIcon,
-} from '@heroicons/react/20/solid';
+  CheckCircleIcon,
+} from '@heroicons/react/24/outline';
 
 import Menu from '../common/Menu';
 
@@ -46,32 +47,42 @@ export default function OrderSidebarMenu({
       <OrderSidebarMenuStyles>
         <div className="menu-items">
           {/* <button className="menu-item"><PencilSquareIcon className="icon" />Edit item</button> */}
+          {/* TODO: add set all fulfilled to shipped functionality */}
+          <button type="button" className="menu-button">
+            <CheckCircleIcon className="icon" strokeWidth={2} />
+            <span>
+              Trigger a shipment
+              <span className="subtitle">
+                Set all fulfilled order items to shipped
+              </span>
+            </span>
+          </button>
           <button
             type="button"
             onClick={handlePrintClick}
             className="menu-button"
           >
-            <PrinterIcon className="icon" /> Print order
+            <PrinterIcon className="icon" strokeWidth={2} /> Print order
           </button>
-          {!orderIsCanceled ? (
-            <button
-              type="button"
-              onClick={handleCancelClick}
-              className="menu-button"
-            >
-              <XCircleIcon className="icon" />
-              Cancel order
-            </button>
-          ) : null}
           <a
             href={`https://dashboard.stripe.com/payments/${stripeId}`}
             target="_blank"
             rel="noreferrer"
             className="menu-link"
           >
-            <CreditCardIcon className="icon" />
-            Go to Stripe dashboard
+            <CreditCardIcon className="icon" strokeWidth={2} />
+            View in Stripe dashboard
           </a>
+          {!orderIsCanceled ? (
+            <button
+              type="button"
+              onClick={handleCancelClick}
+              className="menu-button"
+            >
+              <XCircleIcon className="icon" strokeWidth={2} />
+              Cancel order
+            </button>
+          ) : null}
         </div>
       </OrderSidebarMenuStyles>
     </Menu>
@@ -99,6 +110,12 @@ const OrderSidebarMenuStyles = styled.div`
     line-height: 100%;
     text-align: left;
     transition: color 100ms ease-in-out;
+    .subtitle {
+      margin: 0.1875rem 0 0;
+      display: block;
+      font-size: 0.6875rem;
+      color: #6b7280;
+    }
     &:last-child {
       border-bottom: none;
     }
@@ -110,9 +127,9 @@ const OrderSidebarMenuStyles = styled.div`
     }
     .icon {
       margin-right: 0.5rem;
-      width: 0.875rem;
-      height: 0.875rem;
-      color: #a1a1aa;
+      height: 0.9375rem;
+      width: 0.9375rem;
+      color: #9ca3af;
       transition: color 100ms ease-in-out;
     }
   }

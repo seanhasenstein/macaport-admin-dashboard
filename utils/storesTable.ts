@@ -19,8 +19,11 @@ export function getStoresTableOrders(orders: Order[]) {
         case 'Fulfilled':
           acc = { ...acc, fulfilled: acc.fulfilled + 1 };
           break;
-        case 'Completed':
-          acc = { ...acc, completed: acc.completed + 1 };
+        case 'PartiallyShipped':
+          acc = { ...acc, partiallyShipped: acc.partiallyShipped + 1 };
+          break;
+        case 'Shipped':
+          acc = { ...acc, shipped: acc.shipped + 1 };
           break;
         case 'Canceled':
           acc = { ...acc, canceled: acc.canceled + 1 };
@@ -35,7 +38,8 @@ export function getStoresTableOrders(orders: Order[]) {
       unfulfilled: 0,
       printed: 0,
       fulfilled: 0,
-      completed: 0,
+      partiallyShipped: 0,
+      shipped: 0,
       canceled: 0,
       total: 0,
     }
@@ -83,12 +87,12 @@ export function getStoresTableStores(stores: Store[]) {
         return { ...acc, upcomingStores: sortedUpcomingStores };
       }
 
-      const storeHasOrdersNotCompletedOrCanceled = currentStore.orders.some(
+      const storeHasOrdersNotShippedOrCanceled = currentStore.orders.some(
         order =>
-          order.orderStatus !== 'Completed' && order.orderStatus !== 'Canceled'
+          order.orderStatus !== 'Shipped' && order.orderStatus !== 'Canceled'
       );
 
-      if (storeStatus === 'closed' && storeHasOrdersNotCompletedOrCanceled) {
+      if (storeStatus === 'closed' && storeHasOrdersNotShippedOrCanceled) {
         const sortedClosedStores = sortStoresByCloseDate(
           [...acc.closedStores, storesTableStore],
           false

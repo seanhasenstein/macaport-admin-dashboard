@@ -112,6 +112,7 @@ export default function Store() {
                     <h2>{storeQuery.data.name}</h2>
                     <div className="store-status">
                       <span className={storeStatus}>
+                        Store{' '}
                         {storeStatus === 'upcoming'
                           ? 'Upcoming'
                           : storeStatus === 'open'
@@ -245,6 +246,7 @@ const StoreStyles = styled.div`
     font-size: 1.5rem;
     font-weight: 600;
     color: #111827;
+    line-height: 100%;
   }
 
   h3 {
@@ -308,8 +310,9 @@ const StoreStyles = styled.div`
   }
 
   .store-status {
+    margin: 0.5rem 0 0;
     span {
-      padding: 0.3125rem 0.5rem;
+      padding: 0.375rem 0.6875rem;
       display: inline-flex;
       align-items: center;
       font-size: 0.75rem;
@@ -320,6 +323,7 @@ const StoreStyles = styled.div`
       border-radius: 0.25rem;
       background: #fff;
       line-height: 1;
+      border: 1px solid rgba(0, 0, 0, 0.12);
 
       &.closed {
         background-color: #fee2e2;
@@ -327,13 +331,13 @@ const StoreStyles = styled.div`
       }
 
       &.upcoming {
-        background-color: #feefb4;
+        background-color: #fef3c7;
         color: #92400e;
       }
 
       &.open {
-        color: #14864d;
-        background-color: #c9f7e0;
+        background-color: #d1fae5;
+        color: #065f46;
       }
     }
   }

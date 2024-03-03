@@ -192,7 +192,8 @@ export interface StoresTableOrders {
   unfulfilled: number;
   printed: number;
   fulfilled: number;
-  completed: number;
+  partiallyShipped: number;
+  shipped: number;
   canceled: number;
   total: number;
 }
@@ -213,7 +214,14 @@ export interface PersonalizationAddon {
   subItems: PersonalizationAddon[];
 }
 
+export type OrderItemStatus =
+  | 'Unfulfilled'
+  | 'Fulfilled'
+  | 'Shipped'
+  | 'Canceled';
+
 export interface OrderItem {
+  id: string;
   sku: ProductSku;
   merchandiseCode: string;
   artworkId?: string;
@@ -223,14 +231,20 @@ export interface OrderItem {
   quantity: number;
   itemTotal: number;
   personalizationAddons: PersonalizationAddon[];
+  status: {
+    current: OrderItemStatus;
+    meta: Record<OrderItemStatus, { user: string; updatedAt: string }>;
+  };
 }
 
 export type OrderStatus =
   | 'Unfulfilled'
   | 'Printed'
   | 'Fulfilled'
-  | 'Completed'
-  | 'Canceled';
+  | 'PartiallyShipped'
+  | 'Shipped'
+  | 'Canceled'
+  | 'Completed'; // todo - remove
 
 export interface OrderSummary {
   subtotal: number;

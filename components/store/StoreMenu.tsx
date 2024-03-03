@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import Link from 'next/link';
+import { CheckCircleIcon } from '@heroicons/react/24/outline';
 
 import { StoreStatus } from '../../interfaces';
 
@@ -76,6 +77,22 @@ export default function StoreMenu({
       </button>
 
       <div ref={menuRef} className={`menu-container${showMenu ? ' show' : ''}`}>
+        <button
+          type="button"
+          onClick={() => {
+            console.log('todo');
+          }}
+          className="menu-link"
+        >
+          <CheckCircleIcon strokeWidth={2} />
+          <span>
+            Trigger a shipment
+            <span className="subtitle">
+              Set all fulfilled order items to shipped
+            </span>
+          </span>
+        </button>
+
         <button
           type="button"
           onClick={handlePrintUnfulfilledOrders}
@@ -362,7 +379,7 @@ const StoreMenuStyles = styled.div`
 
   .menu-link,
   .delete-button {
-    padding: 0.75rem 1.5rem 0.75rem 0;
+    padding: 0.75rem 0.5rem 0.75rem 0;
     width: 100%;
     display: flex;
     align-items: center;
@@ -375,8 +392,19 @@ const StoreMenuStyles = styled.div`
     text-align: left;
     cursor: pointer;
 
+    .subtitle {
+      margin: 0.1875rem 0 0;
+      display: block;
+      font-size: 0.6875rem;
+      color: #6b7280;
+    }
+
     &:hover {
       color: #000;
+
+      .subtitle {
+        color: #4b5563;
+      }
 
       svg {
         color: #6b7280;

@@ -26,7 +26,6 @@ export default function StoreOrders(props: Props) {
   } = props;
   return (
     <StoreOrdersStyles id="orders">
-      <h3>Store orders</h3>
       {store.orders ? (
         <OrdersTable
           {...{

@@ -1,6 +1,13 @@
-import { Db, ObjectID } from 'mongodb';
+import { Db, ObjectID, ObjectId } from 'mongodb';
 
-import { Store, OrderStatus, Order } from '../interfaces';
+import {
+  Store,
+  OrderStatus,
+  Order,
+  OrderItemStatus,
+  OrderItem,
+} from '../interfaces';
+import { getNextOrderItemStatus } from '../utils/orderItem';
 
 export async function getOrderById(db: Db, storeId: string, orderId: string) {
   try {
@@ -77,4 +84,61 @@ export async function cancelOrder(
     );
 
   return result.value;
+}
+
+interface OrderItemStatusInput {
+  storeId: string;
+  orderId: string;
+  orderItemId: string;
+  orderItems: OrderItem[];
+  userId: string;
+  statusToSet?: OrderItemStatus;
+}
+
+interface StoreWithId extends Omit<Store, '_id'> {
+  _id: ObjectId;
+}
+
+export async function updateOrderItemStatus(
+  db: Db,
+  input: OrderItemStatusInput
+) {
+  const { storeId, orderId, orderItemId, orderItems, userId, statusToSet } =
+    input;
+
+  const orderItem = orderItems.find(item => item.id === orderItemId);
+
+  if (orderItem) {
+    const nextStatus = statusToSet
+      ? statusToSet
+      : getNextOrderItemStatus(orderItem.status.current);
+
+    const previousMeta = orderItem.status.meta;
+
+    const updatedStatus = {
+      current: nextStatus,
+      meta: {
+        ...previousMeta,
+        [nextStatus]: { user: userId, updatedAt: new Date().toISOString() },
+      },
+    };
+
+    const result = await db.collection<StoreWithId>('stores').findOneAndUpdate(
+      { _id: new ObjectID(storeId) },
+      {
+        $set: {
+          'orders.$[order].items.$[item].status': updatedStatus,
+        },
+      },
+      {
+        arrayFilters: [
+          { 'order.orderId': orderId },
+          { 'item.id': orderItemId },
+        ],
+        returnDocument: 'after',
+      }
+    );
+
+    return result.value;
+  }
 }
