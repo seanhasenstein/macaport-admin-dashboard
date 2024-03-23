@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import { useOrderQuery } from '../../hooks/useOrderQuery';
 import { useOrderMutation } from '../../hooks/useOrderMutations';
 import Layout from '../../components/Layout';
-import OrderStatusButton from '../../components/order/OrderStatusButton';
+import OrderStatus from '../../components/order/OrderStatus';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PrintableOrder from '../../components/PrintableOrder';
 import OrderMenu from '../../components/order/OrderMenu';
@@ -16,9 +16,12 @@ import OrderSummary from '../../components/order/OrderSummary';
 import CancelOrderModal from '../../components/order/CancelOrderModal';
 
 export default function Order() {
-  const router = useRouter();
   const [showCancelOrderModal, setShowCancelOrderModal] = React.useState(false);
+
+  const router = useRouter();
+
   const { isLoading, isFetching, isError, error, data } = useOrderQuery();
+
   const { cancelOrder } = useOrderMutation({
     order: data?.order,
     store: data?.store,
@@ -83,10 +86,7 @@ export default function Order() {
                         {data.order.customer.firstName}{' '}
                         {data.order.customer.lastName}
                       </h2>
-                      <OrderStatusButton
-                        store={data.store}
-                        order={data.order}
-                      />
+                      <OrderStatus order={data.order} />
                     </div>
                     <p>
                       {format(

@@ -46,14 +46,20 @@ export default function OrderItemMenu({
 
   const handleSetStatus = (
     e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
-    statusToSet: OrderItemStatus
+    statusToSet: OrderItemStatus,
+    returnToInventory = false
   ) => {
     e.stopPropagation();
     if (statusToSet === orderItemStatus) {
       setIsOpen(false);
       return;
     }
-    updateOrderItemStatus.mutate({ orderItems, orderItem, statusToSet });
+    updateOrderItemStatus.mutate({
+      orderItems,
+      orderItem,
+      statusToSet,
+      ...(returnToInventory && { returnToInventory }),
+    });
     setIsOpen(false);
   };
 
@@ -94,7 +100,7 @@ export default function OrderItemMenu({
           </button>
           <button
             type="button"
-            onClick={e => handleSetStatus(e, 'Canceled')}
+            onClick={e => handleSetStatus(e, 'Canceled', true)}
             className="menu-button canceled"
           >
             <span className="dot" />
@@ -102,7 +108,6 @@ export default function OrderItemMenu({
           </button>
           <button
             type="button"
-            // TODO: add functionality and api route for this
             onClick={e => handleSetStatus(e, 'Canceled')}
             className="menu-button canceled"
           >

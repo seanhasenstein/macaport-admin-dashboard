@@ -198,9 +198,9 @@ export interface StoresTableOrders {
   total: number;
 }
 
-export interface StoresTableStore extends Omit<Store, 'products' | 'orders'> {
+export interface StoresTableStore extends Omit<Store, 'products'> {
   products: number;
-  orders: StoresTableOrders;
+  ordersStatusTotals: StoresTableOrders;
 }
 
 export interface PersonalizationAddon {
@@ -269,7 +269,8 @@ export interface Order {
     phone: string;
   };
   group: string;
-  orderStatus: OrderStatus;
+  orderStatus: OrderStatus; // todo - replace with status
+  // status: OrderStatus;
   shippingMethod: 'Primary' | 'Direct' | 'Store Pickup' | 'None';
   shippingAddress: {
     name?: string;

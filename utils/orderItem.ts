@@ -13,9 +13,10 @@ export function hydrateOrderItemsWithArtworkId(
 }
 
 const orderItemStatuses: OrderItemStatus[] = [
-  'Unfulfilled',
+  // 'Unfulfilled',
   'Fulfilled',
-  'Shipped',
+  // 'Shipped',
+  // 'Canceled',
 ];
 
 export function getNextOrderItemStatus(status: OrderItemStatus) {

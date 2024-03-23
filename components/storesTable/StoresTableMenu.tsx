@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import useOutsideClick from '../../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
 import { getStoreStatus } from '../../utils';
-import { CheckCircleIcon } from '@heroicons/react/24/outline';
+import { EllipsisVerticalIcon } from '@heroicons/react/24/outline';
 
 type Props = {
   storeId: string;
@@ -18,8 +18,11 @@ export default function StoresTableMenu({
   closeDate,
 }: Props) {
   const menuRef = React.useRef<HTMLDivElement>(null);
-  const storeStatus = getStoreStatus(openDate, closeDate);
+
   const [showMenu, setShowMenu] = React.useState(false);
+
+  const storeStatus = getStoreStatus(openDate, closeDate);
+
   useOutsideClick(showMenu, setShowMenu, menuRef);
   useEscapeKeydownClose(showMenu, setShowMenu);
 
@@ -30,13 +33,7 @@ export default function StoresTableMenu({
         className="menu-button"
         onClick={() => setShowMenu(!showMenu)}
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
-        </svg>
+        <EllipsisVerticalIcon />
       </button>
       <div ref={menuRef} className={`menu ${showMenu ? 'show' : ''}`}>
         <Link href={`/stores/${storeId}`}>
@@ -144,21 +141,6 @@ export default function StoresTableMenu({
             Go to demo store
           </a>
         )}
-        <button
-          type="button"
-          onClick={() => {
-            console.log('todo');
-          }}
-          className="button"
-        >
-          <CheckCircleIcon strokeWidth={2} />
-          <span>
-            Trigger a shipment
-            <span className="subtitle">
-              Set all fulfilled order items to shipped
-            </span>
-          </span>
-        </button>
       </div>
     </StoresTableMenuStyles>
   );
@@ -167,15 +149,15 @@ export default function StoresTableMenu({
 const StoresTableMenuStyles = styled.div`
   .menu-button {
     margin-left: auto;
-    padding: 0.125rem;
-    height: 1.5rem;
-    width: 1.5rem;
+    padding: 0;
+    height: 2.125rem;
+    width: 2.125rem;
     display: flex;
     justify-content: center;
     align-items: center;
     background-color: transparent;
     border: none;
-    border-radius: 0.3125rem;
+    border-radius: 9999px;
     color: #6b7280;
     cursor: pointer;
 
@@ -185,8 +167,8 @@ const StoresTableMenuStyles = styled.div`
 
     svg {
       flex-shrink: 0;
-      height: 1rem;
-      width: 1rem;
+      height: 1.3125rem;
+      width: 1.3125rem;
     }
   }
 
@@ -194,7 +176,7 @@ const StoresTableMenuStyles = styled.div`
     padding: 0 1rem;
     position: absolute;
     right: 1.5rem;
-    top: 3rem;
+    top: 3.5rem;
     white-space: nowrap;
     display: none;
     flex-direction: column;

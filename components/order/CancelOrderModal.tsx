@@ -3,7 +3,7 @@ import { UseMutationResult } from 'react-query';
 import styled from 'styled-components';
 import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
 import useOutsideClick from '../../hooks/useOutsideClick';
-import { Order, Store } from '../../interfaces';
+import { Store } from '../../interfaces';
 import LoadingSpinner from '../LoadingSpinner';
 import { possessiveCheck } from '../../utils';
 
@@ -15,7 +15,7 @@ type Props = {
     Store | undefined,
     unknown,
     void,
-    Order | undefined
+    Store | undefined
   >;
 };
 
@@ -24,7 +24,10 @@ export default function CancelOrderModal(props: Props) {
   useOutsideClick(props.showModal, props.setShowModal, modalRef);
   useEscapeKeydownClose(props.showModal, props.setShowModal);
 
-  const handleCancelOrderClick = () => {
+  const handleCancelOrderClick = (
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>
+  ) => {
+    e.stopPropagation();
     props.cancelOrder.mutate();
     props.setShowModal(false);
   };
@@ -109,7 +112,10 @@ export default function CancelOrderModal(props: Props) {
             <button
               type="button"
               className="secondary-button"
-              onClick={() => props.setShowModal(false)}
+              onClick={e => {
+                e.stopPropagation();
+                props.setShowModal(false);
+              }}
             >
               Cancel
             </button>

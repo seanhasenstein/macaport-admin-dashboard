@@ -14,6 +14,7 @@ type Props = {
     >
   >;
   setShowCancelOrderModal: React.Dispatch<React.SetStateAction<boolean>>;
+  openTriggerStoreShipmentModal: () => void;
 };
 
 export default function StoreOrders(props: Props) {
@@ -23,6 +24,7 @@ export default function StoreOrders(props: Props) {
     setSelectedOrder,
     setPrintOption,
     setShowCancelOrderModal,
+    openTriggerStoreShipmentModal,
   } = props;
   return (
     <StoreOrdersStyles id="orders">
@@ -34,6 +36,7 @@ export default function StoreOrders(props: Props) {
             setSelectedOrder,
             setPrintOption,
             setShowCancelOrderModal,
+            openTriggerStoreShipmentModal,
           }}
         />
       ) : (

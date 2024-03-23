@@ -6,7 +6,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/20/solid';
 
 import Sidebar from '../Sidebar';
 import OrderSidebarMenu from './OrderSidebarMenu';
-import OrderStatusButton from './OrderStatusButton';
+import OrderStatus from './OrderStatus';
 import PrintableOrder from '../PrintableOrder';
 import OrderDetailItem from './OrderDetailItem';
 import OrderItem from './OrderItem';
@@ -31,6 +31,7 @@ type Props = {
     >
   >;
   setShowCancelOrderModal: React.Dispatch<React.SetStateAction<boolean>>;
+  openTriggerStoreShipmentModal: () => void;
 };
 
 export default function OrderSidebar({
@@ -44,12 +45,14 @@ export default function OrderSidebar({
   store,
   setPrintOption,
   setShowCancelOrderModal,
+  openTriggerStoreShipmentModal,
 }: Props) {
   const mainContentRef = React.useRef<HTMLDivElement>(null);
 
   const session = useSession();
   const userId = session[0]?.user?.id;
 
+  // TODO: move this to a custom hook
   React.useEffect(() => {
     if (isOpen) {
       const handleLeftKeydown = (e: KeyboardEvent) => {
@@ -159,9 +162,8 @@ export default function OrderSidebar({
                   </div>
                   <div>
                     <div className="order-status">
-                      <OrderStatusButton
+                      <OrderStatus
                         {...{
-                          store,
                           order: selectedOrder,
                           copy: `Order ${
                             orderStatus === 'PartiallyShipped'
@@ -184,6 +186,8 @@ export default function OrderSidebar({
                     setPrintOption,
                     setShowCancelOrderModal,
                     orderIsCanceled: selectedOrder.orderStatus === 'Canceled',
+                    store,
+                    openTriggerStoreShipmentModal,
                   }}
                 />
               </div>
@@ -460,7 +464,6 @@ const OrderSidebarStyles = styled.div`
     }
   }
   .breakdown-section {
-    /* margin: 0 0 0.1875rem; */
     padding: 1.3125rem 2rem 1.6875rem 2.5rem;
     background-color: #fff;
     border-bottom: 1px solid #e5e7eb;
@@ -489,6 +492,7 @@ const OrderSidebarStyles = styled.div`
         min-width: 10rem;
         font-weight: 700;
         user-select: none;
+        text-align: center;
       }
     }
     .order-menu-section {

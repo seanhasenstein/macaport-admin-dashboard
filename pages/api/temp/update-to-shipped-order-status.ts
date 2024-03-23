@@ -5,6 +5,7 @@ import database from '../../../middleware/db';
 import { store } from '../../../db';
 
 import { Request, Store as StoreInterface } from '../../../interfaces';
+import { getStoreStatus } from '../../../utils';
 
 const handler = nc<Request, NextApiResponse>()
   .use(database)
@@ -13,11 +14,19 @@ const handler = nc<Request, NextApiResponse>()
 
     // loop over allStores and update all orders with a status of 'Completed' to 'Shipped'
     allStores.forEach(async currentStore => {
+      const storeStatus = getStoreStatus(
+        currentStore.openDate,
+        currentStore.closeDate
+      );
+      const storeIsOpen = storeStatus === 'open';
       const updatedStoreOrders = currentStore.orders.map(order => {
         if (order.orderStatus === 'Completed') {
-          return { ...order, orderStatus: 'Shipped' };
+          return {
+            ...order,
+            orderStatus: storeIsOpen ? 'Fulfilled' : 'Shipped',
+          };
         } else {
-          return order;
+          return { ...order, orderStatus: order.orderStatus };
         }
       });
 

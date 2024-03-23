@@ -24,6 +24,7 @@ import PrintableOrder from '../../../components/PrintableOrder';
 import DeleteStoreModal from '../../../components/store/DeleteStoreModal';
 import TableLoadingSpinner from '../../../components/TableLoadingSpinner';
 import CancelOrderModal from '../../../components/order/CancelOrderModal';
+import TriggerShipmentModal from '../../../components/store/TriggerShipmentModal';
 
 export default function Store() {
   const router = useRouter();
@@ -44,6 +45,8 @@ export default function Store() {
     undefined
   );
   const [showCancelOrderModal, setShowCancelOrderModal] = React.useState(false);
+  const [showTriggerShipmentModal, setShowTriggerShipmentModal] =
+    React.useState(false);
 
   useOutsideClick(
     showDeleteProductModal,
@@ -54,7 +57,7 @@ export default function Store() {
   useEscapeKeydownClose(showDeleteProductModal, setShowDeleteProductModal);
 
   const { cancelOrder } = useOrderMutation({
-    order: selectedOrder,
+    order: selectedOrder, // todo: this needs to include orderItems with shouldReturnToInventory (move this to the mutate call)
     store: storeQuery.data,
   });
 
@@ -129,6 +132,9 @@ export default function Store() {
                   setShowDeleteModal={setShowDeleteStoreModal}
                   setShowCSVModal={setShowCSVModal}
                   setPrintOption={setPrintOption}
+                  showTriggerStoreShipmentModal={() =>
+                    setShowTriggerShipmentModal(true)
+                  }
                 />
               </div>
 
@@ -142,6 +148,8 @@ export default function Store() {
                     setSelectedOrder,
                     setPrintOption,
                     setShowCancelOrderModal,
+                    openTriggerStoreShipmentModal: () =>
+                      setShowTriggerShipmentModal(true),
                   }}
                 />
                 <StoreProducts store={storeQuery.data} />
@@ -177,6 +185,14 @@ export default function Store() {
           cancelOrder={cancelOrder}
         />
       </StoreStyles>
+
+      {storeQuery.data && showTriggerShipmentModal && (
+        <TriggerShipmentModal
+          closeModal={() => setShowTriggerShipmentModal(false)}
+          isOpen={showTriggerShipmentModal}
+          store={storeQuery.data}
+        />
+      )}
 
       {storeQuery.data && showDeleteStoreModal && (
         <DeleteStoreModal

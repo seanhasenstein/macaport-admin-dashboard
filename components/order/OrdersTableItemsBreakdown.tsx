@@ -27,7 +27,7 @@ export default function OrdersTableItemsBreakdown({ orderItems }: Props) {
   return (
     <OrderTableItemsBreakdownStyles
       className={classNames({
-        'all-shipped-cancled':
+        'all-shipped-canceled':
           allItemsAreShipped ||
           allItemsAreCanceled ||
           allItemsShippedOrCanceled,
@@ -82,8 +82,10 @@ export default function OrdersTableItemsBreakdown({ orderItems }: Props) {
                   active: unfulfilledTotal > 0,
                 })}
               >
-                <span className="dot" />
-                <p className="label">Unfulfilled:</p>
+                <div className="label-info">
+                  <span className="dot" />
+                  <p className="label">Unfulfilled:</p>
+                </div>
                 <p>{unfulfilledTotal}</p>
               </div>
             )}
@@ -93,8 +95,10 @@ export default function OrdersTableItemsBreakdown({ orderItems }: Props) {
                   active: fulfilledTotal > 0,
                 })}
               >
-                <span className="dot" />
-                <p className="label">Fulfilled:</p>
+                <div className="label-info">
+                  <span className="dot" />
+                  <p className="label">Fulfilled:</p>
+                </div>
                 <p>{fulfilledTotal}</p>
               </div>
             )}
@@ -104,8 +108,10 @@ export default function OrdersTableItemsBreakdown({ orderItems }: Props) {
                   active: shippedTotal > 0,
                 })}
               >
-                <span className="dot" />
-                <p className="label">Shipped:</p>
+                <div className="label-info">
+                  <span className="dot" />
+                  <p className="label">Shipped:</p>
+                </div>
                 <p>{shippedTotal}</p>
               </div>
             )}
@@ -115,8 +121,10 @@ export default function OrdersTableItemsBreakdown({ orderItems }: Props) {
                   active: canceledTotal > 0,
                 })}
               >
-                <span className="dot" />
-                <p className="label">Canceled:</p>
+                <div className="label-info">
+                  <span className="dot" />
+                  <p className="label">Canceled:</p>
+                </div>
                 <p>{canceledTotal}</p>
               </div>
             )}
@@ -127,16 +135,16 @@ export default function OrdersTableItemsBreakdown({ orderItems }: Props) {
 }
 
 const OrderTableItemsBreakdownStyles = styled.div`
-  max-width: 8rem;
   width: 100%;
   display: flex;
   flex-direction: column;
   background-color: #fff;
   border: 1px solid #d4d4d8;
   border-radius: 0.25rem;
-  &.all-shipped-cancled {
+  &.all-shipped-canceled {
     border: none;
     .status-item {
+      justify-content: center;
       padding-left: 0;
       padding-right: 0;
       border: none;
@@ -151,7 +159,7 @@ const OrderTableItemsBreakdownStyles = styled.div`
       }
     }
   }
-  &.all-shipped-cancled {
+  &.all-shipped-canceled {
     .status-item {
       .circle-check-icon {
         color: #077154;
@@ -159,8 +167,9 @@ const OrderTableItemsBreakdownStyles = styled.div`
     }
   }
   .status-item {
-    padding: 0.15625rem 0.375rem 0.15625rem 0.53125rem;
+    padding: 0.15625rem 0.4375rem 0.15625rem;
     display: flex;
+    justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid #d4d4d8;
     &:last-of-type {
@@ -185,6 +194,10 @@ const OrderTableItemsBreakdownStyles = styled.div`
       .dot {
         background-color: #224fb3;
       }
+    }
+    .label-info {
+      display: flex;
+      align-items: center;
     }
     .dot {
       flex-shrink: 0;

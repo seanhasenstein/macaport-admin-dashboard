@@ -8,6 +8,7 @@ export default function useOutsideClick(
   React.useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (!ref.current?.contains(e.target as Node)) {
+        e.stopPropagation();
         setOpen(false);
       }
     };

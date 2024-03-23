@@ -8,6 +8,7 @@ import {
   OrderItem,
 } from '../interfaces';
 import { getNextOrderItemStatus } from '../utils/orderItem';
+import { handleUpdateOrderStatus } from '../utils/order';
 
 export async function getOrderById(db: Db, storeId: string, orderId: string) {
   try {
@@ -51,12 +52,24 @@ export async function cancelOrder(
   db: Db,
   storeId: string,
   orderId: string,
-  order: Order
+  order: Order,
+  userId: string
 ) {
   const updatedItems = order.items.map(i => ({
     ...i,
-    quantity: 0,
-    itemTotal: 0,
+    ...(i.status.current !== 'Canceled' &&
+      i.status.current !== 'Shipped' && {
+        status: {
+          current: 'Canceled' as const,
+          meta: {
+            ...i.status.meta,
+            Canceled: { user: userId, updatedAt: new Date().toISOString() },
+          },
+        },
+      }),
+    // todo: these were set to 0 but I think it would be good to keep the original values, can we do this?
+    // quantity: 0,
+    // itemTotal: 0,
   }));
   const updatedOrder: Order = {
     ...order,
@@ -64,11 +77,13 @@ export async function cancelOrder(
     items: updatedItems,
     summary: {
       ...order.summary,
+      // todo: handle this based on refund status?
       subtotal: 0,
       salesTax: 0,
       shipping: 0,
       total: 0,
     },
+    // todo: should we handle this differently?
     refund: {
       status: 'Full',
       amount: order.summary.total,
@@ -90,6 +105,7 @@ interface OrderItemStatusInput {
   storeId: string;
   orderId: string;
   orderItemId: string;
+  order: Order;
   orderItems: OrderItem[];
   userId: string;
   statusToSet?: OrderItemStatus;
@@ -103,8 +119,15 @@ export async function updateOrderItemStatus(
   db: Db,
   input: OrderItemStatusInput
 ) {
-  const { storeId, orderId, orderItemId, orderItems, userId, statusToSet } =
-    input;
+  const {
+    storeId,
+    orderId,
+    orderItemId,
+    order,
+    orderItems,
+    userId,
+    statusToSet,
+  } = input;
 
   const orderItem = orderItems.find(item => item.id === orderItemId);
 
@@ -123,11 +146,21 @@ export async function updateOrderItemStatus(
       },
     };
 
+    const updatedOrderItems = orderItems.map(item => {
+      if (item.id === orderItemId) {
+        return { ...item, status: updatedStatus };
+      }
+      return item;
+    });
+    const updatedOrder = handleUpdateOrderStatus(order, updatedOrderItems);
+    const updatedOrderStatus = updatedOrder.orderStatus;
+
     const result = await db.collection<StoreWithId>('stores').findOneAndUpdate(
       { _id: new ObjectID(storeId) },
       {
         $set: {
           'orders.$[order].items.$[item].status': updatedStatus,
+          'orders.$[order].orderStatus': updatedOrderStatus,
         },
       },
       {

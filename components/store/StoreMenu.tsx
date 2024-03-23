@@ -20,6 +20,7 @@ type Props = {
       'unfulfilled' | 'personalization' | 'single' | undefined
     >
   >;
+  showTriggerStoreShipmentModal: () => void;
 };
 
 export default function StoreMenu({
@@ -28,6 +29,7 @@ export default function StoreMenu({
   setShowDeleteModal,
   setShowCSVModal,
   setPrintOption,
+  showTriggerStoreShipmentModal,
 }: Props) {
   const menuRef = React.useRef<HTMLDivElement>(null);
   const [showMenu, setShowMenu] = React.useState(false);
@@ -80,7 +82,8 @@ export default function StoreMenu({
         <button
           type="button"
           onClick={() => {
-            console.log('todo');
+            showTriggerStoreShipmentModal();
+            setShowMenu(false);
           }}
           className="menu-link"
         >

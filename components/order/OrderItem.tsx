@@ -32,7 +32,6 @@ export default function OrderItem({
   const [menuIsOpen, setMenuIsOpen] = React.useState(false);
 
   const {
-    id,
     image,
     itemTotal,
     merchandiseCode,
@@ -48,21 +47,21 @@ export default function OrderItem({
   const { label: sizeLabel } = size;
   const { current: itemStatus } = status;
 
-  const handleToggleItemStatus = async (orderItem: OrderItemInterface) => {
-    if (!menuIsOpen) {
-      updateOrderItemStatus.mutate({ orderItems, orderItem });
-    }
-  };
-
   const { updateOrderItemStatus } = useOrderItemMutation({
     order,
     store,
     userId: userId || '',
   });
 
+  const handleToggleItemStatus = async (orderItem: OrderItemInterface) => {
+    if (['Shipped', 'Canceled'].includes(orderItem.status.current)) return;
+    if (!menuIsOpen) {
+      updateOrderItemStatus.mutate({ orderItems, orderItem });
+    }
+  };
+
   return (
     <OrderItemStyles
-      key={`order-${id}`}
       onClick={() => handleToggleItemStatus(item)}
       className={classNames('item', itemStatus.toLowerCase())}
     >
@@ -130,11 +129,8 @@ export default function OrderItem({
             {personalizationAddons.map((item, index) => {
               const { addon, location, subItems, value } = item;
               return (
-                <>
-                  <div
-                    key={`${item.id}-${index}`}
-                    className="personalization-item"
-                  >
+                <div key={`${item.id}-${index}`}>
+                  <div className="personalization-item">
                     <div className="flex align-center">
                       <p className="label">{addon}:</p>
                       <p className="value">{value}</p>
@@ -157,7 +153,7 @@ export default function OrderItem({
                       ))}
                     </>
                   ) : null}
-                </>
+                </div>
               );
             })}
           </div>
@@ -191,6 +187,12 @@ const OrderItemStyles = styled.div`
     .personalization-details .title:after {
       border-color: rgba(0, 0, 0, 0.15);
     }
+  }
+  &.fulfilled,
+  &.shipped,
+  &.canceled {
+    cursor: default;
+    pointer-events: none;
   }
   &.unfulfilled {
     background-color: #fcf3f3;
@@ -231,7 +233,6 @@ const OrderItemStyles = styled.div`
   &.canceled {
     background-color: #ecf1fb;
     /* text-decoration: line-through; */
-    pointer-events: none;
     .status {
       span {
         background: linear-gradient(to bottom, #f9fafb 50%, #ecf1fb 50%);

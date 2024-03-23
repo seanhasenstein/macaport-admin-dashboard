@@ -3,9 +3,10 @@ import styled from 'styled-components';
 import { format } from 'date-fns';
 import classNames from 'classnames';
 
-import OrderStatusButton from './OrderStatusButton';
+import OrderStatusComponent from './OrderStatus';
 import Table from '../common/Table';
 import OrderSidebar from './OrderSidebar';
+import OrdersTableItemsBreakdown from './OrdersTableItemsBreakdown';
 
 import { calculateTotalItems, formatToMoney } from '../../utils';
 
@@ -14,7 +15,6 @@ import {
   OrderStatus,
   StoreWithOrderStatusTotals,
 } from '../../interfaces';
-import OrdersTableItemsBreakdown from './OrdersTableItemsBreakdown';
 
 type OrderViewOptions = OrderStatus | 'All' | 'Personalized';
 
@@ -80,6 +80,7 @@ type Props = {
     >
   >;
   setShowCancelOrderModal: React.Dispatch<React.SetStateAction<boolean>>;
+  openTriggerStoreShipmentModal: () => void;
 };
 
 export default function OrdersTable({
@@ -88,6 +89,7 @@ export default function OrdersTable({
   setSelectedOrder,
   setPrintOption,
   setShowCancelOrderModal,
+  openTriggerStoreShipmentModal,
 }: Props) {
   const [orderViewOption, setOrderViewOption] =
     React.useState<OrderViewOptions>('All');
@@ -259,7 +261,7 @@ export default function OrdersTable({
                                 {o.shippingMethod}
                               </ButtonWrapper>
                             </td>
-                            <td className="text-center total-items">
+                            <td className="text-center">
                               <ButtonWrapper
                                 onClick={() => buttonOnClick(o.orderId)}
                               >
@@ -283,11 +285,14 @@ export default function OrdersTable({
                               </ButtonWrapper>
                             </td>
                             <td className="text-center order-status">
-                              <OrderStatusButton
-                                store={store}
-                                order={o}
-                                customClass="custom-table-order-status"
-                              />
+                              <ButtonWrapper
+                                onClick={() => buttonOnClick(o.orderId)}
+                              >
+                                <OrderStatusComponent
+                                  order={o}
+                                  customClass="custom-table-order-status"
+                                />
+                              </ButtonWrapper>
                             </td>
                             <td className="text-center">
                               <ButtonWrapper
@@ -342,6 +347,7 @@ export default function OrdersTable({
               store,
               setPrintOption,
               setShowCancelOrderModal,
+              openTriggerStoreShipmentModal,
             }}
           />
         </>

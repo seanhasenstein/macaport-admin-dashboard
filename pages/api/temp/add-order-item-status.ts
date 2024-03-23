@@ -80,6 +80,7 @@ const handler = nc<Request, NextApiResponse>()
       const store = allStores[i];
       const { openDate, closeDate } = store;
       const storeStatus = getStoreStatus(openDate, closeDate);
+      const storeIsOpen = storeStatus === 'open';
       const storeIsClosed = storeStatus === 'closed';
       const allOrdersAreCompletedOrCanceled = store.orders.every(o =>
         ['Completed', 'Canceled'].includes(o.orderStatus)
@@ -131,7 +132,15 @@ const handler = nc<Request, NextApiResponse>()
                   return {
                     ...orderItem,
                     id: orderItemId,
-                    status: returnOrderItemStatus('Fulfilled'),
+                    status: returnOrderItemStatus(
+                      storeIsOpen ? 'Fulfilled' : 'Shipped'
+                    ),
+                  };
+                case 'Shipped':
+                  return {
+                    ...orderItem,
+                    id: orderItemId,
+                    status: returnOrderItemStatus('Shipped'),
                   };
                 default:
                   return {

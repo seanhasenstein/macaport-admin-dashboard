@@ -9,6 +9,8 @@ import {
 
 import Menu from '../common/Menu';
 
+import { Store } from '../../interfaces';
+
 type Props = {
   orderIsCanceled: boolean;
   stripeId: string;
@@ -18,6 +20,8 @@ type Props = {
     >
   >;
   setShowCancelOrderModal: React.Dispatch<React.SetStateAction<boolean>>;
+  store: Store;
+  openTriggerStoreShipmentModal: () => void;
 };
 
 export default function OrderSidebarMenu({
@@ -25,6 +29,7 @@ export default function OrderSidebarMenu({
   stripeId,
   setPrintOption,
   setShowCancelOrderModal,
+  openTriggerStoreShipmentModal,
 }: Props) {
   const [isOpen, setIsOpen] = React.useState(false);
 
@@ -37,7 +42,10 @@ export default function OrderSidebarMenu({
     setPrintOption('single');
     setIsOpen(false);
   };
-  const handleCancelClick = () => {
+  const handleCancelClick = (
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>
+  ) => {
+    e.stopPropagation();
     setShowCancelOrderModal(true);
     setIsOpen(false);
   };
@@ -46,9 +54,15 @@ export default function OrderSidebarMenu({
     <Menu {...{ isOpen, closeSidebar, toggleSidebar }}>
       <OrderSidebarMenuStyles>
         <div className="menu-items">
-          {/* <button className="menu-item"><PencilSquareIcon className="icon" />Edit item</button> */}
-          {/* TODO: add set all fulfilled to shipped functionality */}
-          <button type="button" className="menu-button">
+          <button
+            type="button"
+            className="menu-button"
+            onClick={e => {
+              e.stopPropagation();
+              openTriggerStoreShipmentModal();
+              setIsOpen(false);
+            }}
+          >
             <CheckCircleIcon className="icon" strokeWidth={2} />
             <span>
               Trigger a shipment

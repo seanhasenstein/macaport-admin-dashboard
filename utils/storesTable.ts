@@ -51,7 +51,8 @@ export function convertStoreToStoresTableStore(store: Store): StoresTableStore {
   return {
     ...store,
     products: store.products.length,
-    orders: storesTableStoreOrders,
+    orders: store.orders,
+    ordersStatusTotals: storesTableStoreOrders,
   };
 }
 
