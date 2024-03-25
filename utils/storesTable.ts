@@ -65,14 +65,13 @@ interface StoreAccumulator {
 export function getStoresTableStores(stores: Store[]) {
   return stores.reduce(
     (acc: StoreAccumulator, currentStore) => {
-      const storesTableStore = convertStoreToStoresTableStore(currentStore);
-
       const storeStatus = getStoreStatus(
-        storesTableStore.openDate,
-        storesTableStore.closeDate
+        currentStore.openDate,
+        currentStore.closeDate
       );
 
       if (storeStatus === 'open') {
+        const storesTableStore = convertStoreToStoresTableStore(currentStore);
         const sortedOpenStores = sortStoresByCloseDate(
           [...acc.openStores, storesTableStore],
           false
@@ -81,6 +80,7 @@ export function getStoresTableStores(stores: Store[]) {
       }
 
       if (storeStatus === 'upcoming') {
+        const storesTableStore = convertStoreToStoresTableStore(currentStore);
         const sortedUpcomingStores = sortStoresByOpenDate(
           [...acc.upcomingStores, storesTableStore],
           false
@@ -94,6 +94,7 @@ export function getStoresTableStores(stores: Store[]) {
       );
 
       if (storeStatus === 'closed' && storeHasOrdersNotShippedOrCanceled) {
+        const storesTableStore = convertStoreToStoresTableStore(currentStore);
         const sortedClosedStores = sortStoresByCloseDate(
           [...acc.closedStores, storesTableStore],
           false
