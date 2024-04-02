@@ -314,7 +314,7 @@ export default function TriggerShipmentModal({
 
 const TriggerShipmentModalStyles = styled.div`
   .custom-modal-class {
-    padding: 0.25rem 0.75rem;
+    padding: 1.375rem 2rem;
     max-width: 34rem;
     width: 100%;
     .custom-close-button {
