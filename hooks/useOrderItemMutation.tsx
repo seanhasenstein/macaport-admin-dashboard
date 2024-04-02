@@ -37,7 +37,7 @@ export function useOrderItemMutation({ order, store, userId }: Props) {
           orderItemId: orderItem.id,
           userId,
           inventoryProductId: orderItem.sku.inventoryProductId,
-          inventoryProductSkuId: orderItem.sku.id,
+          inventoryProductSkuId: orderItem.sku.inventorySkuId,
           orderItemQuantity: orderItem.quantity,
           ...(statusToSet && { statusToSet }),
           ...(returnToInventory && { returnToInventory }),
