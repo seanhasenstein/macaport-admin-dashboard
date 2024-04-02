@@ -30,6 +30,7 @@ type Props = {
       'unfulfilled' | 'personalization' | 'single' | undefined
     >
   >;
+  showCancelOrderModal: boolean;
   setShowCancelOrderModal: React.Dispatch<React.SetStateAction<boolean>>;
   openTriggerStoreShipmentModal: () => void;
 };
@@ -44,6 +45,7 @@ export default function OrderSidebar({
   updateSelectedOrder,
   store,
   setPrintOption,
+  showCancelOrderModal,
   setShowCancelOrderModal,
   openTriggerStoreShipmentModal,
 }: Props) {
@@ -147,6 +149,8 @@ export default function OrderSidebar({
       <OrderSidebarStyles>
         <Sidebar
           {...{ isOpen, closeSidebar }}
+          disableOutsideClick={showCancelOrderModal}
+          disableEscapeKeydown={showCancelOrderModal}
           customHeader={
             <div className="custom-header">
               <div className="customer-details">
@@ -170,7 +174,7 @@ export default function OrderSidebar({
                               ? 'Partially Shipped'
                               : orderStatus
                           }`,
-                          customClass: 'order-status-button',
+                          customClass: 'custom-order-status',
                         }}
                       />
                     </div>
@@ -185,7 +189,6 @@ export default function OrderSidebar({
                     stripeId,
                     setPrintOption,
                     setShowCancelOrderModal,
-                    orderIsCanceled: selectedOrder.orderStatus === 'Canceled',
                     store,
                     openTriggerStoreShipmentModal,
                   }}
@@ -487,7 +490,7 @@ const OrderSidebarStyles = styled.div`
     .order-status {
       display: flex;
       justify-content: flex-end;
-      .order-status-button {
+      .custom-order-status {
         padding: 0.3125rem 0.875rem;
         min-width: 10rem;
         font-weight: 700;

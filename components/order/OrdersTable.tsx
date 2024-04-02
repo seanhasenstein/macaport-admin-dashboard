@@ -79,6 +79,7 @@ type Props = {
       'unfulfilled' | 'personalization' | 'single' | undefined
     >
   >;
+  showCancelOrderModal: boolean;
   setShowCancelOrderModal: React.Dispatch<React.SetStateAction<boolean>>;
   openTriggerStoreShipmentModal: () => void;
 };
@@ -88,6 +89,7 @@ export default function OrdersTable({
   selectedOrder,
   setSelectedOrder,
   setPrintOption,
+  showCancelOrderModal,
   setShowCancelOrderModal,
   openTriggerStoreShipmentModal,
 }: Props) {
@@ -346,6 +348,7 @@ export default function OrdersTable({
               updateSelectedOrder,
               store,
               setPrintOption,
+              showCancelOrderModal,
               setShowCancelOrderModal,
               openTriggerStoreShipmentModal,
             }}

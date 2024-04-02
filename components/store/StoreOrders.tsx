@@ -13,6 +13,7 @@ type Props = {
       'unfulfilled' | 'personalization' | 'single' | undefined
     >
   >;
+  showCancelOrderModal: boolean;
   setShowCancelOrderModal: React.Dispatch<React.SetStateAction<boolean>>;
   openTriggerStoreShipmentModal: () => void;
 };
@@ -23,6 +24,7 @@ export default function StoreOrders(props: Props) {
     selectedOrder,
     setSelectedOrder,
     setPrintOption,
+    showCancelOrderModal,
     setShowCancelOrderModal,
     openTriggerStoreShipmentModal,
   } = props;
@@ -35,6 +37,7 @@ export default function StoreOrders(props: Props) {
             selectedOrder,
             setSelectedOrder,
             setPrintOption,
+            showCancelOrderModal,
             setShowCancelOrderModal,
             openTriggerStoreShipmentModal,
           }}
