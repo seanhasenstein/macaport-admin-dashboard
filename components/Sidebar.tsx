@@ -14,6 +14,8 @@ type Props = {
   headerTitle?: string;
   customHeader?: React.ReactNode;
   allowBodyScroll?: boolean;
+  disableOutsideClick?: boolean;
+  disableEscapeKeydown?: boolean;
 };
 
 export default function Sidebar({
@@ -24,11 +26,13 @@ export default function Sidebar({
   closeSidebar,
   headerTitle,
   allowBodyScroll = false,
+  disableOutsideClick = false,
+  disableEscapeKeydown = false,
 }: Props) {
   const sidebarRef = React.useRef<HTMLDivElement>(null);
 
-  useOutsideClick(isOpen, closeSidebar, sidebarRef);
-  useEscapeKeydownClose(isOpen, closeSidebar);
+  useOutsideClick(isOpen, closeSidebar, sidebarRef, disableOutsideClick);
+  useEscapeKeydownClose(isOpen, closeSidebar, disableEscapeKeydown);
 
   React.useEffect(() => {
     if (isOpen && !allowBodyScroll) {
