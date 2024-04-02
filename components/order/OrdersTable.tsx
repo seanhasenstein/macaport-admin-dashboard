@@ -185,7 +185,7 @@ export default function OrdersTable({
                 ))}
               </div>
             </div>
-            <Table className="table-container">
+            <Table customClass="table-container">
               <table>
                 <thead>
                   <tr>
