@@ -62,13 +62,13 @@ const ModalContainer = styled.div`
     align-items: center;
     background-color: rgba(0, 0, 0, 0.65);
     z-index: 9999;
+  }
 
-    .modal-container {
-      position: relative;
-      padding: 1.5rem 2rem;
-      background-color: #fff;
-      border-radius: 0.5rem;
-    }
+  .modal-container {
+    position: relative;
+    padding: 1.5rem 2rem;
+    background-color: #fff;
+    border-radius: 0.5rem;
   }
   .close-modal-button {
     position: absolute;
