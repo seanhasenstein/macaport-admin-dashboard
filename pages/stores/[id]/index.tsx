@@ -9,7 +9,6 @@ import { Order, StoreStatus } from '../../../interfaces';
 import { useStoreQuery } from '../../../hooks/useStoreQuery';
 import useOutsideClick from '../../../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../../../hooks/useEscapeKeydownClose';
-import { useOrderMutation } from '../../../hooks/useOrderMutations';
 
 import Layout from '../../../components/Layout';
 import PageNavButtons from '../../../components/PageNavButtons';
@@ -23,7 +22,7 @@ import CSVDownloadModal from '../../../components/store/CSVDownloadModal';
 import PrintableOrder from '../../../components/PrintableOrder';
 import DeleteStoreModal from '../../../components/store/DeleteStoreModal';
 import TableLoadingSpinner from '../../../components/TableLoadingSpinner';
-import CancelOrderModal from '../../../components/order/CancelOrderModal';
+import CancelOrderModal from '../../../components/modals/CancelOrderModal';
 import TriggerShipmentModal from '../../../components/store/TriggerShipmentModal';
 
 export default function Store() {
@@ -56,18 +55,13 @@ export default function Store() {
 
   useEscapeKeydownClose(showDeleteProductModal, setShowDeleteProductModal);
 
-  const { cancelOrder } = useOrderMutation({
-    order: selectedOrder, // todo: this needs to include orderItems with shouldReturnToInventory (move this to the mutate call)
-    store: storeQuery.data,
-  });
-
   React.useEffect(() => {
     if (storeQuery.data) {
       setStoreStatus(
         getStoreStatus(storeQuery.data.openDate, storeQuery.data.closeDate)
       );
 
-      if (!selectedOrder) {
+      if (storeQuery.data.orders && !selectedOrder) {
         setSelectedOrder(storeQuery.data.orders[0]);
       }
     }
@@ -147,6 +141,7 @@ export default function Store() {
                     selectedOrder,
                     setSelectedOrder,
                     setPrintOption,
+                    showCancelOrderModal,
                     setShowCancelOrderModal,
                     openTriggerStoreShipmentModal: () =>
                       setShowTriggerShipmentModal(true),
@@ -178,12 +173,14 @@ export default function Store() {
           heading="Product successfully deleted"
           callbackUrl={`/stores/${router.query.id}`}
         />
-        <CancelOrderModal
-          orderName={`${selectedOrder?.customer.firstName} ${selectedOrder?.customer.lastName}`}
-          showModal={showCancelOrderModal}
-          setShowModal={setShowCancelOrderModal}
-          cancelOrder={cancelOrder}
-        />
+        {storeQuery.data && selectedOrder && showCancelOrderModal && (
+          <CancelOrderModal
+            store={storeQuery.data}
+            order={selectedOrder}
+            isOpen={showCancelOrderModal}
+            closeModal={() => setShowCancelOrderModal(false)}
+          />
+        )}
       </StoreStyles>
 
       {storeQuery.data && showTriggerShipmentModal && (

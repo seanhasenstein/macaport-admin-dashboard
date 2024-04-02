@@ -3,26 +3,33 @@ import styled from 'styled-components';
 import { format } from 'date-fns';
 import classNames from 'classnames';
 import {
-  CheckCircleIcon,
+  PlusCircleIcon,
   ExclamationCircleIcon,
-  NoSymbolIcon,
-  MinusCircleIcon,
+  XCircleIcon,
 } from '@heroicons/react/20/solid';
 
 import Modal from '../Modal';
 import OrderStatus from '../order/OrderStatus';
 
+import { useOrderMutation } from '../../hooks/useOrderMutations';
+
 import { formatPhoneNumber, formatToMoney } from '../../utils';
 
-import { Order } from '../../interfaces';
+import { Order, Store } from '../../interfaces';
 
 type Props = {
   isOpen: boolean;
   closeModal: () => void;
+  store: Store;
   order: Order;
 };
 
-export default function CancelOrderModal({ isOpen, closeModal, order }: Props) {
+export default function CancelOrderModal({
+  isOpen,
+  closeModal,
+  order,
+  store,
+}: Props) {
   const [itemsWithShouldReturn, setItemsWithShouldReturn] = React.useState(
     () => {
       return order.items.map(item => {
@@ -44,6 +51,11 @@ export default function CancelOrderModal({ isOpen, closeModal, order }: Props) {
     }
   );
 
+  const { cancelOrder } = useOrderMutation({
+    order: { ...order, items: itemsWithShouldReturn },
+    store,
+  });
+
   const {
     createdAt,
     customer,
@@ -51,11 +63,11 @@ export default function CancelOrderModal({ isOpen, closeModal, order }: Props) {
     orderId,
     summary,
     stripeId,
-    store,
+    store: orderStore,
     orderStatus,
   } = order;
   const { firstName, lastName, email, phone } = customer;
-  const { name: storeName } = store;
+  const { name: storeName } = orderStore;
   const { subtotal, total, salesTax } = summary;
 
   const allItemsAlreadyCanceled = items.every(
@@ -188,6 +200,7 @@ export default function CancelOrderModal({ isOpen, closeModal, order }: Props) {
                   id,
                   artworkId,
                   personalizationAddons,
+                  merchandiseCode,
                 } = item;
                 const { size } = sku;
                 const { label } = size;
@@ -212,13 +225,13 @@ export default function CancelOrderModal({ isOpen, closeModal, order }: Props) {
                   >
                     <div className="main-item-details">
                       {isShippedOrCanceled ? (
-                        <NoSymbolIcon className="no-symbol-icon" />
+                        <XCircleIcon className="no-symbol-icon" />
                       ) : (
                         <>
                           {shouldReturnToInventory ? (
-                            <CheckCircleIcon className="check-circle-icon" />
+                            <PlusCircleIcon className="check-circle-icon" />
                           ) : (
-                            <MinusCircleIcon className="minus-circle-icon" />
+                            <XCircleIcon className="minus-circle-icon" />
                           )}
                         </>
                       )}
@@ -238,14 +251,12 @@ export default function CancelOrderModal({ isOpen, closeModal, order }: Props) {
                               {itemStatus}
                             </span>
                           </div>
-                          <p className="item-total">
-                            {formatToMoney(itemTotal, true)}
-                          </p>
+                          <p className="merch-code">{merchandiseCode}</p>
                         </div>
                         <div className="row">
-                          <p className="item-size">
-                            <span className="label">Size:</span>
-                            {label}
+                          <p className="item-color">
+                            <span className="label">Color:</span>
+                            {sku.color.label}
                           </p>
                           <p className="item-qty">
                             <span className="label">Qty:</span>
@@ -253,9 +264,19 @@ export default function CancelOrderModal({ isOpen, closeModal, order }: Props) {
                           </p>
                         </div>
                         <div className="row">
+                          <p className="item-size">
+                            <span className="label">Size:</span>
+                            {label}
+                          </p>
+                        </div>
+                        <div className="row">
                           <p className="art-id">
                             <span className="label">Artwork Id:</span>
                             {artworkId ? artworkId : 'None'}
+                          </p>
+                          <p className="item-total">
+                            <span className="label">Total:</span>
+                            {formatToMoney(itemTotal, true)}
                           </p>
                         </div>
                       </div>
@@ -350,7 +371,15 @@ export default function CancelOrderModal({ isOpen, closeModal, order }: Props) {
                 )}
               </p>
             ) : (
-              <button type="button" className="submit-button">
+              <button
+                type="button"
+                className="submit-button"
+                onClick={() => {
+                  cancelOrder.mutate(undefined, {
+                    onSuccess: () => closeModal(),
+                  });
+                }}
+              >
                 Cancel this order
               </button>
             )}
@@ -365,7 +394,7 @@ const CancelOrderModalStyles = styled.div`
   .custom-cancel-item-modal-class {
     position: fixed;
     padding: 0;
-    height: calc(100vh - 8rem);
+    height: calc(100vh - 9.75rem);
     width: 50rem;
     overflow-y: hidden;
     border: 4px solid #e5e5e5;
@@ -517,7 +546,7 @@ const CancelOrderModalStyles = styled.div`
     gap: 1.25rem 0;
 
     .order-item-button {
-      padding: 0.75rem 1.25rem 0.75rem 1rem;
+      padding: 0.875rem 1.25rem 0.75rem 1rem;
       width: 100%;
       background-color: #fcf3f3;
       border: 1px solid rgba(0, 0, 0, 0.1);
@@ -635,11 +664,11 @@ const CancelOrderModalStyles = styled.div`
   }
 
   .personalization-details {
-    margin: 0.25rem 0 0 3.25rem;
+    margin: -0.5rem 0 0 3.25rem;
     padding: 1rem 0 0.3125rem;
     .title {
       position: relative;
-      padding: 0 0 1rem;
+      padding: 0 0 0.625rem;
       color: #09090b;
       font-size: 0.6875rem;
       font-weight: 700;
