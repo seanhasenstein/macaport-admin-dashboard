@@ -3,7 +3,8 @@ import React from 'react';
 export default function useOutsideClick(
   open: boolean,
   setOpen: React.Dispatch<React.SetStateAction<boolean>>,
-  ref: React.RefObject<HTMLElement>
+  ref: React.RefObject<HTMLElement>,
+  disabled = false
 ) {
   React.useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -13,12 +14,12 @@ export default function useOutsideClick(
       }
     };
 
-    if (open) {
+    if (open && !disabled) {
       document.addEventListener('click', handleClick);
     }
 
     return () => {
       document.removeEventListener('click', handleClick);
     };
-  }, [open, ref, setOpen]);
+  }, [disabled, open, ref, setOpen]);
 }
