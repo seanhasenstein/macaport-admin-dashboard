@@ -2,10 +2,18 @@ import { useRouter } from 'next/router';
 import { useMutation, useQueryClient } from 'react-query';
 import { useSession } from 'next-auth/client';
 
-import { Order, Store } from '../interfaces';
+import { Order, OrderItem, Store } from '../interfaces';
+
+interface OrderItemWithShouldReturnToInventory extends OrderItem {
+  shouldReturnToInventory: boolean;
+}
+
+interface OrderWithExtendedOrderItems extends Omit<Order, 'items'> {
+  items: OrderItemWithShouldReturnToInventory[];
+}
 
 type Props = {
-  order?: Order;
+  order?: OrderWithExtendedOrderItems;
   store?: Store;
 };
 
@@ -19,8 +27,6 @@ export function useOrderMutation({ order, store }: Props) {
   const cancelOrder = useMutation(
     async () => {
       if (!order || !store) return;
-      // todo: should we handle updating order items status here or in the api route?
-      // if we do it in the api route we need to send the userId along with the order items that include shouldReturnToInventory
       const response = await fetch(
         `/api/orders/cancel?sid=${store._id}&oid=${order.orderId}`,
         {
