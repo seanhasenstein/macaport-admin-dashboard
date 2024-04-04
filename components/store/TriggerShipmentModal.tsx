@@ -333,8 +333,8 @@ const TriggerShipmentModalStyles = styled.div`
   .main-content {
     margin: 1.5rem 0;
     padding: 0;
-    background-color: #f5f5f5;
-    border: 1px solid #e5e5e5;
+    background-color: #fffbeb;
+    border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 0.5rem;
 
     ul {
@@ -347,16 +347,16 @@ const TriggerShipmentModalStyles = styled.div`
         line-height: 100%;
         list-style-type: none;
         font-size: 0.875rem;
-        border-bottom: 1px solid #d4d4d4;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
         &:last-of-type {
           border-bottom: none;
         }
         .exclamation-circle-icon {
           flex-shrink: 0;
-          margin: 0.0625rem 0.625rem 0 0;
+          margin: 0.0625rem 0.5rem 0 0;
           height: 1rem;
           width: 1rem;
-          color: #d92929;
+          color: #f59e0b;
         }
       }
     }
