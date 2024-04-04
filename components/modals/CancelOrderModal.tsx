@@ -180,10 +180,11 @@ export default function CancelOrderModal({
               </div>
             </div>
             <div className="instructions">
-              <h3>Select the items to return to inventory</h3>
+              <h3>Items to return to inventory</h3>
               <p>
-                All of the order items are selected to return to inventory by
-                default (except for items that are already shipped or canceled).
+                All order items are selected to return to inventory by default
+                (except for items that are already shipped or canceled). Click
+                on any items that you don't want to return to inventory.
               </p>
             </div>
             <h4>Order items:</h4>
