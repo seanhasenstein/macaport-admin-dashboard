@@ -13,7 +13,9 @@ type Props = {
       'unfulfilled' | 'personalization' | 'single' | undefined
     >
   >;
+  showCancelOrderModal: boolean;
   setShowCancelOrderModal: React.Dispatch<React.SetStateAction<boolean>>;
+  openTriggerStoreShipmentModal: () => void;
 };
 
 export default function StoreOrders(props: Props) {
@@ -22,11 +24,12 @@ export default function StoreOrders(props: Props) {
     selectedOrder,
     setSelectedOrder,
     setPrintOption,
+    showCancelOrderModal,
     setShowCancelOrderModal,
+    openTriggerStoreShipmentModal,
   } = props;
   return (
     <StoreOrdersStyles id="orders">
-      <h3>Store orders</h3>
       {store.orders ? (
         <OrdersTable
           {...{
@@ -34,7 +37,9 @@ export default function StoreOrders(props: Props) {
             selectedOrder,
             setSelectedOrder,
             setPrintOption,
+            showCancelOrderModal,
             setShowCancelOrderModal,
+            openTriggerStoreShipmentModal,
           }}
         />
       ) : (

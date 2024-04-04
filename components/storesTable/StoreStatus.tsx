@@ -1,15 +1,21 @@
 import styled from 'styled-components';
+import classNames from 'classnames';
+
 import { getStoreStatus } from '../../utils';
 
 type Props = {
   openDate: string;
   closeDate: string | null;
+  customClass?: string;
 };
 
 export default function StoreStatus(props: Props) {
   return (
     <StoreStatusStyles
-      className={getStoreStatus(props.openDate, props.closeDate)}
+      className={classNames(
+        getStoreStatus(props.openDate, props.closeDate),
+        props.customClass
+      )}
     >
       <span className="dot" />
     </StoreStatusStyles>

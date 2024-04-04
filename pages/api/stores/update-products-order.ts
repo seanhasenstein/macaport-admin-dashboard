@@ -1,7 +1,7 @@
 import { NextApiResponse } from 'next';
 import nc from 'next-connect';
 import { withAuth } from '../../../utils/withAuth';
-import { Request, Store } from '../../../interfaces';
+import { Request } from '../../../interfaces';
 import database from '../../../middleware/db';
 import { store as storeModel } from '../../../db';
 
@@ -24,11 +24,9 @@ const handler = nc<ExtendedRequest, NextApiResponse>()
       return storeProduct;
     });
 
-    const result: Store = await storeModel.updateStore(
-      req.db,
-      req.body.storeId,
-      { products }
-    );
+    const result = await storeModel.updateStore(req.db, req.body.storeId, {
+      products,
+    });
 
     res.json({ store: result });
   });
