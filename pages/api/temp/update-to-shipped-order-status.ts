@@ -26,7 +26,13 @@ const handler = nc<Request, NextApiResponse>()
             orderStatus: storeIsOpen ? 'Fulfilled' : 'Shipped',
           };
         } else {
-          return { ...order, orderStatus: order.orderStatus };
+          return {
+            ...order,
+            orderStatus:
+              order.orderStatus === 'Printed'
+                ? 'Unfulfilled'
+                : order.orderStatus,
+          };
         }
       });
 

@@ -286,6 +286,9 @@ export interface Order {
     amount: number;
   };
   note?: string;
+  meta: {
+    receiptPrinted: boolean;
+  };
   createdAt: string;
   updatedAt: string;
 }

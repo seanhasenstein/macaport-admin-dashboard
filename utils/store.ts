@@ -28,17 +28,28 @@ type OrderStatusNumbersAccumulator = Record<
 export function getStoresOrderStatusNumbers(store: Store) {
   return store.orders.reduce(
     (accumulator: OrderStatusNumbersAccumulator, currentOrder) => {
-      return {
-        ...accumulator,
-        [currentOrder.orderStatus]: accumulator[currentOrder.orderStatus] + 1,
-        Personalized:
-          accumulator.Personalized +
-          (currentOrder.items.some(
-            item => item.personalizationAddons.length > 0
-          )
-            ? 1
-            : 0),
-      };
+      const personalized =
+        accumulator.Personalized +
+        (currentOrder.items.some(item => item.personalizationAddons.length > 0)
+          ? 1
+          : 0);
+
+      if (
+        currentOrder.orderStatus === 'Unfulfilled' &&
+        currentOrder.meta.receiptPrinted
+      ) {
+        return {
+          ...accumulator,
+          Printed: accumulator.Printed + 1,
+          Personalized: personalized,
+        };
+      } else {
+        return {
+          ...accumulator,
+          [currentOrder.orderStatus]: accumulator[currentOrder.orderStatus] + 1,
+          Personalized: personalized,
+        };
+      }
     },
     {
       All: store.orders.length,

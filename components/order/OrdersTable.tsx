@@ -140,9 +140,23 @@ export default function OrdersTable({
       setFilteredOrders(updatedFilteredOrders);
       return;
     }
-    const updatedFilteredOrders = store.orders.filter(
-      o => o.orderStatus === orderViewOption
-    );
+    const updatedFilteredOrders = store.orders.filter(o => {
+      if (
+        orderViewOption === 'Printed' &&
+        o.orderStatus === 'Unfulfilled' &&
+        o.meta.receiptPrinted
+      ) {
+        return true;
+      } else if (
+        orderViewOption === 'Unfulfilled' &&
+        o.orderStatus === 'Unfulfilled' &&
+        o.meta.receiptPrinted
+      ) {
+        return false;
+      } else {
+        return o.orderStatus === orderViewOption;
+      }
+    });
     setFilteredOrders(updatedFilteredOrders);
   }, [orderViewOption, store.orders]);
 

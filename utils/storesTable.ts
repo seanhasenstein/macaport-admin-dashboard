@@ -11,7 +11,11 @@ export function getStoresTableOrders(orders: Order[]) {
     (acc: StoresTableOrders, currOrder) => {
       switch (currOrder.orderStatus) {
         case 'Unfulfilled':
-          acc = { ...acc, unfulfilled: acc.unfulfilled + 1 };
+          if (currOrder.meta.receiptPrinted) {
+            acc = { ...acc, printed: acc.printed + 1 };
+          } else {
+            acc = { ...acc, unfulfilled: acc.unfulfilled + 1 };
+          }
           break;
         case 'Printed':
           acc = { ...acc, printed: acc.printed + 1 };

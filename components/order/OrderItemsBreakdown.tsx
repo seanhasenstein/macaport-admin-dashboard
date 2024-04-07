@@ -3,6 +3,8 @@ import styled from 'styled-components';
 import classNames from 'classnames';
 import { CheckCircleIcon } from '@heroicons/react/20/solid';
 
+import { colors } from '../../constants/colors';
+
 import { getOrderItemsStatusTotals } from '../../utils/orderItem';
 
 import { OrderItem } from '../../interfaces';
@@ -95,7 +97,7 @@ const OrderItemBreakdownStyles = styled.div<{ shipped: boolean }>`
   grid-template-columns: ${p => (p.shipped ? '1fr' : 'repeat(4, 1fr)')};
   gap: 0 1rem;
   p {
-    padding: 0.375rem 0.75rem;
+    padding: 0.34375rem 0.75rem;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -136,27 +138,27 @@ const OrderItemBreakdownStyles = styled.div<{ shipped: boolean }>`
         border-color: rgba(0, 0, 0, 0.6);
       }
       &.unfulfilled {
-        background-color: #f8e3e3;
+        background-color: ${colors.unfulfilled.lightBackgroundColor};
         .dot {
-          background-color: #a32626;
+          background-color: ${colors.unfulfilled.color};
         }
       }
       &.fulfilled {
-        background-color: #f8f3de;
+        background-color: ${colors.fulfilled.lightBackgroundColor};
         .dot {
-          background-color: #b29625;
+          background-color: ${colors.fulfilled.color};
         }
       }
       &.shipped {
-        background-color: #e6faf2;
+        background-color: ${colors.shipped.lightBackgroundColor};
         .dot {
-          background-color: #21986c;
+          background-color: ${colors.shipped.color};
         }
       }
       &.canceled {
-        background-color: #ecf1fb;
+        background-color: ${colors.canceled.lightBackgroundColor};
         .dot {
-          background-color: #224fb3;
+          background-color: ${colors.canceled.color};
         }
       }
     }

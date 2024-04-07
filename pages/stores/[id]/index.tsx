@@ -7,6 +7,7 @@ import { getStoreStatus } from '../../../utils';
 import { Order, StoreStatus } from '../../../interfaces';
 
 import { useStoreQuery } from '../../../hooks/useStoreQuery';
+import { useOrderMutation } from '../../../hooks/useOrderMutations';
 import useOutsideClick from '../../../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../../../hooks/useEscapeKeydownClose';
 
@@ -47,6 +48,10 @@ export default function Store() {
   const [showTriggerShipmentModal, setShowTriggerShipmentModal] =
     React.useState(false);
 
+  const { setReceiptPrintedForUnfulfilledOrders } = useOrderMutation({
+    store: storeQuery.data,
+  });
+
   useOutsideClick(
     showDeleteProductModal,
     setShowDeleteProductModal,
@@ -69,6 +74,9 @@ export default function Store() {
 
   React.useEffect(() => {
     if (printOption) {
+      if (printOption === 'unfulfilled') {
+        setReceiptPrintedForUnfulfilledOrders.mutate();
+      }
       window.print();
       setPrintOption(undefined);
     }
