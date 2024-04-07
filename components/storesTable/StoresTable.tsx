@@ -44,25 +44,25 @@ export default function StoresTable({ stores, tableLabel }: Props) {
               ) : (
                 <>
                   <th>Store details</th>
-                  <th className="text-center">Products</th>
-                  <th className="text-center">Orders</th>
+                  {/* <th className="text-center">Products</th> */}
+                  {/* <th className="text-center">Orders</th> */}
                   <th className="text-center">
-                    <span title="Unfulfilled">U</span>
+                    <span title="Unfulfilled">UNFL</span>
                   </th>
                   <th className="text-center">
-                    <span title="Printed">P</span>
+                    <span title="Printed">PRNT</span>
                   </th>
                   <th className="text-center">
-                    <span title="Fulfilled">F</span>
+                    <span title="Fulfilled">FULL</span>
                   </th>
                   <th className="text-center">
-                    <span title="Partially shipped">PS</span>
+                    <span title="Partially shipped">P. SHIP</span>
                   </th>
                   <th className="text-center">
-                    <span title="Shipped">S</span>
+                    <span title="Shipped">SHIP</span>
                   </th>
                   <th className="text-center">
-                    <span title="Canceled">C</span>
+                    <span title="Canceled">CANC</span>
                   </th>
                 </>
               )}
@@ -129,12 +129,21 @@ export default function StoresTable({ stores, tableLabel }: Props) {
                               )}
                             </div>
                           </div>
+                          <div className="total-products-and-orders">
+                            <div className="total-products">
+                              Products: {s.products}
+                            </div>
+                            <div className="divider">|</div>
+                            <div className="total-orders">
+                              Orders: {s.orders.length}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </TdLink>
                   </td>
-                  <td className="text-center">{s.products}</td>
-                  <td className="text-center">{s.orders.length}</td>
+                  {/* <td className="text-center">{s.products}</td> */}
+                  {/* <td className="text-center">{s.orders.length}</td> */}
                   <td className={classNames('notify-td', hasUnfulfilled)}>
                     <TdLink storeId={s._id}>
                       <span>{s.ordersStatusTotals.unfulfilled}</span>
@@ -182,18 +191,18 @@ export default function StoresTable({ stores, tableLabel }: Props) {
 
 const StoresTableStyles = styled.div`
   .custom-table-class {
-    width: fit-content;
+    /* width: fit-content; */
 
-    table {
+    /* table {
       max-width: 800px;
       width: 100%;
-    }
+    } */
 
     th {
       cursor: default;
 
       &:first-of-type {
-        padding-left: 2.75rem;
+        padding-left: 3.25rem;
       }
 
       &:last-of-type {
@@ -206,7 +215,7 @@ const StoresTableStyles = styled.div`
 
       &:first-of-type {
         .td-store-link {
-          padding-left: 1.25rem;
+          padding-left: 1.5rem;
           padding-right: 1.5rem;
         }
       }
@@ -229,8 +238,8 @@ const StoresTableStyles = styled.div`
 
   .td-store-link {
     display: block;
-    padding-top: 0.75rem;
-    padding-bottom: 0.75rem;
+    padding-top: 0.875rem;
+    padding-bottom: 0.875rem;
     &:hover {
       text-decoration: none;
     }
@@ -242,13 +251,13 @@ const StoresTableStyles = styled.div`
   }
 
   .store-status {
-    margin: 0 0.875rem 0 0;
+    margin: 0 1rem 0 0;
     .custom-store-status {
-      height: 0.875rem;
-      width: 0.875rem;
+      height: 0.9375rem;
+      width: 0.9375rem;
       .dot {
-        height: 0.4375rem;
-        width: 0.4375rem;
+        height: 0.5rem;
+        width: 0.5rem;
       }
     }
   }
@@ -256,25 +265,35 @@ const StoresTableStyles = styled.div`
   .store-name {
     margin: 0 0 0.3125rem;
     display: block;
-    max-width: 14rem;
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     font-weight: 600;
     color: #000;
   }
 
-  .store-dates {
-    margin: 0.25rem 0 0;
+  .store-dates,
+  .total-products,
+  .total-orders {
     display: flex;
     flex-direction: column;
     gap: 0.25rem 0;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     color: #525252;
   }
 
-  td.store-actions {
-    position: relative;
-    padding-left: 0;
-    padding-right: 0.625rem;
+  .store-dates,
+  .total-products-and-orders {
+    margin: 0.25rem 0 0;
+  }
+
+  .total-products-and-orders {
+    display: flex;
+    align-items: center;
+    gap: 0 0.75rem;
+
+    .divider {
+      font-size: 0.5rem;
+      color: #a3a3a3;
+    }
   }
 
   .notify-td {
