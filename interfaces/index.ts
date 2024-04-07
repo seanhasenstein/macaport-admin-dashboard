@@ -239,7 +239,7 @@ export interface OrderItem {
 
 export type OrderStatus =
   | 'Unfulfilled'
-  | 'Printed'
+  | 'Printed' // todo - remove
   | 'Fulfilled'
   | 'PartiallyShipped'
   | 'Shipped'
