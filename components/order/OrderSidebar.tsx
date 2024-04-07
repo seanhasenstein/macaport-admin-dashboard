@@ -494,8 +494,8 @@ const OrderSidebarStyles = styled.div`
       display: flex;
       justify-content: flex-end;
       .custom-order-status {
-        padding: 0.3125rem 0.875rem;
-        min-width: 10rem;
+        padding: 0.34375rem 0.875rem;
+        min-width: 10.5rem;
         font-weight: 700;
         user-select: none;
         text-align: center;

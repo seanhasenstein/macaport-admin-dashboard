@@ -1,6 +1,8 @@
 import styled from 'styled-components';
 import classNames from 'classnames';
 
+import { colors } from '../../constants/colors';
+
 import { Order } from '../../interfaces';
 
 type Props = {
@@ -48,32 +50,32 @@ const OrderStatusStyles = styled.div`
   border-radius: 0.25rem;
 
   &.unfulfilled {
-    background-color: #fee2e2;
-    color: #991b1b;
+    background-color: ${colors.unfulfilled.backgroundColor};
+    color: ${colors.unfulfilled.color};
   }
 
   &.printed {
-    background-color: #ffedd5;
-    color: #c2410c;
+    background-color: ${colors.printed.backgroundColor};
+    color: ${colors.printed.color};
   }
 
   &.fulfilled {
-    background-color: #fef9c3;
-    color: #a16207;
+    background-color: ${colors.fulfilled.backgroundColor};
+    color: ${colors.fulfilled.color};
   }
 
   &.partiallyshipped {
-    background-color: #fae8ff;
-    color: #86198f;
+    background-color: ${colors.partiallyShipped.backgroundColor};
+    color: ${colors.partiallyShipped.color};
   }
 
   &.shipped {
-    background-color: #d1fae5;
-    color: #065f46;
+    background-color: ${colors.shipped.backgroundColor};
+    color: ${colors.shipped.color};
   }
 
   &.canceled {
-    background-color: #ecf1fb;
-    color: #224fb3;
+    background-color: ${colors.canceled.backgroundColor};
+    color: ${colors.canceled.color};
   }
 `;
