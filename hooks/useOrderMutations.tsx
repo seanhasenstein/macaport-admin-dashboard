@@ -107,7 +107,58 @@ export function useOrderMutation({ order, store }: Props) {
     }
   );
 
+  const setReceiptPrintedForUnfulfilledOrders = useMutation(
+    async () => {
+      const response = await fetch(
+        `/api/orders/update/add-receipt-printed-to-all-unfulfilled?storeId=${store?._id}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to update unfulfilled orders to printed');
+      }
+
+      const data: { store: Store } = await response.json();
+      return data.store;
+    },
+    {
+      onMutate: async () => {
+        if (store) {
+          await queryClient.cancelQueries(['stores', 'store', store._id]);
+          const updatedOrders = store.orders.map(currOrder => {
+            if (currOrder.orderStatus === 'Unfulfilled') {
+              return {
+                ...currOrder,
+                meta: {
+                  ...currOrder.meta,
+                  receiptPrinted: true,
+                },
+              };
+            } else {
+              return currOrder;
+            }
+          });
+
+          const updatedStore: Store = { ...store, orders: updatedOrders };
+          queryClient.setQueryData(
+            ['stores', 'store', store._id],
+            updatedStore
+          );
+        }
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries('stores');
+      },
+    }
+  );
+
   return {
     cancelOrder,
+    setReceiptPrintedForUnfulfilledOrders,
   };
 }

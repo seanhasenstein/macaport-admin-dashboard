@@ -133,6 +133,9 @@ export default function CancelOrderModal({
                     copy: `Order ${
                       orderStatus === 'PartiallyShipped'
                         ? 'Partially Shipped'
+                        : orderStatus === 'Unfulfilled' &&
+                          order.meta.receiptPrinted
+                        ? 'Printed'
                         : orderStatus
                     }`,
                     customClass: 'order-status',

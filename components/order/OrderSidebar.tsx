@@ -172,6 +172,9 @@ export default function OrderSidebar({
                           copy: `Order ${
                             orderStatus === 'PartiallyShipped'
                               ? 'Partially Shipped'
+                              : orderStatus === 'Unfulfilled' &&
+                                selectedOrder.meta.receiptPrinted
+                              ? 'Printed'
                               : orderStatus
                           }`,
                           customClass: 'custom-order-status',

@@ -10,9 +10,15 @@ type Props = {
 };
 
 export default function OrderStatus({ order, copy, customClass }: Props) {
+  const orderWasPrinted = order.meta.receiptPrinted === true;
+  const orderStatus =
+    order.orderStatus === 'Unfulfilled' && orderWasPrinted
+      ? 'Printed'
+      : order.orderStatus;
+
   return (
     <OrderStatusStyles
-      className={classNames(order.orderStatus.toLowerCase() || '', customClass)}
+      className={classNames(orderStatus.toLowerCase() || '', customClass)}
     >
       {copy ? (
         copy
@@ -22,7 +28,7 @@ export default function OrderStatus({ order, copy, customClass }: Props) {
           Shipped
         </>
       ) : (
-        order.orderStatus
+        orderStatus
       )}
     </OrderStatusStyles>
   );
@@ -47,13 +53,13 @@ const OrderStatusStyles = styled.div`
   }
 
   &.printed {
-    background-color: #e0e7ff;
-    color: #3730a3;
+    background-color: #ffedd5;
+    color: #c2410c;
   }
 
   &.fulfilled {
-    background-color: #fef3c7;
-    color: #92400e;
+    background-color: #fef9c3;
+    color: #a16207;
   }
 
   &.partiallyshipped {
