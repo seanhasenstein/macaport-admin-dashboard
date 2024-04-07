@@ -38,6 +38,7 @@ const handler = nc<Request, NextApiResponse>()
             ? 'Unfulfilled'
             : currentOrderStatus,
           meta: {
+            ...order.meta,
             receiptPrinted: receiptWasPrinted ? true : false,
           },
         };
