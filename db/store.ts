@@ -1,4 +1,4 @@
-import { Db, ObjectID } from 'mongodb';
+import { Db, ObjectID, ObjectId } from 'mongodb';
 import { formatISO } from 'date-fns';
 import {
   Store,
@@ -9,6 +9,10 @@ import {
 } from '../interfaces';
 import { createId } from '../utils';
 import { paginatedStoresReducer } from '../utils/store';
+
+interface StoreWithId extends Omit<Store, '_id'> {
+  _id: ObjectId;
+}
 
 export async function getStoreById(db: Db, id: string) {
   const result = await db
@@ -96,7 +100,7 @@ export async function updateStore(
   updates: Record<string, any>
 ) {
   const result = await db
-    .collection('stores')
+    .collection<StoreWithId>('stores')
     .findOneAndUpdate(
       { _id: new ObjectID(id) },
       { $set: { ...updates, updatedAt: formatISO(new Date()) } },

@@ -22,7 +22,7 @@ const handler = nc<Request, NextApiResponse>()
       products: updatedProducts,
     };
 
-    const result: Store = await store.updateStore(req.db, req.body.storeId, {
+    const result = await store.updateStore(req.db, req.body.storeId, {
       ...updatedStore,
     });
 

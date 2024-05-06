@@ -12,7 +12,7 @@ type Props = {
   customMenuClass?: string;
   isOpen: boolean;
   closeSidebar: () => void;
-  toggleSidebar: () => void;
+  toggleSidebar: (e: any) => void;
 };
 
 export default function Menu({

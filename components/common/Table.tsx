@@ -1,13 +1,19 @@
 import React from 'react';
 import styled from 'styled-components';
+import classNames from 'classnames';
 
 type Props = {
   children: React.ReactNode;
+  customClass?: string;
   [props: string]: unknown;
 };
 
-export default function Table({ children, ...props }: Props) {
-  return <TableStyles {...props}>{children}</TableStyles>;
+export default function Table({ children, customClass, ...props }: Props) {
+  return (
+    <TableStyles {...props} className={classNames(customClass)}>
+      {children}
+    </TableStyles>
+  );
 }
 
 const TableStyles = styled.div`
@@ -16,7 +22,7 @@ const TableStyles = styled.div`
   border-width: 1px 1px 0 1px;
   border-style: solid;
   border-color: #d1d5db;
-  border-radius: 0.25rem;
+  border-radius: 0.375rem;
   box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 
   table {

@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import Link from 'next/link';
+import { CheckCircleIcon, PrinterIcon } from '@heroicons/react/24/outline';
 
 import { StoreStatus } from '../../interfaces';
 
@@ -19,6 +20,7 @@ type Props = {
       'unfulfilled' | 'personalization' | 'single' | undefined
     >
   >;
+  showTriggerStoreShipmentModal: () => void;
 };
 
 export default function StoreMenu({
@@ -27,6 +29,7 @@ export default function StoreMenu({
   setShowDeleteModal,
   setShowCSVModal,
   setPrintOption,
+  showTriggerStoreShipmentModal,
 }: Props) {
   const menuRef = React.useRef<HTMLDivElement>(null);
   const [showMenu, setShowMenu] = React.useState(false);
@@ -78,23 +81,33 @@ export default function StoreMenu({
       <div ref={menuRef} className={`menu-container${showMenu ? ' show' : ''}`}>
         <button
           type="button"
+          onClick={() => {
+            showTriggerStoreShipmentModal();
+            setShowMenu(false);
+          }}
+          className="menu-link"
+        >
+          <CheckCircleIcon strokeWidth={2} />
+          <span>
+            Trigger a shipment
+            <span className="subtitle">
+              Set all fulfilled order items to shipped
+            </span>
+          </span>
+        </button>
+
+        <button
+          type="button"
           onClick={handlePrintUnfulfilledOrders}
           className="menu-link"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-            />
-          </svg>
-          Print unfulfilled orders
+          <PrinterIcon />
+          <span>
+            Print unfulfilled orders
+            <span className="subtitle">
+              Sets all unfulfilled orders to printed
+            </span>
+          </span>
         </button>
 
         <button
@@ -102,19 +115,7 @@ export default function StoreMenu({
           onClick={handlePrintPersonalizedOrders}
           className="menu-link"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-            />
-          </svg>
+          <PrinterIcon />
           Print personalized orders
         </button>
 
@@ -362,7 +363,7 @@ const StoreMenuStyles = styled.div`
 
   .menu-link,
   .delete-button {
-    padding: 0.75rem 1.5rem 0.75rem 0;
+    padding: 0.75rem 0.5rem 0.75rem 0;
     width: 100%;
     display: flex;
     align-items: center;
@@ -375,8 +376,19 @@ const StoreMenuStyles = styled.div`
     text-align: left;
     cursor: pointer;
 
+    .subtitle {
+      margin: 0.1875rem 0 0;
+      display: block;
+      font-size: 0.6875rem;
+      color: #6b7280;
+    }
+
     &:hover {
       color: #000;
+
+      .subtitle {
+        color: #4b5563;
+      }
 
       svg {
         color: #6b7280;

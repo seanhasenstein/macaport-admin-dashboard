@@ -83,7 +83,7 @@ export async function updateInventoryProduct(
   return result.value;
 }
 
-export async function updateInventoryProductSku(
+export async function updateInventoryProductSkusInventory(
   db: Db,
   inventoryProductId: string,
   inventorySkuId: string,

@@ -11,7 +11,11 @@ export function getStoresTableOrders(orders: Order[]) {
     (acc: StoresTableOrders, currOrder) => {
       switch (currOrder.orderStatus) {
         case 'Unfulfilled':
-          acc = { ...acc, unfulfilled: acc.unfulfilled + 1 };
+          if (currOrder.meta.receiptPrinted) {
+            acc = { ...acc, printed: acc.printed + 1 };
+          } else {
+            acc = { ...acc, unfulfilled: acc.unfulfilled + 1 };
+          }
           break;
         case 'Printed':
           acc = { ...acc, printed: acc.printed + 1 };
@@ -19,8 +23,11 @@ export function getStoresTableOrders(orders: Order[]) {
         case 'Fulfilled':
           acc = { ...acc, fulfilled: acc.fulfilled + 1 };
           break;
-        case 'Completed':
-          acc = { ...acc, completed: acc.completed + 1 };
+        case 'PartiallyShipped':
+          acc = { ...acc, partiallyShipped: acc.partiallyShipped + 1 };
+          break;
+        case 'Shipped':
+          acc = { ...acc, shipped: acc.shipped + 1 };
           break;
         case 'Canceled':
           acc = { ...acc, canceled: acc.canceled + 1 };
@@ -35,7 +42,8 @@ export function getStoresTableOrders(orders: Order[]) {
       unfulfilled: 0,
       printed: 0,
       fulfilled: 0,
-      completed: 0,
+      partiallyShipped: 0,
+      shipped: 0,
       canceled: 0,
       total: 0,
     }
@@ -47,7 +55,8 @@ export function convertStoreToStoresTableStore(store: Store): StoresTableStore {
   return {
     ...store,
     products: store.products.length,
-    orders: storesTableStoreOrders,
+    orders: store.orders,
+    ordersStatusTotals: storesTableStoreOrders,
   };
 }
 
@@ -60,14 +69,13 @@ interface StoreAccumulator {
 export function getStoresTableStores(stores: Store[]) {
   return stores.reduce(
     (acc: StoreAccumulator, currentStore) => {
-      const storesTableStore = convertStoreToStoresTableStore(currentStore);
-
       const storeStatus = getStoreStatus(
-        storesTableStore.openDate,
-        storesTableStore.closeDate
+        currentStore.openDate,
+        currentStore.closeDate
       );
 
       if (storeStatus === 'open') {
+        const storesTableStore = convertStoreToStoresTableStore(currentStore);
         const sortedOpenStores = sortStoresByCloseDate(
           [...acc.openStores, storesTableStore],
           false
@@ -76,6 +84,7 @@ export function getStoresTableStores(stores: Store[]) {
       }
 
       if (storeStatus === 'upcoming') {
+        const storesTableStore = convertStoreToStoresTableStore(currentStore);
         const sortedUpcomingStores = sortStoresByOpenDate(
           [...acc.upcomingStores, storesTableStore],
           false
@@ -83,12 +92,13 @@ export function getStoresTableStores(stores: Store[]) {
         return { ...acc, upcomingStores: sortedUpcomingStores };
       }
 
-      const storeHasOrdersNotCompletedOrCanceled = currentStore.orders.some(
+      const storeHasOrdersNotShippedOrCanceled = currentStore.orders.some(
         order =>
-          order.orderStatus !== 'Completed' && order.orderStatus !== 'Canceled'
+          order.orderStatus !== 'Shipped' && order.orderStatus !== 'Canceled'
       );
 
-      if (storeStatus === 'closed' && storeHasOrdersNotCompletedOrCanceled) {
+      if (storeStatus === 'closed' && storeHasOrdersNotShippedOrCanceled) {
+        const storesTableStore = convertStoreToStoresTableStore(currentStore);
         const sortedClosedStores = sortStoresByCloseDate(
           [...acc.closedStores, storesTableStore],
           false

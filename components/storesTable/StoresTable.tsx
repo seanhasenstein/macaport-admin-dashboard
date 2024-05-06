@@ -4,13 +4,27 @@ import styled from 'styled-components';
 import { format } from 'date-fns';
 import classNames from 'classnames';
 
-import { StoresTableStore } from '../../interfaces';
-
-import StoresTableMenu from './StoresTableMenu';
 import Notification from '../Notification';
 import StoreStatus from './StoreStatus';
 import Table from '../common/Table';
+
 import { getStoreStatus } from '../../utils';
+
+import { StoresTableStore } from '../../interfaces';
+
+function TdLink({
+  children,
+  storeId,
+}: {
+  children: React.ReactNode;
+  storeId: string;
+}) {
+  return (
+    <Link href={`/stores/${storeId}`}>
+      <a className="td-store-link">{children}</a>
+    </Link>
+  );
+}
 
 type Props = {
   stores: StoresTableStore[];
@@ -21,7 +35,7 @@ export default function StoresTable({ stores, tableLabel }: Props) {
   return (
     <StoresTableStyles>
       {tableLabel ? <h2 className="table-label">{tableLabel}</h2> : null}
-      <Table>
+      <Table customClass="custom-table-class">
         <table>
           <thead>
             <tr>
@@ -29,29 +43,27 @@ export default function StoresTable({ stores, tableLabel }: Props) {
                 <th>Store Results</th>
               ) : (
                 <>
-                  <th className="status">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.05 3.636a1 1 0 010 1.414 7 7 0 000 9.9 1 1 0 11-1.414 1.414 9 9 0 010-12.728 1 1 0 011.414 0zm9.9 0a1 1 0 011.414 0 9 9 0 010 12.728 1 1 0 11-1.414-1.414 7 7 0 000-9.9 1 1 0 010-1.414zM7.879 6.464a1 1 0 010 1.414 3 3 0 000 4.243 1 1 0 11-1.415 1.414 5 5 0 010-7.07 1 1 0 011.415 0zm4.242 0a1 1 0 011.415 0 5 5 0 010 7.072 1 1 0 01-1.415-1.415 3 3 0 000-4.242 1 1 0 010-1.415zM10 9a1 1 0 011 1v.01a1 1 0 11-2 0V10a1 1 0 011-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                  <th>Store details</th>
+                  {/* <th className="text-center">Products</th> */}
+                  {/* <th className="text-center">Orders</th> */}
+                  <th className="text-center">
+                    <span title="Unfulfilled">UNFL</span>
                   </th>
-                  <th>Store Name</th>
-                  <th>Open &amp; Close Dates</th>
-                  <th className="text-center">Products</th>
-                  <th className="text-center">Orders</th>
-                  <th className="text-center">UNFL</th>
-                  <th className="text-center">PRNT</th>
-                  <th className="text-center">FULL</th>
-                  <th className="text-center">COMP</th>
-                  <th className="text-center">CANC</th>
-                  <th />
+                  <th className="text-center">
+                    <span title="Printed">PRNT</span>
+                  </th>
+                  <th className="text-center">
+                    <span title="Fulfilled">FULL</span>
+                  </th>
+                  <th className="text-center">
+                    <span title="Partially shipped">P. SHIP</span>
+                  </th>
+                  <th className="text-center">
+                    <span title="Shipped">SHIP</span>
+                  </th>
+                  <th className="text-center">
+                    <span title="Canceled">CANC</span>
+                  </th>
                 </>
               )}
             </tr>
@@ -64,77 +76,103 @@ export default function StoresTable({ stores, tableLabel }: Props) {
             )}
             {stores.map(s => {
               const hasUnfulfilled =
-                s.orders.unfulfilled > 0 ? 'hasUnfulfilled' : '';
-              const hasPrinted = s.orders.printed > 0 ? 'hasPrinted' : '';
-              const hasFulfilled = s.orders.fulfilled > 0 ? 'hasFulfilled' : '';
-              const allCompleted =
-                s.orders.completed + s.orders.canceled === s.orders.total
-                  ? 'allCompleted'
+                s.ordersStatusTotals.unfulfilled > 0 ? 'hasUnfulfilled' : '';
+              const hasPrinted =
+                s.ordersStatusTotals.printed > 0 ? 'hasPrinted' : '';
+              const hasFulfilled =
+                s.ordersStatusTotals.fulfilled > 0 ? 'hasFulfilled' : '';
+              const hasPartiallyShipped =
+                s.ordersStatusTotals.partiallyShipped > 0
+                  ? 'hasPartiallyShipped'
                   : '';
+              const allShipped =
+                s.ordersStatusTotals.shipped + s.ordersStatusTotals.canceled ===
+                s.ordersStatusTotals.total
+                  ? 'allShipped'
+                  : '';
+
               const storeStatus = getStoreStatus(s.openDate, s.closeDate);
-              const storeOpenWithNoProducts =
-                storeStatus === 'open' && s.products === 0 ? 'warning' : '';
+              const isPermanentlyOpen = storeStatus === 'open' && !s.closeDate;
 
               return (
                 <tr key={s._id}>
                   <td>
-                    <StoreStatus
-                      openDate={s.openDate}
-                      closeDate={s.closeDate}
-                    />
-                  </td>
-                  <td>
-                    <div className="store-name">
-                      <Link href={`/stores/${s._id}`}>
-                        <a>{s.name}</a>
-                      </Link>
-                    </div>
-                    <div className="store-id">{s.storeId}</div>
-                  </td>
-                  <td>
-                    <div className="store-dates">
-                      <div>
-                        {format(new Date(s.openDate), "M/d/yy 'at' h:mmaa")}
+                    <TdLink storeId={s._id}>
+                      <div className="store-details">
+                        <div className="store-status">
+                          <StoreStatus
+                            openDate={s.openDate}
+                            closeDate={s.closeDate}
+                            customClass="custom-store-status"
+                          />
+                        </div>
+                        <div>
+                          <div className="store-name">{s.name}</div>
+                          <div className="store-dates">
+                            <div>
+                              {isPermanentlyOpen ? (
+                                'Permanently open'
+                              ) : (
+                                <>
+                                  {format(
+                                    new Date(s.openDate),
+                                    'M/d/yy h:mmaa'
+                                  )}{' '}
+                                  -{' '}
+                                  {s.closeDate
+                                    ? format(
+                                        new Date(s.closeDate),
+                                        'M/d/yy h:mmaa'
+                                      )
+                                    : 'Perm. open'}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <div className="total-products-and-orders">
+                            <div className="total-products">
+                              Products: {s.products}
+                            </div>
+                            <div className="divider">|</div>
+                            <div className="total-orders">
+                              Orders: {s.orders.length}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        {s.closeDate
-                          ? format(new Date(s.closeDate), "M/d/yy 'at' h:mmaa")
-                          : 'Permanently Open'}
-                      </div>
-                    </div>
+                    </TdLink>
                   </td>
-                  <td
-                    className={classNames(
-                      storeOpenWithNoProducts,
-                      'text-center'
-                    )}
-                  >
-                    {s.products}
-                  </td>
-                  <td className={classNames('notify-td')}>
-                    <span>{s.orders.total}</span>
-                  </td>
+                  {/* <td className="text-center">{s.products}</td> */}
+                  {/* <td className="text-center">{s.orders.length}</td> */}
                   <td className={classNames('notify-td', hasUnfulfilled)}>
-                    <span>{s.orders.unfulfilled}</span>
+                    <TdLink storeId={s._id}>
+                      <span>{s.ordersStatusTotals.unfulfilled}</span>
+                    </TdLink>
                   </td>
                   <td className={classNames('notify-td', hasPrinted)}>
-                    <span>{s.orders.printed}</span>
+                    <TdLink storeId={s._id}>
+                      <span>{s.ordersStatusTotals.printed}</span>
+                    </TdLink>
                   </td>
                   <td className={classNames('notify-td', hasFulfilled)}>
-                    <span>{s.orders.fulfilled}</span>
+                    <TdLink storeId={s._id}>
+                      <span>{s.ordersStatusTotals.fulfilled}</span>
+                    </TdLink>
                   </td>
-                  <td className={classNames('notify-td', allCompleted)}>
-                    <span>{s.orders.completed}</span>
+                  <td className={classNames('notify-td', hasPartiallyShipped)}>
+                    <TdLink storeId={s._id}>
+                      <span>{s.ordersStatusTotals.partiallyShipped}</span>
+                    </TdLink>
+                  </td>
+                  <td className={classNames('notify-td', allShipped)}>
+                    <TdLink storeId={s._id}>
+                      <span>{s.ordersStatusTotals.shipped}</span>
+                    </TdLink>
                   </td>
                   <td className={classNames('notify-td')}>
-                    <span>{s.orders.canceled}</span>
-                  </td>
-                  <td className="store-actions">
-                    <StoresTableMenu
-                      storeId={s._id}
-                      openDate={s.openDate}
-                      closeDate={s.closeDate}
-                    />
+                    <TdLink storeId={s._id}>
+                      <span>{s.ordersStatusTotals.canceled}</span>
+                    </TdLink>
                   </td>
                 </tr>
               );
@@ -152,6 +190,45 @@ export default function StoresTable({ stores, tableLabel }: Props) {
 }
 
 const StoresTableStyles = styled.div`
+  .custom-table-class {
+    /* width: fit-content; */
+
+    /* table {
+      max-width: 800px;
+      width: 100%;
+    } */
+
+    th {
+      cursor: default;
+
+      &:first-of-type {
+        padding-left: 3.25rem;
+      }
+
+      &:last-of-type {
+        padding-right: 1.5rem;
+      }
+    }
+
+    td {
+      padding: 0;
+
+      &:first-of-type {
+        .td-store-link {
+          padding-left: 1.5rem;
+          padding-right: 1.5rem;
+        }
+      }
+
+      &:last-of-type {
+        .td-store-link {
+          padding-left: 1rem;
+          padding-right: 1.5rem;
+        }
+      }
+    }
+  }
+
   .table-label {
     margin: 0 0 1.75rem;
     font-size: 1.25rem;
@@ -159,27 +236,64 @@ const StoresTableStyles = styled.div`
     color: #111827;
   }
 
+  .td-store-link {
+    display: block;
+    padding-top: 0.875rem;
+    padding-bottom: 0.875rem;
+    &:hover {
+      text-decoration: none;
+    }
+  }
+
+  .store-details {
+    display: flex;
+    align-items: center;
+  }
+
+  .store-status {
+    margin: 0 1rem 0 0;
+    .custom-store-status {
+      height: 0.9375rem;
+      width: 0.9375rem;
+      .dot {
+        height: 0.5rem;
+        width: 0.5rem;
+      }
+    }
+  }
+
   .store-name {
     margin: 0 0 0.3125rem;
+    display: block;
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: 600;
     color: #000;
   }
 
-  .store-dates {
+  .store-dates,
+  .total-products,
+  .total-orders {
     display: flex;
     flex-direction: column;
-    gap: 0.625rem;
+    gap: 0.25rem 0;
+    font-size: 0.8125rem;
+    color: #525252;
   }
 
-  .store-id {
-    font-family: 'Dank Mono', 'Menlo', monospace;
-    font-weight: 700;
-    color: #6b7280;
+  .store-dates,
+  .total-products-and-orders {
+    margin: 0.25rem 0 0;
   }
 
-  td.store-actions {
-    position: relative;
+  .total-products-and-orders {
+    display: flex;
+    align-items: center;
+    gap: 0 0.75rem;
+
+    .divider {
+      font-size: 0.5rem;
+      color: #a3a3a3;
+    }
   }
 
   .notify-td {
@@ -193,7 +307,8 @@ const StoresTableStyles = styled.div`
   .hasUnfulfilled,
   .hasPrinted,
   .hasFulfilled,
-  .allCompleted,
+  .hasPartiallyShipped,
+  .allShipped,
   .warning {
     border: 1px solid rgba(0, 0, 0, 0.1);
   }
@@ -214,7 +329,12 @@ const StoresTableStyles = styled.div`
     color: #4f2c0d;
   }
 
-  .allCompleted {
+  .hasPartiallyShipped {
+    background-color: #fae8ff;
+    color: #86198f;
+  }
+
+  .allShipped {
     background-color: #d1fae5;
     color: #032a1f;
   }

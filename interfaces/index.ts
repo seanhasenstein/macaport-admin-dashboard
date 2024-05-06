@@ -192,14 +192,15 @@ export interface StoresTableOrders {
   unfulfilled: number;
   printed: number;
   fulfilled: number;
-  completed: number;
+  partiallyShipped: number;
+  shipped: number;
   canceled: number;
   total: number;
 }
 
-export interface StoresTableStore extends Omit<Store, 'products' | 'orders'> {
+export interface StoresTableStore extends Omit<Store, 'products'> {
   products: number;
-  orders: StoresTableOrders;
+  ordersStatusTotals: StoresTableOrders;
 }
 
 export interface PersonalizationAddon {
@@ -213,7 +214,14 @@ export interface PersonalizationAddon {
   subItems: PersonalizationAddon[];
 }
 
+export type OrderItemStatus =
+  | 'Unfulfilled'
+  | 'Fulfilled'
+  | 'Shipped'
+  | 'Canceled';
+
 export interface OrderItem {
+  id: string;
   sku: ProductSku;
   merchandiseCode: string;
   artworkId?: string;
@@ -223,14 +231,20 @@ export interface OrderItem {
   quantity: number;
   itemTotal: number;
   personalizationAddons: PersonalizationAddon[];
+  status: {
+    current: OrderItemStatus;
+    meta: Record<OrderItemStatus, { user: string; updatedAt: string }>;
+  };
 }
 
 export type OrderStatus =
   | 'Unfulfilled'
-  | 'Printed'
+  | 'Printed' // todo - remove
   | 'Fulfilled'
-  | 'Completed'
-  | 'Canceled';
+  | 'PartiallyShipped'
+  | 'Shipped'
+  | 'Canceled'
+  | 'Completed'; // todo - remove
 
 export interface OrderSummary {
   subtotal: number;
@@ -255,7 +269,8 @@ export interface Order {
     phone: string;
   };
   group: string;
-  orderStatus: OrderStatus;
+  orderStatus: OrderStatus; // todo - replace with status
+  // status: OrderStatus;
   shippingMethod: 'Primary' | 'Direct' | 'Store Pickup' | 'None';
   shippingAddress: {
     name?: string;
@@ -271,6 +286,9 @@ export interface Order {
     amount: number;
   };
   note?: string;
+  meta: {
+    receiptPrinted: boolean;
+  };
   createdAt: string;
   updatedAt: string;
 }

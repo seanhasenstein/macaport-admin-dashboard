@@ -7,9 +7,9 @@ import { getStoreStatus } from '../../../utils';
 import { Order, StoreStatus } from '../../../interfaces';
 
 import { useStoreQuery } from '../../../hooks/useStoreQuery';
+import { useOrderMutation } from '../../../hooks/useOrderMutations';
 import useOutsideClick from '../../../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../../../hooks/useEscapeKeydownClose';
-import { useOrderMutation } from '../../../hooks/useOrderMutations';
 
 import Layout from '../../../components/Layout';
 import PageNavButtons from '../../../components/PageNavButtons';
@@ -23,7 +23,8 @@ import CSVDownloadModal from '../../../components/store/CSVDownloadModal';
 import PrintableOrder from '../../../components/PrintableOrder';
 import DeleteStoreModal from '../../../components/store/DeleteStoreModal';
 import TableLoadingSpinner from '../../../components/TableLoadingSpinner';
-import CancelOrderModal from '../../../components/order/CancelOrderModal';
+import CancelOrderModal from '../../../components/modals/CancelOrderModal';
+import TriggerShipmentModal from '../../../components/store/TriggerShipmentModal';
 
 export default function Store() {
   const router = useRouter();
@@ -44,6 +45,12 @@ export default function Store() {
     undefined
   );
   const [showCancelOrderModal, setShowCancelOrderModal] = React.useState(false);
+  const [showTriggerShipmentModal, setShowTriggerShipmentModal] =
+    React.useState(false);
+
+  const { setReceiptPrintedForUnfulfilledOrders } = useOrderMutation({
+    store: storeQuery.data,
+  });
 
   useOutsideClick(
     showDeleteProductModal,
@@ -53,18 +60,13 @@ export default function Store() {
 
   useEscapeKeydownClose(showDeleteProductModal, setShowDeleteProductModal);
 
-  const { cancelOrder } = useOrderMutation({
-    order: selectedOrder,
-    store: storeQuery.data,
-  });
-
   React.useEffect(() => {
     if (storeQuery.data) {
       setStoreStatus(
         getStoreStatus(storeQuery.data.openDate, storeQuery.data.closeDate)
       );
 
-      if (!selectedOrder) {
+      if (storeQuery.data.orders && !selectedOrder) {
         setSelectedOrder(storeQuery.data.orders[0]);
       }
     }
@@ -72,6 +74,9 @@ export default function Store() {
 
   React.useEffect(() => {
     if (printOption) {
+      if (printOption === 'unfulfilled') {
+        setReceiptPrintedForUnfulfilledOrders.mutate();
+      }
       window.print();
       setPrintOption(undefined);
     }
@@ -112,6 +117,7 @@ export default function Store() {
                     <h2>{storeQuery.data.name}</h2>
                     <div className="store-status">
                       <span className={storeStatus}>
+                        Store{' '}
                         {storeStatus === 'upcoming'
                           ? 'Upcoming'
                           : storeStatus === 'open'
@@ -128,6 +134,9 @@ export default function Store() {
                   setShowDeleteModal={setShowDeleteStoreModal}
                   setShowCSVModal={setShowCSVModal}
                   setPrintOption={setPrintOption}
+                  showTriggerStoreShipmentModal={() =>
+                    setShowTriggerShipmentModal(true)
+                  }
                 />
               </div>
 
@@ -140,7 +149,10 @@ export default function Store() {
                     selectedOrder,
                     setSelectedOrder,
                     setPrintOption,
+                    showCancelOrderModal,
                     setShowCancelOrderModal,
+                    openTriggerStoreShipmentModal: () =>
+                      setShowTriggerShipmentModal(true),
                   }}
                 />
                 <StoreProducts store={storeQuery.data} />
@@ -169,13 +181,23 @@ export default function Store() {
           heading="Product successfully deleted"
           callbackUrl={`/stores/${router.query.id}`}
         />
-        <CancelOrderModal
-          orderName={`${selectedOrder?.customer.firstName} ${selectedOrder?.customer.lastName}`}
-          showModal={showCancelOrderModal}
-          setShowModal={setShowCancelOrderModal}
-          cancelOrder={cancelOrder}
-        />
+        {storeQuery.data && selectedOrder && showCancelOrderModal && (
+          <CancelOrderModal
+            store={storeQuery.data}
+            order={selectedOrder}
+            isOpen={showCancelOrderModal}
+            closeModal={() => setShowCancelOrderModal(false)}
+          />
+        )}
       </StoreStyles>
+
+      {storeQuery.data && showTriggerShipmentModal && (
+        <TriggerShipmentModal
+          closeModal={() => setShowTriggerShipmentModal(false)}
+          isOpen={showTriggerShipmentModal}
+          store={storeQuery.data}
+        />
+      )}
 
       {storeQuery.data && showDeleteStoreModal && (
         <DeleteStoreModal
@@ -245,6 +267,7 @@ const StoreStyles = styled.div`
     font-size: 1.5rem;
     font-weight: 600;
     color: #111827;
+    line-height: 100%;
   }
 
   h3 {
@@ -308,8 +331,9 @@ const StoreStyles = styled.div`
   }
 
   .store-status {
+    margin: 0.5rem 0 0;
     span {
-      padding: 0.3125rem 0.5rem;
+      padding: 0.375rem 0.6875rem;
       display: inline-flex;
       align-items: center;
       font-size: 0.75rem;
@@ -320,6 +344,7 @@ const StoreStyles = styled.div`
       border-radius: 0.25rem;
       background: #fff;
       line-height: 1;
+      border: 1px solid rgba(0, 0, 0, 0.12);
 
       &.closed {
         background-color: #fee2e2;
@@ -327,13 +352,13 @@ const StoreStyles = styled.div`
       }
 
       &.upcoming {
-        background-color: #feefb4;
+        background-color: #fef3c7;
         color: #92400e;
       }
 
       &.open {
-        color: #14864d;
-        background-color: #c9f7e0;
+        background-color: #d1fae5;
+        color: #065f46;
       }
     }
   }

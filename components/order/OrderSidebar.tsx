@@ -1,59 +1,20 @@
 import React from 'react';
+import { useSession } from 'next-auth/client';
 import styled from 'styled-components';
 import { format } from 'date-fns';
-import classNames from 'classnames';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/20/solid';
 
 import Sidebar from '../Sidebar';
 import OrderSidebarMenu from './OrderSidebarMenu';
-import OrderStatusButton from './OrderStatusButton';
-
-import { Order, Store } from '../../interfaces';
+import OrderStatus from './OrderStatus';
+import PrintableOrder from '../PrintableOrder';
+import OrderDetailItem from './OrderDetailItem';
+import OrderItem from './OrderItem';
+import OrderItemsBreakdown from './OrderItemsBreakdown';
 
 import { formatPhoneNumber, formatToMoney } from '../../utils';
-import PrintableOrder from '../PrintableOrder';
 
-type OrderItemProps = {
-  label: string;
-  value: string | number | JSX.Element | null | undefined;
-  customClass?: string;
-  customLabelClass?: string;
-  customValueClass?: string;
-};
-
-function OrderItem({
-  label,
-  value,
-  customClass,
-  customLabelClass,
-  customValueClass,
-}: OrderItemProps) {
-  return (
-    <OrderItemStyles className={classNames(customClass)}>
-      <p className={classNames('label', customLabelClass)}>{label}</p>
-      <p className={classNames('value', customValueClass)}>
-        {value ? value : ''}
-      </p>
-    </OrderItemStyles>
-  );
-}
-
-const OrderItemStyles = styled.div`
-  display: flex;
-  .label {
-    min-width: 9.5rem;
-    color: #09090b;
-    font-size: 0.9375rem;
-    font-weight: 500;
-    line-height: 100%;
-  }
-  .value {
-    color: #52525b;
-    font-size: 0.9375rem;
-    font-weight: 500;
-    line-height: 100%;
-  }
-`;
+import { Order, Store } from '../../interfaces';
 
 type Props = {
   closeSidebar: () => void;
@@ -69,7 +30,9 @@ type Props = {
       'unfulfilled' | 'personalization' | 'single' | undefined
     >
   >;
+  showCancelOrderModal: boolean;
   setShowCancelOrderModal: React.Dispatch<React.SetStateAction<boolean>>;
+  openTriggerStoreShipmentModal: () => void;
 };
 
 export default function OrderSidebar({
@@ -82,26 +45,18 @@ export default function OrderSidebar({
   updateSelectedOrder,
   store,
   setPrintOption,
+  showCancelOrderModal,
   setShowCancelOrderModal,
+  openTriggerStoreShipmentModal,
 }: Props) {
   const mainContentRef = React.useRef<HTMLDivElement>(null);
 
+  const session = useSession();
+  const userId = session[0]?.user?.id;
+
+  // TODO: move this to a custom hook
   React.useEffect(() => {
     if (isOpen) {
-      const handleUpKeydown = (e: KeyboardEvent) => {
-        if (e.key === 'ArrowUp' && prevOrderId) {
-          updateSelectedOrder(prevOrderId);
-          mainContentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      };
-
-      const handleDownKeydown = (e: KeyboardEvent) => {
-        if (e.key === 'ArrowDown' && nextOrderId) {
-          updateSelectedOrder(nextOrderId);
-          mainContentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      };
-
       const handleLeftKeydown = (e: KeyboardEvent) => {
         if (e.key === 'ArrowLeft' && prevOrderId) {
           updateSelectedOrder(prevOrderId);
@@ -116,19 +71,21 @@ export default function OrderSidebar({
         }
       };
 
-      document.addEventListener('keydown', handleUpKeydown);
-      document.addEventListener('keydown', handleDownKeydown);
       document.addEventListener('keydown', handleLeftKeydown);
       document.addEventListener('keydown', handleRightKeydown);
 
       return () => {
-        document.removeEventListener('keydown', handleUpKeydown);
-        document.removeEventListener('keydown', handleDownKeydown);
         document.removeEventListener('keydown', handleLeftKeydown);
         document.removeEventListener('keydown', handleRightKeydown);
       };
     }
   }, [isOpen, nextOrderId, prevOrderId, updateSelectedOrder]);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      mainContentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [isOpen]);
 
   if (!selectedOrder) return null;
 
@@ -143,6 +100,7 @@ export default function OrderSidebar({
     shippingAddress,
     stripeId,
     summary,
+    orderStatus,
   } = selectedOrder;
   const { email, firstName, lastName, phone } = customer;
   const { subtotal, salesTax, shipping, total, stripeFee } = summary;
@@ -191,55 +149,91 @@ export default function OrderSidebar({
       <OrderSidebarStyles>
         <Sidebar
           {...{ isOpen, closeSidebar }}
+          disableOutsideClick={showCancelOrderModal}
+          disableEscapeKeydown={showCancelOrderModal}
           customHeader={
-            <div className="customer-details">
-              <div className="details flex justify-between">
-                <div>
-                  <p className="name">
-                    {firstName} {lastName}
-                  </p>
-                  <p className="email">
-                    <a href={`mailto:${email}`}>{email}</a>
-                  </p>
-                  <p className="phone">{formatPhoneNumber(phone)}</p>
-                </div>
-                <div>
-                  <div className="order-status">
-                    <OrderStatusButton {...{ store, order: selectedOrder }} />
+            <div className="custom-header">
+              <div className="customer-details">
+                <div className="details flex justify-between">
+                  <div>
+                    <p className="name">
+                      {firstName} {lastName}
+                    </p>
+                    <p className="email">
+                      <a href={`mailto:${email}`}>{email}</a>
+                    </p>
+                    <p className="phone">{formatPhoneNumber(phone)}</p>
                   </div>
-                  <p className="date">
-                    {format(new Date(createdAt), "P 'at' h:mmaaa")}
+                  <div>
+                    <div className="order-status">
+                      <OrderStatus
+                        {...{
+                          order: selectedOrder,
+                          copy: `Order ${
+                            orderStatus === 'PartiallyShipped'
+                              ? 'Partially Shipped'
+                              : orderStatus === 'Unfulfilled' &&
+                                selectedOrder.meta.receiptPrinted
+                              ? 'Printed'
+                              : orderStatus
+                          }`,
+                          customClass: 'custom-order-status',
+                        }}
+                      />
+                    </div>
+                    <p className="date">
+                      {format(new Date(createdAt), "P 'at' h:mmaaa")}
+                    </p>
+                    <p className="order-id">#{orderId}</p>
+                  </div>
+                </div>
+                <OrderSidebarMenu
+                  {...{
+                    stripeId,
+                    setPrintOption,
+                    setShowCancelOrderModal,
+                    store,
+                    openTriggerStoreShipmentModal,
+                  }}
+                />
+              </div>
+              <div>
+                <div className="order-number-header">
+                  <p>
+                    <span>
+                      Order {selectedOrderIndex + 1} of {store.orders.length}
+                    </span>
                   </p>
-                  <p className="order-id">#{orderId}</p>
+                </div>
+                <div className="breakdown-section">
+                  <OrderItemsBreakdown
+                    orderItems={items}
+                    customClass="order-items-breakdown"
+                  />
                 </div>
               </div>
-              <OrderSidebarMenu
-                {...{
-                  stripeId,
-                  setPrintOption,
-                  setShowCancelOrderModal,
-                  orderIsCanceled: selectedOrder.orderStatus === 'Canceled',
-                }}
-              />
             </div>
           }
         >
           <div ref={mainContentRef} className="main-order-content">
             <div className="order-details">
               <div className="details">
-                <OrderItem label="Store:" value={store.name} />
+                <OrderDetailItem label="Store:" value={store.name} />
                 {store.requireGroupSelection && (
-                  <OrderItem label={store.groupTerm} value={group} />
+                  <OrderDetailItem label={store.groupTerm} value={group} />
                 )}
-                <OrderItem label="Shipping method:" value={shippingMethod} />
+                <OrderDetailItem
+                  label="Shipping method:"
+                  value={shippingMethod}
+                />
                 {shippingMethod !== 'Store Pickup' && (
-                  <OrderItem
+                  <OrderDetailItem
                     label={renderShippingAddressLabel()}
                     value={renderShippingAddressValue()}
                     customValueClass="shipping-address-value"
                   />
                 )}
-                <OrderItem
+                <OrderDetailItem
                   label="Order note:"
                   value={note ? note : 'None provided'}
                   customClass={note ? 'note-item' : undefined}
@@ -247,42 +241,42 @@ export default function OrderSidebar({
                 />
               </div>
               <div className="summary">
-                <OrderItem
+                <OrderDetailItem
                   label="Subtotal:"
                   value={formatToMoney(subtotal, true)}
                   customClass="summary-item"
                   customLabelClass="summary-label"
                   customValueClass="summary-value"
                 />
-                <OrderItem
+                <OrderDetailItem
                   label="Sales tax:"
                   value={formatToMoney(salesTax, true)}
                   customClass="summary-item"
                   customLabelClass="summary-label"
                   customValueClass="summary-value"
                 />
-                <OrderItem
+                <OrderDetailItem
                   label="Shipping:"
                   value={formatToMoney(shipping, true)}
                   customClass="summary-item"
                   customLabelClass="summary-label"
                   customValueClass="summary-value"
                 />
-                <OrderItem
+                <OrderDetailItem
                   label="Total:"
                   value={formatToMoney(total, true)}
                   customClass="summary-item"
                   customLabelClass="summary-label"
                   customValueClass="summary-value"
                 />
-                <OrderItem
+                <OrderDetailItem
                   label="Stripe fee:"
                   value={formatToMoney(stripeFee, true)}
                   customClass="summary-item"
                   customLabelClass="summary-label"
                   customValueClass="summary-value"
                 />
-                <OrderItem
+                <OrderDetailItem
                   label="Net:"
                   value={formatToMoney(total - stripeFee, true)}
                   customClass="summary-item"
@@ -295,116 +289,19 @@ export default function OrderSidebar({
               <p className="order-items-label">
                 <span>Order items</span>
               </p>
-              <div className="items">
-                {items.map((item, index) => {
-                  const {
-                    image,
-                    itemTotal,
-                    merchandiseCode,
-                    name,
-                    personalizationAddons,
-                    quantity,
-                    sku,
-                    artworkId,
-                  } = item;
-                  const { color, size } = sku;
-                  const { label: colorLabel, hex } = color;
-                  const { label: sizeLabel } = size;
-
-                  return (
-                    <div key={index} className="item">
-                      <div className="main-details">
-                        <div className="full-width flex">
-                          <div className="featured-img">
-                            <img src={image} alt={name} />
-                          </div>
-                          <div className="full-width">
-                            <div className="top-row">
-                              <p className="item-name">{name}</p>
-                              <p className="merch-code">
-                                {merchandiseCode ? `${merchandiseCode}` : ''}
-                              </p>
-                            </div>
-                            <div>
-                              <div className="full-width flex justify-between align-center">
-                                <p className="color">
-                                  <span
-                                    className="dot"
-                                    style={{ backgroundColor: hex }}
-                                  />
-                                  {colorLabel}
-                                </p>
-                                <p className="artwork-id">
-                                  <span>Artwork:</span>{' '}
-                                  {artworkId ? artworkId : 'None'}
-                                </p>
-                              </div>
-                              <div className="item-data">
-                                <p className="quantity-and-size">
-                                  <span className="quantity">{quantity}</span>
-                                  <span className="x">x</span>
-                                  <span className="size">{sizeLabel}</span>
-                                </p>
-                                <p className="item-total">
-                                  {formatToMoney(itemTotal, true)}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      {/* personalization */}
-                      {personalizationAddons.length > 0 && (
-                        <div className="personalization-details">
-                          <p className="title">
-                            <span>Item personalization</span>
-                          </p>
-                          <div className="items">
-                            {personalizationAddons.map((item, index) => {
-                              const { addon, location, subItems, value } = item;
-                              return (
-                                <>
-                                  <div
-                                    key={index}
-                                    className="personalization-item"
-                                  >
-                                    <div className="flex align-center">
-                                      <p className="label">{addon}:</p>
-                                      <p className="value">{value}</p>
-                                    </div>
-                                    <span className="location">{location}</span>
-                                  </div>
-                                  {subItems.length > 0 ? (
-                                    <>
-                                      {subItems.map((subItem, index) => (
-                                        <div
-                                          key={index}
-                                          className="personalization-item"
-                                        >
-                                          <div className="flex align-center">
-                                            <p className="label">
-                                              {subItem.addon}:
-                                            </p>
-                                            <p className="value">
-                                              {subItem.value}
-                                            </p>
-                                          </div>
-                                          <span className="location">
-                                            {subItem.location}
-                                          </span>
-                                        </div>
-                                      ))}
-                                    </>
-                                  ) : null}
-                                </>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+              <div>
+                {items.map(item => (
+                  <OrderItem
+                    key={item.id}
+                    {...{
+                      orderItems: items,
+                      item,
+                      order: selectedOrder,
+                      store,
+                      userId,
+                    }}
+                  />
+                ))}
               </div>
             </div>
             <div className="order-number">
@@ -464,6 +361,22 @@ export default function OrderSidebar({
 }
 
 const OrderSidebarStyles = styled.div`
+  --unfulfilled-background: #fff1f1;
+  --unfulfilled-text-color: #630303;
+  --unfulfilled-border: #fecbcb;
+  --unfulfilled-dark-border: #f83333;
+  --fulfilled-background: #fffbeb;
+  --fulfilled-text-color: #5e4c02;
+  --fulfilled-border: #fce277;
+  --fulfilled-dark-border: #fbce16;
+  --fulfilled-text: #382d01;
+  --shipped-background: #e5f9f2;
+  --shipped-text-color: #0c3727;
+  --shipped-border: #95e8ca;
+  --shipped-dark-border: #28b883;
+  --canceled-background: #f4f4f5;
+  --canceled-border: #a1a1aa;
+  --canceled-dark-border: #71717a;
   position: relative;
   .flex {
     display: flex;
@@ -495,7 +408,9 @@ const OrderSidebarStyles = styled.div`
       font-weight: 500;
       line-height: 100%;
     }
-    &.email,
+    &.email {
+      margin-top: 0.375rem;
+    }
     &.date {
       margin-top: 0.5rem;
     }
@@ -507,11 +422,59 @@ const OrderSidebarStyles = styled.div`
     &.date {
       text-align: right;
     }
+    &.date {
+      margin-top: 0.5625rem;
+    }
     &.email {
       a:hover {
         text-decoration: underline;
       }
     }
+  }
+  .custom-header {
+    background-color: #f9fafb;
+    border-radius: 0.625rem 0.625rem 0rem 0rem;
+
+    .order-number-header {
+      background-color: #fff;
+      p {
+        position: relative;
+        margin: 0 1.5rem 0 2.5rem;
+        width: calc(100% - 4.5rem);
+        color: #000;
+        font-size: 0.75rem;
+        font-weight: 600;
+        line-height: 100%;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+
+        span {
+          position: relative;
+          padding: 0 1rem;
+          background-color: #fff;
+          z-index: 1;
+        }
+        &:after {
+          content: '';
+          display: block;
+          position: absolute;
+          top: 0.3125rem;
+          left: 0;
+          width: 100%;
+          height: 1px;
+          background-color: #d4d4d8;
+          z-index: 0;
+        }
+      }
+    }
+  }
+  .breakdown-section {
+    padding: 1.3125rem 2rem 1.6875rem 2.5rem;
+    background-color: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    border-radius: 0.625rem 0.625rem 0rem 0rem;
+    box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
   }
   .customer-details {
     z-index: 100;
@@ -519,20 +482,24 @@ const OrderSidebarStyles = styled.div`
     top: 0;
     left: 0;
     width: 100%;
-    margin: 0 0 0.5rem 0;
-    padding: 2rem 1.5rem 0 2.5rem;
+    padding: 1.75rem 1.5rem 1.5rem 2.5rem;
     display: grid;
     grid-template-columns: 1fr 1.5rem;
+    background-color: #fff;
     border-radius: 0.625rem 0.625rem 0rem 0rem;
-    border-bottom: 1px solid #e5e7eb;
-    background: #fff;
-    box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
     .details {
-      padding: 0 2rem 2rem 0;
+      padding: 0 2rem 0 0;
     }
     .order-status {
       display: flex;
       justify-content: flex-end;
+      .custom-order-status {
+        padding: 0.34375rem 0.875rem;
+        min-width: 10.5rem;
+        font-weight: 700;
+        user-select: none;
+        text-align: center;
+      }
     }
     .order-menu-section {
       display: flex;
@@ -543,7 +510,7 @@ const OrderSidebarStyles = styled.div`
   .main-order-content {
     overflow-y: auto;
     position: fixed;
-    top: 8.625rem;
+    top: 13.75rem;
     bottom: 0.375rem;
     width: 100%;
   }
@@ -592,11 +559,9 @@ const OrderSidebarStyles = styled.div`
     }
   }
   .order-items {
-    margin: 2.75rem 2.5rem 0;
+    margin: 2.25rem 2.5rem 0;
     .order-items-label {
       position: relative;
-      margin: 0 0 1.5rem;
-      padding: 0 0 1.25rem;
       color: #09090b;
       font-size: 0.6875rem;
       font-weight: 700;
@@ -620,185 +585,6 @@ const OrderSidebarStyles = styled.div`
         padding: 0 1.25rem;
         background-color: #f9fafb;
         z-index: 1;
-      }
-    }
-    .items {
-      .item {
-        margin: 1.125rem 0 0;
-        padding: 1.125rem 1.125rem 1.3125rem 1rem;
-        background-color: #fff;
-        border: 1px solid #dddde2;
-        border-radius: 0.5rem;
-        box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
-        .main-details {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 0 2rem;
-          .featured-img {
-            margin-right: 1rem;
-            width: 2.25rem;
-            display: flex;
-            flex-direction: column;
-            img {
-              max-height: 3.25rem;
-              width: auto;
-              object-fit: contain;
-            }
-          }
-          .top-row {
-            margin-bottom: 1.25rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 0 1rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid #d4d4d8;
-          }
-          .item-name,
-          .merch-code {
-            color: #09090b;
-            font-size: 0.875rem;
-            font-weight: 600;
-            line-height: 130%;
-          }
-          .color {
-            margin: 0;
-            display: flex;
-            align-items: center;
-            color: #52525b;
-            font-size: 0.875rem;
-            font-weight: 500;
-            line-height: 100%;
-            span {
-              margin: 0 0.375rem 0 0;
-            }
-            .dot {
-              flex-shrink: 0;
-              margin: 0 0.375rem 0 0;
-              display: inline-block;
-              height: 0.875rem;
-              width: 0.875rem;
-              border: 1px solid rgba(0, 0, 0, 0.4);
-              border-radius: 9999px;
-            }
-          }
-          .artwork-id,
-          .color {
-            margin: 0;
-            color: #52525b;
-            font-size: 0.875rem;
-            font-weight: 500;
-            line-height: 130%;
-            span {
-              color: #27272a;
-            }
-          }
-          .item-data {
-            margin: 1.375rem 0 0;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            .quantity-and-size,
-            .item-total {
-              color: #52525b;
-              font-size: 0.875rem;
-              font-weight: 500;
-              line-height: 130%;
-              span {
-                color: #09090b;
-              }
-              &.item-total {
-                text-align: right;
-              }
-            }
-            .quantity-and-size {
-              display: grid;
-              grid-template-columns: 2rem 2.75rem 1fr;
-              .x {
-                margin: -0.0625rem 0.5rem 0;
-                color: #a1a1aa;
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  .personalization-details {
-    margin: 0.25rem 0 0 3.25rem;
-    padding: 1rem 0 0;
-    .title {
-      position: relative;
-      padding: 0 0 1rem;
-      color: #09090b;
-      font-size: 0.6875rem;
-      font-weight: 700;
-      line-height: 100%;
-      letter-spacing: 0.15rem;
-      text-transform: uppercase;
-      text-align: center;
-      &:after {
-        content: '';
-        display: block;
-        position: absolute;
-        top: 0.34375rem;
-        left: 0;
-        width: 100%;
-        height: 1px;
-        background-color: #d4d4d8;
-        z-index: 0;
-      }
-      span {
-        position: relative;
-        padding: 0 1.25rem;
-        background-color: #fff;
-        z-index: 1;
-      }
-    }
-    .items {
-      margin: 0.4375rem 0 0;
-      display: flex;
-      flex-direction: column;
-      padding: 0 0.625rem;
-      background-color: #fafafa;
-      border: 1px solid #e4e4e7;
-      border-radius: 0.25rem;
-      .personalization-item {
-        padding: 0.6875rem 0.3125rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid #d4d4d8;
-        &:last-of-type {
-          border-bottom: none;
-        }
-        p {
-          margin: 0;
-          &.label,
-          &.value {
-            font-size: 0.875rem;
-            font-weight: 500;
-            line-height: 100%;
-          }
-          &.label {
-            margin: 0 0.625rem 0 0;
-            color: #18181b;
-          }
-          &.value {
-            color: #3f3f46;
-          }
-        }
-        .location {
-          margin: 0 0 0 0.5rem;
-          padding: 0.125rem 0.25rem;
-          font-size: 0.625rem;
-          font-weight: 600;
-          color: #52525b;
-          background-color: #fff;
-          border-radius: 0.1875rem;
-          border: 1px solid #dddde2;
-          box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
-        }
       }
     }
   }

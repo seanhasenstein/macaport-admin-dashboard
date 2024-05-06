@@ -1,8 +1,11 @@
 import React from 'react';
 import styled from 'styled-components';
-import { ShippingDataForm } from '../../interfaces';
+import { EllipsisVerticalIcon } from '@heroicons/react/24/outline';
+
 import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
 import useOutsideClick from '../../hooks/useOutsideClick';
+
+import { ShippingDataForm } from '../../interfaces';
 
 type Props = {
   showMenu: boolean;
@@ -28,17 +31,7 @@ export default function HomepageMenu(props: Props) {
         onClick={() => props.setShowMenu(!props.showMenu)}
         className="main-menu-button"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-        >
-          <path
-            fillRule="evenodd"
-            d="M10.5 6a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zm0 6a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zm0 6a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0z"
-            clipRule="evenodd"
-          />
-        </svg>
+        <EllipsisVerticalIcon />
         <span className="sr-only">Toggle nav menu</span>
       </button>
       <div

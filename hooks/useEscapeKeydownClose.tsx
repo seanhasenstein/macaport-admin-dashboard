@@ -2,7 +2,8 @@ import React from 'react';
 
 export default function useEscapeKeydownClose(
   open: boolean,
-  setOpen: (value: React.SetStateAction<boolean>) => void
+  setOpen: (value: React.SetStateAction<boolean>) => void,
+  disabled = false
 ) {
   React.useEffect(() => {
     const handleEscapeKeydown = (e: KeyboardEvent) => {
@@ -11,12 +12,12 @@ export default function useEscapeKeydownClose(
       }
     };
 
-    if (open) {
+    if (open && !disabled) {
       document.addEventListener('keydown', handleEscapeKeydown);
     }
 
     return () => {
       document.removeEventListener('keydown', handleEscapeKeydown);
     };
-  }, [open, setOpen]);
+  }, [disabled, open, setOpen]);
 }
