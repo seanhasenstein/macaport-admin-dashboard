@@ -6,22 +6,15 @@ import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 
 import {
-  CloudinaryStatus,
-  Color,
-  InventoryProduct,
-  PersonalizationForm,
-  Size,
-} from '../../../../interfaces';
-
-import {
   createId,
-  getCloudinarySignature,
   removeNonAlphanumeric,
   createStoreProductSkus,
+  getFileType,
 } from '../../../../utils';
 import {
   createBlankPersonalizedItem,
   formatPersonalizationValues,
+  handleStoreProductImageUpload,
 } from '../../../../utils/storeProduct';
 
 import { useStoreQuery } from '../../../../hooks/useStoreQuery';
@@ -33,6 +26,14 @@ import BasicLayout from '../../../../components/BasicLayout';
 import Notification from '../../../../components/Notification';
 import LoadingSpinner from '../../../../components/LoadingSpinner';
 
+import {
+  CloudinaryStatus,
+  Color,
+  FormSize,
+  InventoryProduct,
+  PersonalizationForm,
+} from '../../../../interfaces';
+
 type InitialValues = {
   id: string;
   inventoryProductId: string;
@@ -42,20 +43,20 @@ type InitialValues = {
   tag: string;
   details: string[];
   personalization: PersonalizationForm;
-  sizes: Size[];
+  sizes: FormSize[];
   colors: Color[];
 };
 
 const validationSchema = Yup.object().shape({
   name: Yup.string().required('Product name is required'),
+  allSizesPrice: Yup.number()
+    .min(0, 'All sizes price must be at least 0')
+    .typeError('All sizes price must be a number'),
   sizes: Yup.array().of(
     Yup.object().shape({
       label: Yup.string().required('A label is required'),
       price: Yup.number()
-        // .matches(
-        //   /^([0-9]{1,})(\.)([0-9]{2})$/,
-        //   'Must be a valid price (i.e. 10.00)'
-        // )
+        .typeError('Price must be a number')
         .required('A price is required'),
     })
   ),
@@ -76,12 +77,14 @@ const validationSchema = Yup.object().shape({
 export default function AddProduct() {
   const router = useRouter();
   const queryClient = useQueryClient();
+
   const [primaryImageStatus, setPrimaryImageStatus] =
     React.useState<CloudinaryStatus>('idle');
   const [secondaryImageStatus, setSecondaryImageStatus] =
     React.useState<CloudinaryStatus>('idle');
   const [inventoryProduct, setInventoryProduct] =
     React.useState<InventoryProduct>();
+
   const inventoryProductsQuery = useQuery<InventoryProduct[]>(
     ['inventory-products'],
     fetchAllInventoryProducts,
@@ -95,10 +98,9 @@ export default function AddProduct() {
       staleTime: 1000 * 60 * 10,
     }
   );
+
   const storeQuery = useStoreQuery();
   const { addProduct } = useStoreProductMutations({ store: storeQuery.data });
-
-  const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_NAME}/image/upload`;
 
   const handleInventoryProductChange = (
     e: React.ChangeEvent<HTMLSelectElement>
@@ -106,112 +108,131 @@ export default function AddProduct() {
     const updatedInventoryProduct = inventoryProductsQuery?.data?.find(
       ip => ip._id === e.target.value
     );
-
     setInventoryProduct(updatedInventoryProduct);
   };
 
-  const handlePrimaryImageChange = async (
-    productId: string,
-    color: Color,
-    colors: Color[],
+  type HandleAwsImageType = {
+    productId: string;
+    color: Color;
+    colors: Color[];
     setFieldValue: (
       field: string,
       value: Color[],
       shouldValidate?: boolean | undefined
-    ) => void,
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    if (e.target.files === null || e.target.files[0] === undefined) {
+    ) => void;
+    event: React.ChangeEvent<HTMLInputElement>;
+  };
+
+  const handlePrimaryImageChange = async ({
+    productId,
+    color,
+    colors,
+    setFieldValue,
+    event,
+  }: HandleAwsImageType) => {
+    event.preventDefault();
+    if (event.target.files === null || event.target.files[0] === undefined)
       return;
-    }
 
     setPrimaryImageStatus('loading');
-    const publicId = `stores/${router.query.id}/${productId}/${
-      color.id
-    }/${createId('primary')}`;
-    const { signature, timestamp } = await getCloudinarySignature(publicId);
 
-    const formData = new FormData();
-    formData.append('file', e.target.files[0]);
-    formData.append('api_key', `${process.env.NEXT_PUBLIC_CLOUDINARY_KEY}`);
-    formData.append('public_id', publicId);
-    formData.append('timestamp', `${timestamp}`);
-    formData.append('signature', signature);
+    const fileType = getFileType(event);
+    const key = `${createId('primary')}.${fileType}`;
 
-    const response = await fetch(cloudinaryUrl, {
-      method: 'post',
-      body: formData,
+    const location = await handleStoreProductImageUpload({
+      storeId: router.query.id as string,
+      productId,
+      colorId: color.id,
+      image: event.target.files[0],
+      key,
+      errorHandler: message => {
+        console.error(message);
+      },
     });
 
-    if (!response.ok) {
-      throw new Error('Failed to send primary image to cloudinary.');
+    if (location) {
+      const updatedColors = colors.map(c => {
+        if (c.id === color.id) {
+          return { ...color, primaryImage: location };
+        } else {
+          return c;
+        }
+      });
+
+      setFieldValue('colors', updatedColors);
     }
 
-    const data = await response.json();
-
-    const updatedColors = colors.map(c => {
-      if (c.id == color.id) {
-        return { ...color, primaryImage: data.secure_url };
-      }
-      return c;
-    });
-
-    setFieldValue('colors', updatedColors);
     setPrimaryImageStatus('idle');
   };
 
-  const handleAddSecondaryImages = async (
-    productId: string,
-    color: Color,
-    colors: Color[],
-    setFieldValue: (
-      field: string,
-      value: Color[],
-      shouldValidate?: boolean | undefined
-    ) => void,
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    if (e.target.files === null || e.target.files[0] === undefined) {
+  const handleAddSecondaryImages = async ({
+    productId,
+    color,
+    colors,
+    setFieldValue,
+    event,
+  }: HandleAwsImageType) => {
+    event.preventDefault();
+
+    if (event.target.files === null || event.target.files[0] === undefined)
       return;
-    }
 
     setSecondaryImageStatus('loading');
 
     const secondaryImagesCopy = [...color.secondaryImages];
 
-    for (let i = 0; i < e.target.files.length; i++) {
-      const publicId = `stores/${router.query.id}/${productId}/${
-        color.id
-      }/${createId('secondary')}`;
+    for (let i = 0; i < event.target.files.length; i++) {
+      const fileType = getFileType(event);
+      const key = `${createId('secondary')}.${fileType}`;
 
-      const { signature, timestamp } = await getCloudinarySignature(publicId);
-
-      const formData = new FormData();
-      formData.append('file', e.target.files[i]);
-      formData.append('api_key', `${process.env.NEXT_PUBLIC_CLOUDINARY_KEY}`);
-      formData.append('public_id', publicId);
-      formData.append('timestamp', `${timestamp}`);
-      formData.append('signature', signature);
-
-      const response = await fetch(cloudinaryUrl, {
-        method: 'post',
-        body: formData,
+      const location = await handleStoreProductImageUpload({
+        storeId: router.query.id as string,
+        productId,
+        colorId: color.id,
+        image: event.target.files[i],
+        key,
+        errorHandler: message => {
+          console.error(message);
+        },
       });
 
-      const data = await response.json();
-
-      secondaryImagesCopy.push(data.secure_url);
+      if (location) {
+        secondaryImagesCopy.push(location);
+      }
     }
 
     const updatedColors = colors.map(c => {
       if (c.id === color.id) {
-        return { ...color, secondaryImages: secondaryImagesCopy };
+        return {
+          ...color,
+          secondaryImages: secondaryImagesCopy,
+        };
+      } else {
+        return c;
+      }
+    });
+
+    setFieldValue('colors', updatedColors);
+    setSecondaryImageStatus('idle');
+  };
+
+  const handleRemovePrimaryImage = (
+    color: Color,
+    colors: Color[],
+    setFieldValue: (
+      field: string,
+      value: Color[],
+      shouldValidate?: boolean | undefined
+    ) => void
+  ) => {
+    const updatedColors = colors.map(c => {
+      if (c.id === color.id) {
+        return { ...color, primaryImage: '' };
       }
       return c;
     });
 
     setFieldValue('colors', updatedColors);
-    setSecondaryImageStatus('idle');
   };
 
   const handleRemoveSecondaryImage = (
@@ -252,13 +273,17 @@ export default function AddProduct() {
         maxLines: 0,
         addons: [],
       },
-      sizes: inventoryProduct?.sizes.map(s => ({ ...s, price: 0 })) || [],
+      allSizesPrice: 0,
+      sizes: inventoryProduct?.sizes.map(s => ({ ...s, price: '' })) || [],
       colors:
-        inventoryProduct?.colors.map(c => ({
-          ...c,
-          primaryImage: '',
-          secondaryImages: [],
-        })) || [],
+        inventoryProduct?.colors
+          .map(c => ({
+            ...c,
+            primaryImage: '',
+            secondaryImages: [],
+          }))
+          .sort((colorA, colorB) => (colorA.label < colorB.label ? -1 : 1)) ||
+        [],
     };
   }, [inventoryProduct]);
 
@@ -275,7 +300,7 @@ export default function AddProduct() {
       <AddProductStyles>
         <Formik
           initialValues={initialValues}
-          enableReinitialize={true}
+          enableReinitialize
           validationSchema={validationSchema}
           onSubmit={values => {
             const sizes = values.sizes.map(size => {
@@ -319,7 +344,7 @@ export default function AddProduct() {
             });
           }}
         >
-          {({ values, setFieldValue }) => (
+          {({ values, setFieldValue, setFieldTouched }) => (
             <Form>
               <div className="title">
                 <div>
@@ -368,7 +393,6 @@ export default function AddProduct() {
                       <select
                         name="inventoryProduct"
                         id="inventoryProduct"
-                        value={inventoryProduct?._id}
                         onBlur={handleInventoryProductChange}
                       >
                         <option value="">Select inventory product</option>
@@ -423,7 +447,7 @@ export default function AddProduct() {
                         </div>
                       </div>
 
-                      <div className="section">
+                      <div className="section product-details">
                         <h3>Product details</h3>
 
                         <FieldArray
@@ -923,6 +947,36 @@ export default function AddProduct() {
                         ) : null}
                       </div>
 
+                      <div className="section all-sizes-price-section">
+                        <h3>Set a price for all sizes</h3>
+                        <div className="all-sizes-price">
+                          <label htmlFor="allSizesPrice">
+                            Price for all sizes
+                          </label>
+                          <Field
+                            name="allSizesPrice"
+                            id="allSizesPrice"
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>
+                            ) => {
+                              const updatedSizes = values.sizes.map(size => {
+                                return { ...size, price: e.target.value };
+                              });
+                              values.sizes.forEach((size, index) => {
+                                setFieldTouched(`sizes.${index}.price`, true);
+                              });
+                              setFieldValue('sizes', updatedSizes);
+                              setFieldValue('allSizesPrice', e.target.value);
+                            }}
+                          />
+                          <ErrorMessage
+                            name="allSizesPrice"
+                            component="div"
+                            className="validation-error"
+                          />
+                        </div>
+                      </div>
+
                       <div className="section">
                         <h3>Product sizes</h3>
                         <FieldArray
@@ -930,7 +984,7 @@ export default function AddProduct() {
                           render={() => (
                             <>
                               {values.sizes.length > 0 &&
-                                values.sizes.map((size: Size, sizeIndex) => (
+                                values.sizes.map((size, sizeIndex) => (
                                   <div key={sizeIndex} className="size-item">
                                     <div className="grid-col-2">
                                       <div className="item">
@@ -956,7 +1010,45 @@ export default function AddProduct() {
                                         <Field
                                           name={`sizes.${sizeIndex}.price`}
                                           id={`sizes.${sizeIndex}.price`}
-                                          placeholder="0.00"
+                                          onChange={(
+                                            e: React.ChangeEvent<HTMLInputElement>
+                                          ) => {
+                                            const updatedSizes =
+                                              values.sizes.map(s => {
+                                                if (s.id === size.id) {
+                                                  return {
+                                                    ...s,
+                                                    price: e.target.value,
+                                                  };
+                                                }
+                                                return s;
+                                              });
+                                            setFieldValue(
+                                              'sizes',
+                                              updatedSizes
+                                            );
+                                            const allSizesPricesAreEqual =
+                                              values.sizes.every(s => {
+                                                if (s.id === size.id) {
+                                                  return true;
+                                                }
+                                                return (
+                                                  s.price === e.target.value
+                                                );
+                                              });
+
+                                            if (allSizesPricesAreEqual) {
+                                              setFieldValue(
+                                                'allSizesPrice',
+                                                e.target.value
+                                              );
+                                            } else {
+                                              setFieldValue(
+                                                'allSizesPrice',
+                                                ''
+                                              );
+                                            }
+                                          }}
                                         />
                                         <ErrorMessage
                                           name={`sizes.${sizeIndex}.price`}
@@ -982,177 +1074,34 @@ export default function AddProduct() {
                                 values.colors.map((color, colorIndex) => (
                                   <div key={colorIndex} className="color-item">
                                     <div>
-                                      <div className="grid-col-2">
-                                        <div className="item">
-                                          <label
-                                            htmlFor={`colors.${colorIndex}.label`}
-                                          >
-                                            Color label
-                                          </label>
-                                          <input
-                                            type="text"
-                                            name={`colors.${colorIndex}.label`}
-                                            id={`colors.${colorIndex}.label`}
-                                            value={color.label}
-                                            readOnly
+                                      <div className="color-header">
+                                        <h3>
+                                          <span
+                                            className="dot"
+                                            style={{
+                                              backgroundColor: color.hex,
+                                            }}
                                           />
-                                        </div>
-                                        <div className="item">
-                                          <label
-                                            htmlFor={`colors.${colorIndex}.hex`}
-                                          >
-                                            Hex color value
-                                          </label>
-                                          <input
-                                            type="text"
-                                            name={`colors.${colorIndex}.hex`}
-                                            id={`colors.${colorIndex}.hex`}
-                                            value={color.hex}
-                                            readOnly
-                                          />
-                                        </div>
+                                          {color.label}
+                                        </h3>
+                                        <span className="hex">{color.hex}</span>
                                       </div>
-                                      <div className="item primary-image-item">
-                                        <h5>Primary image</h5>
-                                        <div className="row">
-                                          <div className="primary-thumbnail">
-                                            {color.primaryImage ? (
-                                              <img
-                                                src={color.primaryImage}
-                                                alt={`${values.name} - ${color.label}`}
-                                              />
-                                            ) : (
-                                              <div className="placeholder">
-                                                <svg
-                                                  xmlns="http://www.w3.org/2000/svg"
-                                                  className="placeholder-icon"
-                                                  fill="none"
-                                                  viewBox="0 0 24 24"
-                                                  stroke="currentColor"
-                                                >
-                                                  <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth={2}
-                                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                                  />
-                                                </svg>
-                                              </div>
-                                            )}
-                                          </div>
-                                          <div>
-                                            <label
-                                              htmlFor={`primaryImage${colorIndex}`}
-                                            >
-                                              {primaryImageStatus ===
-                                              'loading' ? (
-                                                'Loading...'
-                                              ) : (
-                                                <>
-                                                  <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                  >
-                                                    <path
-                                                      strokeLinecap="round"
-                                                      strokeLinejoin="round"
-                                                      strokeWidth={2}
-                                                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                                                    />
-                                                  </svg>
-                                                  {color.primaryImage
-                                                    ? 'Upload a different image'
-                                                    : 'Upload an image'}
-                                                </>
-                                              )}
-                                            </label>
-                                            <input
-                                              type="file"
-                                              accept="image/png, image/jpeg"
-                                              name={`primaryImage${colorIndex}`}
-                                              id={`primaryImage${colorIndex}`}
-                                              className="sr-only"
-                                              onChange={e =>
-                                                handlePrimaryImageChange(
-                                                  values.id,
-                                                  color,
-                                                  values.colors,
-                                                  setFieldValue,
-                                                  e
-                                                )
-                                              }
-                                            />
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <div className="item secondary-images-item">
-                                        <h5>Secondary image</h5>
-                                        <div className="row">
-                                          <div>
-                                            <label
-                                              htmlFor={`secondaryImages${colorIndex}`}
-                                            >
-                                              {secondaryImageStatus ===
-                                              'loading' ? (
-                                                'Loading...'
-                                              ) : (
-                                                <>
-                                                  <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                  >
-                                                    <path
-                                                      strokeLinecap="round"
-                                                      strokeLinejoin="round"
-                                                      strokeWidth={2}
-                                                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                                                    />
-                                                  </svg>
-                                                  Upload images
-                                                </>
-                                              )}
-                                            </label>
-                                            <input
-                                              type="file"
-                                              multiple
-                                              accept="image/png, image/jpeg"
-                                              name={`secondaryImages${colorIndex}`}
-                                              id={`secondaryImages${colorIndex}`}
-                                              className="sr-only"
-                                              onChange={e =>
-                                                handleAddSecondaryImages(
-                                                  values.id,
-                                                  color,
-                                                  values.colors,
-                                                  setFieldValue,
-                                                  e
-                                                )
-                                              }
-                                            />
-                                          </div>
-                                        </div>
-                                        <div className="secondary-thumbnails">
-                                          {color.secondaryImages.map(
-                                            (secImg, secImgIndex) => {
-                                              return (
-                                                <div
-                                                  key={secImgIndex}
-                                                  className="thumbnail"
-                                                >
+                                      <div className="color-imgs-row">
+                                        <div className="primary-image-item">
+                                          <h5>Primary image</h5>
+                                          <div className="row">
+                                            <div className="primary-thumbnail">
+                                              {color.primaryImage ? (
+                                                <div className="thumbnail">
                                                   <img
-                                                    src={secImg}
-                                                    alt={`Secondary number ${secImgIndex} for color number ${colorIndex}`}
+                                                    src={color.primaryImage}
+                                                    alt={`${values.name} - ${color.label}`}
                                                   />
                                                   <button
                                                     type="button"
                                                     className="remove-img-button"
                                                     onClick={() =>
-                                                      handleRemoveSecondaryImage(
-                                                        secImgIndex,
+                                                      handleRemovePrimaryImage(
                                                         color,
                                                         values.colors,
                                                         setFieldValue
@@ -1177,9 +1126,126 @@ export default function AddProduct() {
                                                     </span>
                                                   </button>
                                                 </div>
-                                              );
-                                            }
-                                          )}
+                                              ) : null}
+                                            </div>
+                                            {color.primaryImage ? null : (
+                                              <>
+                                                <label
+                                                  htmlFor={`primaryImage${colorIndex}`}
+                                                >
+                                                  {primaryImageStatus ===
+                                                  'loading'
+                                                    ? 'Loading...'
+                                                    : 'Upload image'}
+                                                </label>
+                                                <input
+                                                  type="file"
+                                                  accept="image/png, image/jpeg, image/jpg, image/webp"
+                                                  name={`primaryImage${colorIndex}`}
+                                                  id={`primaryImage${colorIndex}`}
+                                                  className="sr-only image-input"
+                                                  disabled={
+                                                    primaryImageStatus ===
+                                                    'loading'
+                                                  }
+                                                  onChange={e =>
+                                                    handlePrimaryImageChange({
+                                                      event: e,
+                                                      productId: values.id,
+                                                      color,
+                                                      colors: values.colors,
+                                                      setFieldValue,
+                                                    })
+                                                  }
+                                                />
+                                              </>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <div className="secondary-images-item">
+                                          <h5>Secondary image</h5>
+                                          <div className="row">
+                                            <>
+                                              <label
+                                                htmlFor={`secondaryImages${colorIndex}`}
+                                              >
+                                                {secondaryImageStatus ===
+                                                'loading'
+                                                  ? 'Loading...'
+                                                  : `Upload ${
+                                                      color.secondaryImages
+                                                        .length > 0
+                                                        ? 'more '
+                                                        : ''
+                                                    } images`}
+                                              </label>
+                                              <input
+                                                type="file"
+                                                multiple
+                                                accept="image/png, image/jpeg, image/jpg, image/webp"
+                                                name={`secondaryImages${colorIndex}`}
+                                                id={`secondaryImages${colorIndex}`}
+                                                className="sr-only image-input"
+                                                onChange={e =>
+                                                  handleAddSecondaryImages({
+                                                    productId: values.id,
+                                                    color,
+                                                    colors: values.colors,
+                                                    setFieldValue,
+                                                    event: e,
+                                                  })
+                                                }
+                                              />
+                                            </>
+                                          </div>
+                                          {color.secondaryImages.length > 0 ? (
+                                            <div className="secondary-thumbnails">
+                                              {color.secondaryImages.map(
+                                                (secImg, secImgIndex) => {
+                                                  return (
+                                                    <div
+                                                      key={secImgIndex}
+                                                      className="thumbnail"
+                                                    >
+                                                      <img
+                                                        src={secImg}
+                                                        alt={`Secondary number ${secImgIndex} for color number ${colorIndex}`}
+                                                      />
+                                                      <button
+                                                        type="button"
+                                                        className="remove-img-button"
+                                                        onClick={() =>
+                                                          handleRemoveSecondaryImage(
+                                                            secImgIndex,
+                                                            color,
+                                                            values.colors,
+                                                            setFieldValue
+                                                          )
+                                                        }
+                                                      >
+                                                        <svg
+                                                          xmlns="http://www.w3.org/2000/svg"
+                                                          fill="none"
+                                                          viewBox="0 0 24 24"
+                                                          stroke="currentColor"
+                                                        >
+                                                          <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={2}
+                                                            d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                          />
+                                                        </svg>
+                                                        <span className="sr-only">
+                                                          Remove Image
+                                                        </span>
+                                                      </button>
+                                                    </div>
+                                                  );
+                                                }
+                                              )}
+                                            </div>
+                                          ) : null}
                                         </div>
                                       </div>
                                     </div>
@@ -1365,6 +1431,18 @@ const AddProductStyles = styled.div`
 
   .section {
     padding: 3rem 0;
+
+    &.product-details {
+      button {
+        margin-top: 0.25rem;
+        max-width: 29.5rem;
+        width: 100%;
+      }
+    }
+
+    &.all-sizes-price-section {
+      padding-bottom: 0;
+    }
   }
 
   .grid-col-1 {
@@ -1402,20 +1480,79 @@ const AddProductStyles = styled.div`
     align-items: center;
   }
 
-  .size-item,
-  .color-item {
-    padding: 2.5rem 0;
-    display: grid;
-    grid-template-columns: 1fr 2rem;
-    gap: 2rem;
-    border-bottom: 1px solid #e5e7eb;
+  .all-sizes-price {
+    display: flex;
+    flex-direction: column;
+  }
 
-    &:first-of-type {
-      padding-top: 0;
+  .color-item {
+    margin-bottom: 2.5rem;
+    padding: 1.25rem 1.5rem;
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+
+    .color-header {
+      margin-bottom: 0.25rem;
+      padding-bottom: 1.125rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e5e7eb;
+
+      h3 {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        font-size: 1rem;
+        line-height: 100%;
+        color: #111827;
+
+        .dot {
+          margin-right: 0.75rem;
+          display: inline-block;
+          height: 1.25rem;
+          width: 1.25rem;
+          border-radius: 0.25rem;
+          border: 1px solid rgba(0, 0, 0, 0.25);
+          color: #111827;
+        }
+      }
+
+      .hex {
+        padding: 0.1875rem 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        letter-spacing: 0.05em;
+        background-color: #f3f4f6;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.125rem;
+      }
     }
 
-    &:last-of-type {
-      border-bottom: none;
+    .color-imgs-row {
+      display: grid;
+      grid-template-columns: 9rem 1fr;
+      gap: 0 1.5rem;
+    }
+  }
+
+  .color-hex {
+    position: relative;
+    input {
+      width: 100%;
+    }
+    .color-example {
+      margin-bottom: 1rem;
+      position: absolute;
+      top: 0.9375rem;
+      right: 0.875rem;
+      display: block;
+      height: 0.8125rem;
+      width: 0.8125rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(0, 0, 0, 0.5);
     }
   }
 
@@ -1577,7 +1714,7 @@ const AddProductStyles = styled.div`
 
   .primary-image-item,
   .secondary-images-item {
-    padding: 1.5rem 0;
+    padding: 1rem 0 0;
 
     h5 {
       margin: 0 0 0.75rem;
@@ -1588,20 +1725,23 @@ const AddProductStyles = styled.div`
 
     label {
       margin: 0.125rem 0 0;
-      padding: 0.375rem 1rem;
-      display: inline-flex;
+      padding: 0.5rem 1rem;
+      display: flex;
+      justify-content: center;
       align-items: center;
-      width: inherit;
+      width: 100%;
       background-color: #fff;
       border: 1px solid #d1d5db;
       font-size: 0.8125rem;
       font-weight: 500;
+      line-height: 100%;
       border-radius: 0.3125rem;
       color: #374151;
       cursor: pointer;
       box-shadow: rgb(0 0 0 / 0%) 0px 0px 0px 0px,
         rgb(0 0 0 / 0%) 0px 0px 0px 0px, rgb(0 0 0 / 10%) 0px 1px 2px 0px,
         rgb(0 0 0 / 2%) 0px 1px 1px 0px;
+      text-align: center;
 
       svg {
         margin: 0 0.375rem 0 0;
@@ -1620,55 +1760,51 @@ const AddProductStyles = styled.div`
       }
     }
 
+    .image-input {
+      padding: 0;
+    }
+
     .row {
       display: flex;
       align-items: center;
-      gap: 1rem;
     }
 
     .primary-thumbnail {
       margin: 0.75rem 0 0;
-      padding: 0.5rem 0.875rem;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      width: 5rem;
-      height: 5rem;
-      background-color: #fff;
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
-        rgba(17, 24, 39, 0.05) 0px 0px 0px 1px,
-        rgba(0, 0, 0, 0.1) 0px 4px 6px -1px,
-        rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
-      border-radius: 0.125rem;
 
-      .placeholder {
-        width: 100%;
-        height: 100%;
+      .thumbnail {
+        position: relative;
+        padding: 0.5rem 0.875rem;
         display: flex;
         justify-content: center;
         align-items: center;
+        width: 5rem;
+        height: 5rem;
+        background-color: #fff;
+        box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
+          rgba(17, 24, 39, 0.05) 0px 0px 0px 1px,
+          rgba(0, 0, 0, 0.1) 0px 4px 6px -1px,
+          rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
         border-radius: 0.125rem;
-      }
 
-      img {
-        width: 100%;
+        img {
+          width: 100%;
+        }
       }
-    }
-
-    .placeholder-icon {
-      height: 1.5rem;
-      width: 1.5rem;
-      color: #d1d5db;
     }
 
     .secondary-thumbnails {
       margin: 1.875rem 0 0;
       display: flex;
+      flex-wrap: wrap;
       gap: 1.25rem;
 
       .thumbnail {
         padding: 0.5rem 0.875rem;
         position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
         background-color: #fff;
         box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
           rgba(17, 24, 39, 0.05) 0px 0px 0px 1px,
@@ -1699,7 +1835,7 @@ const AddProductStyles = styled.div`
       cursor: pointer;
 
       &:hover {
-        color: #991b1b;
+        color: #000;
       }
 
       svg {
@@ -1707,6 +1843,10 @@ const AddProductStyles = styled.div`
         width: 1.5rem;
       }
     }
+  }
+
+  .secondary-images-item {
+    width: 100%;
   }
 
   .validation-error {
