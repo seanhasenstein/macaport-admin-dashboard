@@ -1,10 +1,12 @@
+import { s3 } from '../utils/s3';
+import { createId, getBucketEnv } from '.';
+
 import {
   PersonalizationItem,
   PersonalizationFormItem,
   PersonalizationForm,
   Personalization,
 } from '../interfaces';
-import { createId } from '.';
 
 export function createBlankPersonalizedItem(prefix: string) {
   const item: PersonalizationFormItem = {
@@ -85,4 +87,43 @@ export function formatDbAddonItemsForForm(
       subItems,
     };
   });
+}
+
+type HandleStoreProductImageUploadType = {
+  storeId: string;
+  productId: string;
+  colorId: string;
+  image: File | null;
+  key: string;
+  errorHandler: (message: string) => void;
+};
+
+export async function handleStoreProductImageUpload(
+  args: HandleStoreProductImageUploadType
+) {
+  const { storeId, productId, colorId, image, key, errorHandler } = args;
+
+  if (!image) return;
+
+  const params = {
+    Bucket: `macaport-store-product-images/${getBucketEnv()}/store-${storeId}/${productId}/${colorId}`,
+    Key: key,
+    Body: image,
+  };
+
+  try {
+    const upload = s3.upload(params, (err: any, data: any) => {
+      // todo: handle error
+      console.log('err', err);
+      console.log('data', data);
+    });
+
+    const res = await upload.promise();
+
+    if (res.Location) {
+      return res.Location;
+    }
+  } catch (err: any) {
+    errorHandler(err);
+  }
 }
