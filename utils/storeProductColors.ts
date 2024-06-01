@@ -30,3 +30,9 @@ export function getActiveProductColors(storeProduct: StoreProduct) {
     includedColorsArray.includes(color.id)
   );
 }
+
+export function getStoreProductColorsWithPrimaryImages(
+  storeProduct: StoreProduct
+) {
+  return storeProduct.colors.filter(color => color.primaryImage);
+}
