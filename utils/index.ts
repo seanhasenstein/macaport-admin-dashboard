@@ -99,10 +99,6 @@ export function formatToMoney(input: number, includeDecimal = false) {
   }
 }
 
-export function formatFromStripeToPrice(value: number) {
-  return `${value / 100}.00`;
-}
-
 const ALPHA_NUM =
   '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
@@ -208,7 +204,7 @@ export function createStoreProductSkus({
         inventorySkuId: inventoryProductSku?.id,
         size: s,
         color: c,
-        active: false,
+        active: inventoryProductSku.active && c.primaryImage ? true : false,
       };
     });
 
@@ -246,6 +242,30 @@ export function possessiveCheck(name: string) {
   } else {
     return `${name}'s`;
   }
+}
+
+export function getBucketEnv() {
+  switch (process.env.NEXT_PUBLIC_VERCEL_ENV) {
+    case 'preview':
+      return 'dev';
+    case 'production':
+      return 'prod';
+    default:
+      return 'dev';
+  }
+}
+
+export function getFileType(event: React.ChangeEvent<HTMLInputElement>) {
+  if (
+    !event ||
+    !event.target ||
+    !event.target.files ||
+    !event.target.files.length
+  )
+    return;
+  const file = event.target.files[0];
+  const fileType = file.type.split('/')[1];
+  return fileType;
 }
 
 export const unitedStates = [
