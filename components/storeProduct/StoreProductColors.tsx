@@ -48,7 +48,7 @@ export default function StoreProductColors({ product, storeId }: Props) {
         <>
           {dnd.list.length > 0 ? (
             <div className="colors-container">
-              {dnd.list.map((color, index) => (
+              {dnd.list.map((color, index, array) => (
                 <div
                   key={color.id}
                   draggable={dnd.dragging}
@@ -62,6 +62,9 @@ export default function StoreProductColors({ product, storeId }: Props) {
                   onDrop={dnd.handleDrop}
                   className={dnd.dragging ? dnd.getStyles(index) : 'prod-color'}
                 >
+                  <span className="color-count">
+                    {index + 1} / {array.length}
+                  </span>
                   {dnd.list.length > 1 && (
                     <button
                       type="button"
@@ -258,6 +261,7 @@ const StoreProductColorStyles = styled.div`
   margin: 4rem 0 6rem;
 
   .prod-color {
+    position: relative;
     margin: 0 0 3rem;
     padding: 1.75rem 2rem 2rem;
     max-width: 74rem;
@@ -295,6 +299,16 @@ const StoreProductColorStyles = styled.div`
         margin-top: -0.75rem;
       }
     }
+  }
+
+  .color-count {
+    position: absolute;
+    top: 1.125rem;
+    right: 1.375rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #111827;
+    line-height: 100%;
   }
 
   .full-width {
@@ -443,6 +457,10 @@ const StoreProductColorStyles = styled.div`
         &:focus-visible {
           box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px,
             #1c44b9 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+        }
+
+        &:disabled {
+          cursor: default;
         }
 
         .span1 {
