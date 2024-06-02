@@ -3,7 +3,6 @@ import { useRouter } from 'next/router';
 import { UseQueryResult } from 'react-query';
 
 import {
-  CloudinaryStatus,
   Color,
   FormSize,
   InventoryProduct,
@@ -13,14 +12,7 @@ import {
   StoreProduct,
 } from '../interfaces';
 
-import {
-  createId,
-  formatFromStripeToPrice,
-  getCloudinarySignature,
-} from '../utils';
 import { formatDbAddonItemsForForm } from '../utils/storeProduct';
-
-const url = `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_NAME}/image/upload`;
 
 type InitialValues = {
   id: string;
@@ -32,6 +24,7 @@ type InitialValues = {
   tag: string;
   details: string[];
   personalization: PersonalizationForm;
+  allSizesPrice: number | undefined;
   sizes: FormSize[];
   colors: Color[];
   productSkus: ProductSku[];
@@ -45,10 +38,6 @@ type Props = {
 export function useUpdateStoreProduct(props: Props) {
   const router = useRouter();
   const [product, setProduct] = React.useState<StoreProduct>();
-  const [primaryImageStatus, setPrimaryImageStatus] =
-    React.useState<CloudinaryStatus>('idle');
-  const [secondaryImageStatus, setSecondaryImageStatus] =
-    React.useState<CloudinaryStatus>('idle');
   const [initialValues, setInitialValues] = React.useState<InitialValues>({
     id: '',
     inventoryProductId: '',
@@ -63,6 +52,7 @@ export function useUpdateStoreProduct(props: Props) {
       maxLines: 0,
       addons: [],
     },
+    allSizesPrice: undefined,
     sizes: [],
     colors: [],
     productSkus: [],
@@ -79,18 +69,39 @@ export function useUpdateStoreProduct(props: Props) {
 
   React.useEffect(() => {
     if (product && props.inventoryProductQuery.data) {
-      const colors: Color[] = props.inventoryProductQuery.data.colors.map(
-        invProdColor => {
-          const storeProdColor = product.colors.find(
-            storeProd => storeProd.id === invProdColor.id
-          );
+      type AccumulatorType = {
+        colorsWithPrimaryImg: Color[];
+        colorsWithoutPrimaryImg: Color[];
+      };
 
-          if (storeProdColor) {
-            return storeProdColor;
-          } else {
-            return { ...invProdColor, primaryImage: '', secondaryImages: [] };
-          }
+      const { colorsWithPrimaryImg, colorsWithoutPrimaryImg } =
+        product.colors.reduce(
+          (accumulator: AccumulatorType, currentColor) => {
+            if (currentColor.primaryImage) {
+              accumulator.colorsWithPrimaryImg.push(currentColor);
+            } else {
+              accumulator.colorsWithoutPrimaryImg.push(currentColor);
+            }
+            return accumulator;
+          },
+          { colorsWithPrimaryImg: [], colorsWithoutPrimaryImg: [] }
+        );
+
+      const sortedColorsWithoutPrimaryImg = colorsWithoutPrimaryImg.sort(
+        (colorA, colorB) => {
+          if (colorA.label < colorB.label) return -1;
+          if (colorA.label > colorB.label) return 1;
+          return 0;
         }
+      );
+
+      const colors = [
+        ...colorsWithPrimaryImg,
+        ...sortedColorsWithoutPrimaryImg,
+      ];
+
+      const allSizePricesAreEqual = product.sizes.every(
+        s => s.price === product.sizes[0].price
       );
 
       setInitialValues({
@@ -106,144 +117,18 @@ export function useUpdateStoreProduct(props: Props) {
           ...product.personalization,
           addons: formatDbAddonItemsForForm(product.personalization.addons),
         },
+        allSizesPrice: allSizePricesAreEqual
+          ? product.sizes[0].price / 100
+          : undefined,
         sizes: product.sizes.map(s => ({
           ...s,
-          price: formatFromStripeToPrice(s.price),
+          price: `${s.price / 100}`,
         })),
         colors,
         productSkus: product.productSkus,
       });
     }
   }, [product, props.inventoryProductQuery.data]);
-
-  const handlePrimaryImageChange = async (
-    productId: string,
-    color: Color,
-    colors: Color[],
-    setFieldValue: (
-      field: string,
-      value: any,
-      shouldValidate?: boolean | undefined
-    ) => void,
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    if (e.target.files === null || e.target.files[0] === undefined) {
-      return;
-    }
-
-    setPrimaryImageStatus('loading');
-    const publicId = `stores/${router.query.id}/${productId}/${
-      color.id
-    }/${createId('primary')}`;
-    const { signature, timestamp } = await getCloudinarySignature(publicId);
-
-    const formData = new FormData();
-    formData.append('file', e.target.files[0]);
-    formData.append('api_key', `${process.env.NEXT_PUBLIC_CLOUDINARY_KEY}`);
-    formData.append('public_id', publicId);
-    formData.append('timestamp', `${timestamp}`);
-    formData.append('signature', signature);
-
-    const response = await fetch(url, {
-      method: 'post',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to send primary image to cloudinary.');
-    }
-
-    const data = await response.json();
-
-    const updatedColors = colors.map(c => {
-      if (c.id == color.id) {
-        return { ...color, primaryImage: data.secure_url };
-      }
-
-      return c;
-    });
-
-    setFieldValue('colors', updatedColors);
-    setPrimaryImageStatus('idle');
-  };
-
-  const handleAddSecondaryImages = async (
-    productId: string,
-    color: Color,
-    colors: Color[],
-    setFieldValue: (
-      field: string,
-      value: any,
-      shouldValidate?: boolean | undefined
-    ) => void,
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    if (e.target.files === null || e.target.files[0] === undefined) {
-      return;
-    }
-
-    setSecondaryImageStatus('loading');
-
-    const secondaryImagesCopy = [...color.secondaryImages];
-
-    for (let i = 0; i < e.target.files.length; i++) {
-      const publicId = `stores/${router.query.id}/${productId}/${
-        color.id
-      }/${createId('secondary')}`;
-
-      const { signature, timestamp } = await getCloudinarySignature(publicId);
-
-      const formData = new FormData();
-      formData.append('file', e.target.files[i]);
-      formData.append('api_key', `${process.env.NEXT_PUBLIC_CLOUDINARY_KEY}`);
-      formData.append('public_id', publicId);
-      formData.append('timestamp', `${timestamp}`);
-      formData.append('signature', signature);
-
-      const response = await fetch(url, {
-        method: 'post',
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      secondaryImagesCopy.push(data.secure_url);
-    }
-
-    const updatedColors = colors.map(c => {
-      if (c.id === color.id) {
-        return { ...color, secondaryImages: secondaryImagesCopy };
-      }
-      return c;
-    });
-
-    setFieldValue('colors', updatedColors);
-    setSecondaryImageStatus('idle');
-  };
-
-  const handleRemoveSecondaryImage = (
-    secImgIndex: number,
-    color: Color,
-    colors: Color[],
-    setFieldValue: (
-      field: string,
-      value: any,
-      shouldValidate?: boolean | undefined
-    ) => void
-  ) => {
-    const secondaryImagesCopy = [...color.secondaryImages];
-
-    secondaryImagesCopy.splice(secImgIndex, 1);
-
-    const updatedColors = colors.map(c => {
-      if (c.id === color.id) {
-        return { ...color, secondaryImages: secondaryImagesCopy };
-      }
-      return c;
-    });
-
-    setFieldValue('colors', updatedColors);
-  };
 
   const handleAddClick = async (callback: () => void, selector: string) => {
     await callback();
@@ -253,11 +138,6 @@ export function useUpdateStoreProduct(props: Props) {
   return {
     initialValues,
     product,
-    primaryImageStatus,
-    secondaryImageStatus,
-    handlePrimaryImageChange,
-    handleAddSecondaryImages,
-    handleRemoveSecondaryImage,
     handleAddClick,
   };
 }
