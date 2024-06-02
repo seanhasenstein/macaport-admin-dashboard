@@ -229,7 +229,11 @@ export function updateProductSkus(
     }
 
     if (color) {
-      updatedSku = { ...updatedSku, color };
+      updatedSku = {
+        ...updatedSku,
+        color,
+        active: sku.inventorySkuActive && color.primaryImage ? true : false,
+      };
     }
 
     return updatedSku;
