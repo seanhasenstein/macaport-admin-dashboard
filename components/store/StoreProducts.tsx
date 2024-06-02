@@ -157,7 +157,7 @@ export default function StoreProducts({ store }: Props) {
                                 <ProductColor
                                   key={color.id}
                                   hex={color.hex}
-                                  title={color.hex}
+                                  title={color.label}
                                 />
                               ))}
                             </>
