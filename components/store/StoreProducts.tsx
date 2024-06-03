@@ -203,7 +203,7 @@ export default function StoreProducts({ store }: Props) {
 }
 
 const StoreProductsStyles = styled.div`
-  margin: 5rem 0 0;
+  margin: 3.5rem 0 0;
 
   .products-header {
     margin: 0 0 1.5rem;
@@ -220,7 +220,7 @@ const StoreProductsStyles = styled.div`
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 500;
     color: #1f2937;
     line-height: 1;
@@ -232,8 +232,8 @@ const StoreProductsStyles = styled.div`
 
     svg {
       margin: 0 0.5rem 0 0;
-      height: 0.875rem;
-      width: 0.875rem;
+      height: 0.75rem;
+      width: 0.75rem;
       color: #4b5563;
     }
 
@@ -255,12 +255,10 @@ const StoreProductsStyles = styled.div`
   }
 
   .products-table {
-    margin: 2rem 0 0;
+    margin: 1rem 0 0;
     border: 1px solid #d1d5db;
     border-radius: 0.375rem;
-    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-      rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 1px 3px 0px,
-      rgba(0, 0, 0, 0.06) 0px 1px 2px 0px;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   }
 
   .products-header-labels,
@@ -296,7 +294,7 @@ const StoreProductsStyles = styled.div`
   }
 
   .products {
-    background-color: #fff;
+    background-color: #fdfdfd;
     border-radius: 0 0 0.375rem 0.375rem;
   }
 
