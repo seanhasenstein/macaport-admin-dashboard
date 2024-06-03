@@ -13,7 +13,6 @@ export default function StoreDetails({ store }: Props) {
 
   return (
     <StoreDetailsStyles>
-      <h3 className="section-title">Store details</h3>
       <div className="grid">
         <div>
           <div className="detail-item">
@@ -116,10 +115,6 @@ export default function StoreDetails({ store }: Props) {
 }
 
 const StoreDetailsStyles = styled.div`
-  margin: 1.5rem 0 0;
-  padding: 0 0 0.5rem;
-  border-bottom: 1px solid #d1d5db;
-
   .grid {
     padding: 0.875rem 0 0;
     display: flex;
@@ -134,14 +129,14 @@ const StoreDetailsStyles = styled.div`
 
   .label {
     margin: 0 0 0.4375rem;
-    font-size: 0.9375rem;
-    font-weight: 500;
-    color: #6b7280;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #111827;
     text-transform: capitalize;
   }
 
   .value {
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
     color: #111827;
     line-height: 1.5;
 
