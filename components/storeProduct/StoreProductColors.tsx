@@ -8,8 +8,6 @@ import useDragNDrop from '../../hooks/useDragNDrop';
 import { getStoreProductColorsWithPrimaryImages } from '../../utils/storeProductColors';
 import { formatToMoney } from '../../utils';
 
-import StoreProductSecondaryImages from './StoreProductSecondaryImages';
-
 import { Color, StoreProduct } from '../../interfaces';
 
 type Props = {
@@ -101,39 +99,38 @@ export default function StoreProductColors({ product, storeId }: Props) {
                     </button>
                   )}
                   <div className="full-width">
-                    <div className="color-details-row">
-                      <div className="color-details">
-                        <div className="color-item">
-                          <div className="color-label">Label</div>
-                          <div className="color-value">{color.label}</div>
-                        </div>
-                        <div className="color-item">
-                          <div className="color-label">Hex</div>
-                          <div className="color-value">
-                            <ColorSpan hex={color.hex} />
-                            {color.hex}
-                          </div>
+                    <div className="flex">
+                      <div>
+                        <div className="color-details">
+                          <div
+                            className="color-square"
+                            style={{ backgroundColor: color.hex }}
+                          />
+                          <div className="color-name">{color.label}</div>
+                          <div className="color-hex">{color.hex}</div>
                         </div>
                       </div>
                       <div className="color-imgs">
                         <div className="primary-img">
-                          <div className="color-label">Primary Image</div>
-                          {color.primaryImage ? (
-                            <div className="color-value">
-                              <img
-                                src={color.primaryImage}
-                                alt={`${color.label} primary`}
-                              />
-                            </div>
-                          ) : null}
-                        </div>
-                        <div className="secondary-imgs">
-                          <div className="color-label">Secondary Images</div>
-                          <StoreProductSecondaryImages
-                            color={color}
-                            product={product}
+                          <img
+                            src={color.primaryImage}
+                            alt={`${color.label} primary`}
                           />
                         </div>
+                        {color.secondaryImages.length > 0 && (
+                          <div className="secondary-imgs">
+                            <>
+                              {color.secondaryImages.map((img, i) => (
+                                <div key={i} className="secondary-img">
+                                  <img
+                                    src={img}
+                                    alt={`${color.label} secondary ${i}`}
+                                  />
+                                </div>
+                              ))}
+                            </>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="color-sizes">
@@ -263,7 +260,7 @@ const StoreProductColorStyles = styled.div`
   .prod-color {
     position: relative;
     margin: 0 0 3rem;
-    padding: 1.75rem 2rem 2rem;
+    padding: 1.75rem 6rem 2.25rem 2rem;
     max-width: 74rem;
     width: 100%;
     display: flex;
@@ -271,7 +268,7 @@ const StoreProductColorStyles = styled.div`
     gap: 2rem;
     background: #fafafa;
     border: 1px solid #d1d5db;
-    border-radius: 0.25rem;
+    border-radius: 0.5rem;
     box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   }
 
@@ -301,6 +298,48 @@ const StoreProductColorStyles = styled.div`
     }
   }
 
+  .full-width {
+    width: 100%;
+  }
+
+  .flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0 1.5rem;
+  }
+
+  .color-details {
+    display: flex;
+    align-items: center;
+
+    .color-square {
+      margin: 0 0.875rem 0 0;
+      height: 1.25rem;
+      width: 1.25rem;
+      border-radius: 0.25rem;
+      border: 1px solid rgba(0, 0, 0, 0.25);
+    }
+
+    .color-name {
+      margin: 0 1.5rem 0 0;
+      font-size: 1.125rem;
+      font-weight: 700;
+      line-height: 100%;
+      color: #111827;
+    }
+
+    .color-hex {
+      padding: 0.1875rem 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      background-color: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.125rem;
+    }
+  }
+
   .color-count {
     position: absolute;
     top: 1.125rem;
@@ -311,71 +350,40 @@ const StoreProductColorStyles = styled.div`
     line-height: 100%;
   }
 
-  .full-width {
-    width: 100%;
-  }
-
-  .color-details-row {
-    display: flex;
-    justify-content: space-between;
-  }
-
-  .color-details {
-    width: 40%;
-  }
-
   .color-imgs {
     display: flex;
-    justify-content: space-between;
-    width: 60%;
-  }
 
-  .primary-img {
-    width: 30%;
-  }
-
-  .secondary-imgs {
-    width: 55%;
-  }
-
-  .primary-img {
-    .color-value {
+    .primary-img,
+    .secondary-img {
       padding: 0.25rem 0.5rem;
-      width: 2.75rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       background-color: #fff;
-      border: 1px solid #e5e7eb;
+      border: 1px solid #d1d5db;
       border-radius: 0.25rem;
-      box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+
+      img {
+        width: 100%;
+      }
     }
 
-    img {
-      width: 100%;
+    .primary-img {
+      width: 3rem;
     }
-  }
 
-  .color-details {
-    display: flex;
-  }
+    .secondary-imgs {
+      margin: 0 0 0 1rem;
+      display: flex;
+      align-items: start;
+      gap: 0 1rem;
 
-  .color-item {
-    width: 50%;
-  }
-
-  .color-label {
-    margin: 0 0 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.075em;
-    color: #3f3f46;
-  }
-
-  .color-value {
-    display: flex;
-    align-items: center;
-    font-size: 0.875rem;
-    color: #1f2937;
+      .secondary-img {
+        width: 3rem;
+        height: 3rem;
+      }
+    }
   }
 
   .no-active-colors {
@@ -385,7 +393,7 @@ const StoreProductColorStyles = styled.div`
   }
 
   .color-sizes {
-    margin: 1.5rem 0 0;
+    margin: 1.75rem 0 0;
     border: 1px solid #d1d5db;
     background-color: #fff;
     border-radius: 0.25rem;
@@ -524,23 +532,4 @@ const StoreProductColorStyles = styled.div`
       }
     }
   }
-`;
-
-type ColorProps = {
-  hex: string;
-};
-
-function ColorSpan(props: ColorProps) {
-  return <ColorSpanStyles {...props} />;
-}
-
-const ColorSpanStyles = styled.span<ColorProps>`
-  margin: 0 0.5rem 0 0;
-  display: flex;
-  background-color: ${props => props.hex};
-  height: 1rem;
-  width: 1rem;
-  border-radius: 9999px;
-  border: 1px solid rgba(0, 0, 0, 0.25);
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 `;
