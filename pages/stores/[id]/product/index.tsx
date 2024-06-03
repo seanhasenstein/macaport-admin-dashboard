@@ -220,7 +220,7 @@ const ProductStyles = styled.div`
         font-size: 0.875rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.035em;
+        letter-spacing: 0.05em;
         line-height: 100%;
       }
 
