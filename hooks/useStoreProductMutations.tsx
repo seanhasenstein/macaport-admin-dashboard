@@ -215,7 +215,15 @@ export function useStoreProductMutations({
   });
 
   const updateColorsOrder = useMutation(
-    async (colors: Color[]) => {
+    async (activeColors: Color[]) => {
+      const nonActiveColors =
+        storeProduct?.colors.filter(
+          storeProdColor =>
+            !activeColors.find(
+              activeColor => activeColor.id === storeProdColor.id
+            )
+        ) || [];
+      const colors = [...activeColors, ...nonActiveColors];
       const response = await fetch(
         `/api/stores/update-product?sid=${router.query.id}&pid=${router.query.pid}`,
         {

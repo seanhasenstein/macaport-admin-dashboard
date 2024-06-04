@@ -141,8 +141,11 @@ const OrderTableItemsBreakdownStyles = styled.div`
   background-color: #fff;
   border: 1px solid #d4d4d8;
   border-radius: 0.25rem;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   &.all-shipped-canceled {
     border: none;
+    background-color: transparent;
+    box-shadow: none;
     .status-item {
       justify-content: center;
       padding-left: 0;

@@ -341,19 +341,18 @@ const StoreMenuStyles = styled.div`
   }
 
   .menu-container {
-    margin: 0.25rem 0 0;
+    margin: 0.375rem 0 0;
     padding: 0 1rem;
     position: absolute;
-    right: 1rem;
+    right: 2.75rem;
     white-space: nowrap;
     display: none;
     flex-direction: column;
     align-items: flex-start;
-    background-color: #fff;
-    border-radius: 0.5rem;
-    box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
-      rgba(17, 24, 39, 0.05) 0px 0px 0px 1px,
-      rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
+    background-color: #fbfbfb;
+    border-radius: 0.375rem;
+    border: 1px solid #d1d5db;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 
     &.show {
       display: flex;

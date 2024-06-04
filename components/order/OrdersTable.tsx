@@ -376,7 +376,7 @@ export default function OrdersTable({
 const OrdersTableStyles = styled.div`
   overflow-x: auto;
   .buttons {
-    margin: 0 0 1.125rem;
+    margin: 0 0 1.75rem;
     width: 100%;
 
     .container {
@@ -455,6 +455,24 @@ const OrdersTableStyles = styled.div`
     padding-bottom: 0.5rem;
   }
 
+  th {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  td {
+    background-color: #fdfdfd;
+  }
+
+  tr:last-of-type {
+    td:first-of-type {
+      border-bottom-left-radius: 0.375rem;
+    }
+    td:last-of-type {
+      border-bottom-right-radius: 0.375rem;
+    }
+  }
+
   td,
   td:first-of-type {
     padding: 0;
@@ -478,21 +496,22 @@ const OrdersTableStyles = styled.div`
       padding-right: 1rem;
       .custom-table-order-status {
         padding: 0.3125rem 0;
-        min-width: 7.5rem;
+        min-width: 7.25rem;
+        font-size: 0.625rem;
       }
     }
 
     .personalized-span {
       margin: 0 auto;
       padding: 0 0 0 0.0625rem;
-      height: 1.375rem;
-      width: 1.375rem;
+      height: 1.25rem;
+      width: 1.25rem;
       display: flex;
       justify-content: center;
       align-items: center;
       background-color: #4b5563;
       color: #fff;
-      font-size: 0.625rem;
+      font-size: 0.5625rem;
       font-weight: 700;
       text-align: center;
       line-height: 100%;
@@ -508,8 +527,8 @@ const OrdersTableStyles = styled.div`
         justify-content: flex-end;
         align-items: center;
         svg {
-          height: 1.0625rem;
-          width: 1.0625rem;
+          height: 0.875rem;
+          width: 0.875rem;
           color: #4b5563;
         }
       }
