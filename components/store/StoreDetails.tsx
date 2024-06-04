@@ -130,13 +130,14 @@ const StoreDetailsStyles = styled.div`
   .label {
     margin: 0 0 0.4375rem;
     font-size: 0.875rem;
-    font-weight: 600;
-    color: #111827;
+    font-weight: 500;
+    color: #6b7280;
     text-transform: capitalize;
   }
 
   .value {
     font-size: 0.875rem;
+    font-weight: 400;
     color: #111827;
     line-height: 1.5;
 
