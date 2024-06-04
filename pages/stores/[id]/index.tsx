@@ -101,48 +101,37 @@ export default function Store() {
             <>
               <PageNavButtons />
 
-              <div className="header">
-                <div>
-                  <div className="category">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
-                    </svg>
-                    <div>Website Store</div>
-                  </div>
-                  <div className="name-status-row">
-                    <h2>{storeQuery.data.name}</h2>
-                    <div className="store-status">
-                      <span className={storeStatus}>
-                        Store{' '}
-                        {storeStatus === 'upcoming'
-                          ? 'Upcoming'
-                          : storeStatus === 'open'
-                          ? 'Open'
-                          : 'Closed'}
-                      </span>
-                    </div>
-                  </div>
-                  <p>{storeQuery.data.storeId}</p>
-                </div>
-                <StoreMenu
-                  storeId={storeQuery.data._id}
-                  storeStatus={storeStatus}
-                  setShowDeleteModal={setShowDeleteStoreModal}
-                  setShowCSVModal={setShowCSVModal}
-                  setPrintOption={setPrintOption}
-                  showTriggerStoreShipmentModal={() =>
-                    setShowTriggerShipmentModal(true)
-                  }
-                />
-              </div>
-
-              <div className="main-content">
+              <div>
                 <FetchingSpinner isLoading={storeQuery.isFetching} />
-                <StoreDetails store={storeQuery.data} />
+                <div className="store-details-container">
+                  <div className="header">
+                    <div className="store-status-name-row">
+                      <div className="store-status">
+                        <span className={storeStatus}>
+                          Store{' '}
+                          {storeStatus === 'upcoming'
+                            ? 'Upcoming'
+                            : storeStatus === 'open'
+                            ? 'Open'
+                            : 'Closed'}
+                        </span>
+                      </div>
+                      <h2 className="store-name">{storeQuery.data.name}</h2>
+                    </div>
+                    <StoreMenu
+                      storeId={storeQuery.data._id}
+                      storeStatus={storeStatus}
+                      setShowDeleteModal={setShowDeleteStoreModal}
+                      setShowCSVModal={setShowCSVModal}
+                      setPrintOption={setPrintOption}
+                      showTriggerStoreShipmentModal={() =>
+                        setShowTriggerShipmentModal(true)
+                      }
+                    />
+                  </div>
+                  <StoreDetails store={storeQuery.data} />
+                </div>
+                <StoreProducts store={storeQuery.data} />
                 <StoreOrders
                   store={storeQuery.data}
                   {...{
@@ -155,7 +144,6 @@ export default function Store() {
                       setShowTriggerShipmentModal(true),
                   }}
                 />
-                <StoreProducts store={storeQuery.data} />
               </div>
             </>
           )}
@@ -292,80 +280,69 @@ const StoreStyles = styled.div`
     width: 100%;
   }
 
+  .store-details-container {
+    margin: 1.875rem 0 0;
+    padding: 1.625rem 1.75rem 1rem;
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.4375rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  }
+
   .header {
-    margin: 3.5rem 0 0;
+    margin: 0 0 1rem;
+    padding: 0 0 1.625rem;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    border-bottom: 1px solid #e5e7eb;
 
-    .category {
-      margin: 0 0 1rem;
+    .store-status-name-row {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      color: #374151;
-      font-size: 0.875rem;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.025em;
+    }
 
-      svg {
-        height: 0.9375rem;
-        width: 0.9375rem;
-        color: #9ca3af;
+    .store-status {
+      span {
+        padding: 0.3125rem 0.5rem;
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.075em;
+        color: #374151;
+        border-radius: 0.25rem;
+        background: #fff;
+        line-height: 1;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+
+        &.closed {
+          background-color: #fee2e2;
+          color: #991b1b;
+        }
+
+        &.upcoming {
+          background-color: #fef3c7;
+          color: #92400e;
+        }
+
+        &.open {
+          background-color: #d1fae5;
+          color: #065f46;
+        }
       }
     }
 
-    p {
-      margin: 0.25rem 0 0;
-      font-size: 1rem;
-      font-weight: 500;
-      color: #6b7280;
+    .store-name {
+      margin: 0 0 0 1.25rem;
+      padding: 0 0 0 1rem;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #1f2937;
+      letter-spacing: -0.025em;
+      line-height: 100%;
+      border-left: 1px solid #d1d5db;
     }
-  }
-
-  .name-status-row {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  .store-status {
-    margin: 0.5rem 0 0;
-    span {
-      padding: 0.375rem 0.6875rem;
-      display: inline-flex;
-      align-items: center;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #374151;
-      border-radius: 0.25rem;
-      background: #fff;
-      line-height: 1;
-      border: 1px solid rgba(0, 0, 0, 0.12);
-
-      &.closed {
-        background-color: #fee2e2;
-        color: #991b1b;
-      }
-
-      &.upcoming {
-        background-color: #fef3c7;
-        color: #92400e;
-      }
-
-      &.open {
-        background-color: #d1fae5;
-        color: #065f46;
-      }
-    }
-  }
-
-  .main-content {
-    position: relative;
-    padding: 4rem 0;
   }
 
   .section-title {

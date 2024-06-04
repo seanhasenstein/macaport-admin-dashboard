@@ -10,7 +10,6 @@ import { useStoreProductMutations } from '../../../../hooks/useStoreProductMutat
 
 import Layout from '../../../../components/Layout';
 import StoreProductColors from '../../../../components/storeProduct/StoreProductColors';
-import StoreProductSkusTable from '../../../../components/storeProduct/StoreProductSkusTable';
 import LoadingSpinner from '../../../../components/LoadingSpinner';
 import Notification from '../../../../components/Notification';
 import StoreProductMenu from '../../../../components/storeProduct/StoreProductMenu';
@@ -62,31 +61,29 @@ export default function Product() {
               </div>
 
               <div className="header">
-                <div className="category">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
-                  </svg>
-                  <div>Store Product</div>
+                <div className="product-image">
+                  <img
+                    src={
+                      storeProduct.colors.find(c => c.primaryImage)
+                        ?.primaryImage
+                    }
+                    alt={storeProduct.name}
+                  />
                 </div>
-                <h2>{storeProduct.name}</h2>
-                <p>{storeProduct.id}</p>
+                <div className="product-details">
+                  <p className="category">Store Product</p>
+                  <p className="product-name">{storeProduct.name}</p>
+                </div>
               </div>
 
               <div className="main-content">
                 <FetchingSpinner isLoading={isFetching} />
                 <StoreProductDetails storeProduct={storeProduct} />
                 <StoreProductPersonzalization storeProduct={storeProduct} />
-                <StoreProductSkusTable
+                <StoreProductColors
+                  product={storeProduct}
                   storeId={getQueryParameter(router.query.id)}
-                  storeProduct={storeProduct}
-                  productSkus={storeProduct.productSkus}
-                  inventoryProductId={storeProduct.inventoryProductId}
                 />
-                <StoreProductColors product={storeProduct} />
               </div>
             </>
           )}
@@ -189,31 +186,52 @@ const ProductStyles = styled.div`
   }
 
   .header {
-    padding: 0.5rem 0 1.5rem;
+    padding: 1.25rem 1.625rem 1.25rem 1.25rem;
+    display: inline-flex;
+    gap: 0 1.1875rem;
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 
-    .category {
-      margin: 0 0 1rem;
+    .product-image {
+      padding-right: 1.25rem;
       display: flex;
+      justify-content: center;
       align-items: center;
-      gap: 0.5rem;
-      color: #374151;
-      font-size: 0.875rem;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.025em;
+      width: 4.25rem;
+      background-color: #fff;
+      border-radius: 0.125rem;
+      border-right: 1px solid #e5e7eb;
 
-      svg {
-        height: 0.9375rem;
-        width: 0.9375rem;
-        color: #9ca3af;
+      img {
+        width: 100%;
+        height: auto;
       }
     }
 
-    p {
-      margin: 0.25rem 0 0;
-      font-size: 1rem;
-      font-weight: 500;
-      color: #6b7280;
+    .product-details {
+      .category {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #6b7280;
+        font-size: 0.875rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        line-height: 100%;
+      }
+
+      .product-name {
+        margin: 0.9rem 0 0;
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: #1f2937;
+        letter-spacing: -0.025em;
+        line-height: 100%;
+      }
     }
   }
 
