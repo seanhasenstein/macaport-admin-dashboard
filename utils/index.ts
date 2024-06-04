@@ -215,9 +215,29 @@ export function createStoreProductSkus({
 }
 
 export function updateProductSkus(
+  previousColors: Color[],
   previousProductSkus: ProductSku[],
   formData: StoreProduct
 ) {
+  const initialColorsWithPrimaryImage = previousColors.filter(
+    color => color.primaryImage
+  );
+  const newColorsWithPrimaryImage = formData.colors.reduce(
+    (accumulator: Color[], currentColor) => {
+      if (
+        currentColor.primaryImage &&
+        !initialColorsWithPrimaryImage.some(
+          color => color.id === currentColor.id
+        )
+      ) {
+        return [...accumulator, currentColor];
+      } else {
+        return accumulator;
+      }
+    },
+    []
+  );
+
   return previousProductSkus.map(sku => {
     const size = formData.sizes.find(s => s.id === sku.size.id);
     const color = formData.colors.find(c => c.id === sku.color.id);
@@ -229,10 +249,19 @@ export function updateProductSkus(
     }
 
     if (color) {
+      const newColorWithPrimaryImgAndInvSkuActive =
+        newColorsWithPrimaryImage.some(c => c.id === color.id) &&
+        sku.inventorySkuActive;
+      const prevColorWithPrimaryImgAndActiveProdSku = sku.active;
+
       updatedSku = {
         ...updatedSku,
         color,
-        active: sku.inventorySkuActive && color.primaryImage ? true : false,
+        active:
+          newColorWithPrimaryImgAndInvSkuActive ||
+          prevColorWithPrimaryImgAndActiveProdSku
+            ? true
+            : false,
       };
     }
 

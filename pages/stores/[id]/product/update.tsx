@@ -310,6 +310,7 @@ export default function UpdateProduct() {
                   };
 
                   const updatedSkus = updateProductSkus(
+                    product.colors,
                     product.productSkus,
                     updatedFormValues
                   );
