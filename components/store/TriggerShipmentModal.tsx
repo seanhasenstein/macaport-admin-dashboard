@@ -146,7 +146,7 @@ export default function TriggerShipmentModal({
         {...{
           closeModal,
           isOpen,
-          customClass: 'custom-modal-class',
+          customModalClass: 'custom-modal-class',
           customCloseClass: 'custom-close-button',
         }}
       >

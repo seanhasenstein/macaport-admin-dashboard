@@ -10,7 +10,8 @@ type Props = {
   children: React.ReactNode;
   closeModal: () => void;
   isOpen: boolean;
-  customClass?: string;
+  customOverlayClass?: string;
+  customModalClass?: string;
   customCloseClass?: string;
 };
 
@@ -18,7 +19,8 @@ export default function Modal({
   children,
   closeModal,
   isOpen,
-  customClass,
+  customOverlayClass,
+  customModalClass,
   customCloseClass,
 }: Props) {
   const modalRef = React.useRef<HTMLDivElement>(null);
@@ -28,10 +30,10 @@ export default function Modal({
 
   return (
     <ModalContainer>
-      <div className="overlay">
+      <div className={classNames('overlay', customOverlayClass)}>
         <div
           ref={modalRef}
-          className={classNames('modal-container', customClass)}
+          className={classNames('modal-container', customModalClass)}
         >
           <button
             onClick={e => {

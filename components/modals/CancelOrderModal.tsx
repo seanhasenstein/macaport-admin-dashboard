@@ -105,7 +105,7 @@ export default function CancelOrderModal({
         {...{
           closeModal,
           isOpen,
-          customClass: 'custom-cancel-item-modal-class',
+          customModalClass: 'custom-cancel-item-modal-class',
           customCloseClass: 'custom-close-button',
         }}
       >
