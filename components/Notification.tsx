@@ -8,6 +8,7 @@ type Props = {
   heading: string;
   callbackUrl: string;
   className?: string;
+  durationVisible?: number;
 };
 
 export default function Notification({
@@ -15,6 +16,7 @@ export default function Notification({
   heading,
   callbackUrl,
   className = '',
+  durationVisible = 10000,
 }: Props) {
   const router = useRouter();
   const [show, setShow] = useNotification(query);
@@ -29,7 +31,7 @@ export default function Notification({
 
       showRef = setTimeout(() => {
         setShow(false);
-      }, 10000);
+      }, durationVisible);
     }
     return () => {
       clearTimeout(queryRef);
