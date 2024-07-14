@@ -13,7 +13,7 @@ type Props = {
   inventoryProduct: InventoryProduct | undefined;
 };
 
-export default function SizeChartModal({
+export default function EditSizeChartModal({
   isOpen,
   closeModal,
   inventoryProduct,
@@ -30,7 +30,7 @@ export default function SizeChartModal({
   if (!isOpen || !inventoryProduct) return null;
 
   return (
-    <SizeChartModalStyles>
+    <EditSizeChartModalStyles>
       <Modal
         {...{ isOpen, closeModal }}
         customOverlayClass="custom-modal-overlay"
@@ -42,11 +42,11 @@ export default function SizeChartModal({
         </p>
         <SizeChartForm {...{ inventoryProduct }} onSuccess={onSuccess} />
       </Modal>
-    </SizeChartModalStyles>
+    </EditSizeChartModalStyles>
   );
 }
 
-const SizeChartModalStyles = styled.div`
+const EditSizeChartModalStyles = styled.div`
   .custom-modal-container {
     max-width: 30rem;
     width: 100%;
