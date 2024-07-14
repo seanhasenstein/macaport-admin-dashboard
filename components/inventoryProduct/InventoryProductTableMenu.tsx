@@ -1,7 +1,11 @@
 import React from 'react';
 import styled from 'styled-components';
 import { EllipsisVerticalIcon } from '@heroicons/react/20/solid';
-import { PencilIcon, FolderOpenIcon } from '@heroicons/react/24/outline';
+import {
+  PencilIcon,
+  FolderOpenIcon,
+  FolderPlusIcon,
+} from '@heroicons/react/24/outline';
 
 import useOutsideClick from '../../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
@@ -44,7 +48,7 @@ export default function InventoryProductTableMenu({
             setShowMenu(false);
           }}
         >
-          <PencilIcon />
+          {sizeChart?.length ? <PencilIcon /> : <FolderPlusIcon />}
           {addEditSizeChartCopy}
         </button>
         {sizeChart?.length && (
