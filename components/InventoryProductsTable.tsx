@@ -12,12 +12,13 @@ import Pagination from './Pagination';
 import PageNavButtons from './PageNavButtons';
 import Table from './common/Table';
 import InventoryProductTableMenu from './inventoryProduct/InventoryProductTableMenu';
-import SizeChartModal from './modals/SizeChartModal';
+import EditSizeChartModal from './modals/EditSizeChartModal';
+import ViewSizeChartModal from './modals/ViewSizeChartModal';
 import Notification from './Notification';
 
 import { fetchPaginatedInventoryProducts } from '../queries/inventory-products';
 
-import { InventoryProduct, InventorySku } from '../interfaces';
+import { InventoryProduct, InventorySku, Size } from '../interfaces';
 
 interface InventoryProductsQuery {
   inventoryProducts: InventoryProduct[];
@@ -35,17 +36,35 @@ export default function InventoryProductsTable() {
   const router = useRouter();
   const pageSize = 10;
   const [currentPage, setCurrentPage] = React.useState<number>();
-  const [showSizeChartModal, setShowSizeChartModal] = React.useState(false);
+  const [showEditSizeChartModal, setShowEditSizeChartModal] =
+    React.useState(false);
+  const [showViewSizeChartModal, setShowViewSizeChartModal] =
+    React.useState(false);
   const [selectedProduct, setSelectedProduct] =
     React.useState<InventoryProduct>();
 
-  const handleSizeChartClick = (inventoryProduct: InventoryProduct) => {
-    setShowSizeChartModal(true);
+  const handleSizeChartClick = ({
+    mode,
+    inventoryProduct,
+  }: {
+    mode: 'view' | 'edit';
+    inventoryProduct: InventoryProduct;
+  }) => {
+    if (mode === 'edit') {
+      setShowEditSizeChartModal(true);
+    } else if (mode === 'view') {
+      setShowViewSizeChartModal(true);
+    }
     setSelectedProduct(inventoryProduct);
   };
 
-  const closeSizeChartModal = () => {
-    setShowSizeChartModal(false);
+  const closeEditSizeChartModal = () => {
+    setShowEditSizeChartModal(false);
+    setSelectedProduct(undefined);
+  };
+
+  const closeViewSizeChartModal = () => {
+    setShowViewSizeChartModal(false);
     setSelectedProduct(undefined);
   };
 
@@ -160,8 +179,11 @@ export default function InventoryProductsTable() {
                         <td>
                           <InventoryProductTableMenu
                             sizeChart={product.sizeChart}
-                            handleSizeChartClick={() =>
-                              handleSizeChartClick(product)
+                            handleSizeChartClick={mode =>
+                              handleSizeChartClick({
+                                inventoryProduct: product,
+                                mode,
+                              })
                             }
                           />
                         </td>
@@ -183,11 +205,20 @@ export default function InventoryProductsTable() {
           )}
         </div>
       )}
-      <SizeChartModal
-        isOpen={showSizeChartModal}
-        closeModal={closeSizeChartModal}
+      <EditSizeChartModal
+        isOpen={showEditSizeChartModal}
+        closeModal={closeEditSizeChartModal}
         inventoryProduct={selectedProduct}
       />
+      {selectedProduct && (
+        <ViewSizeChartModal
+          isOpen={showViewSizeChartModal}
+          closeModal={closeViewSizeChartModal}
+          productName={selectedProduct?.name || ''}
+          productSizes={selectedProduct.sizes as Size[]}
+          sizeChart={selectedProduct?.sizeChart}
+        />
+      )}
       <Notification
         query="sizeChart"
         heading="Size chart saved"
