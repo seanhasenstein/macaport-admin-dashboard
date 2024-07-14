@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { EllipsisVerticalIcon } from '@heroicons/react/20/solid';
-import { TableCellsIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, FolderOpenIcon } from '@heroicons/react/24/outline';
 
 import useOutsideClick from '../../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
@@ -10,7 +10,7 @@ import { SizeChart } from '../../interfaces';
 
 type Props = {
   sizeChart: SizeChart | undefined;
-  handleSizeChartClick: () => void;
+  handleSizeChartClick: (mode: 'view' | 'edit') => void;
 };
 
 export default function InventoryProductTableMenu({
@@ -40,13 +40,26 @@ export default function InventoryProductTableMenu({
           type="button"
           className="menu-link-button"
           onClick={() => {
-            handleSizeChartClick();
+            handleSizeChartClick('edit');
             setShowMenu(false);
           }}
         >
-          <TableCellsIcon />
+          <PencilIcon />
           {addEditSizeChartCopy}
         </button>
+        {sizeChart?.length && (
+          <button
+            type="button"
+            className="menu-link-button"
+            onClick={() => {
+              handleSizeChartClick('view');
+              setShowMenu(false);
+            }}
+          >
+            <FolderOpenIcon />
+            View size chart
+          </button>
+        )}
       </div>
     </InventoryProductTableMenuStyles>
   );
