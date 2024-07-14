@@ -4,13 +4,21 @@ import Link from 'next/link';
 import { useQuery } from 'react-query';
 import styled from 'styled-components';
 import { format } from 'date-fns';
-import { InventoryProduct, InventorySku } from '../interfaces';
-import { fetchPaginatedInventoryProducts } from '../queries/inventory-products';
+import { CheckCircleIcon } from '@heroicons/react/20/solid';
+
 import TableLoadingSpinner from './TableLoadingSpinner';
 import LoadingSpinner from './LoadingSpinner';
 import Pagination from './Pagination';
 import PageNavButtons from './PageNavButtons';
 import Table from './common/Table';
+import InventoryProductTableMenu from './inventoryProduct/InventoryProductTableMenu';
+import EditSizeChartModal from './modals/EditSizeChartModal';
+import ViewSizeChartModal from './modals/ViewSizeChartModal';
+import Notification from './Notification';
+
+import { fetchPaginatedInventoryProducts } from '../queries/inventory-products';
+
+import { InventoryProduct, InventorySku, Size } from '../interfaces';
 
 interface InventoryProductsQuery {
   inventoryProducts: InventoryProduct[];
@@ -28,6 +36,38 @@ export default function InventoryProductsTable() {
   const router = useRouter();
   const pageSize = 10;
   const [currentPage, setCurrentPage] = React.useState<number>();
+  const [showEditSizeChartModal, setShowEditSizeChartModal] =
+    React.useState(false);
+  const [showViewSizeChartModal, setShowViewSizeChartModal] =
+    React.useState(false);
+  const [selectedProduct, setSelectedProduct] =
+    React.useState<InventoryProduct>();
+
+  const handleSizeChartClick = ({
+    mode,
+    inventoryProduct,
+  }: {
+    mode: 'view' | 'edit';
+    inventoryProduct: InventoryProduct;
+  }) => {
+    if (mode === 'edit') {
+      setShowEditSizeChartModal(true);
+    } else if (mode === 'view') {
+      setShowViewSizeChartModal(true);
+    }
+    setSelectedProduct(inventoryProduct);
+  };
+
+  const closeEditSizeChartModal = () => {
+    setShowEditSizeChartModal(false);
+    setSelectedProduct(undefined);
+  };
+
+  const closeViewSizeChartModal = () => {
+    setShowViewSizeChartModal(false);
+    setSelectedProduct(undefined);
+  };
+
   const { data, isLoading, isFetching } = useQuery<InventoryProductsQuery>(
     ['inventory-products', currentPage, pageSize],
     () => fetchPaginatedInventoryProducts(currentPage, pageSize),
@@ -85,12 +125,13 @@ export default function InventoryProductsTable() {
               <thead>
                 <tr>
                   <th>Product Name</th>
-                  <th>Code</th>
                   <th className="text-center">Sizes</th>
                   <th className="text-center">Colors</th>
                   <th className="text-center">Total Skus</th>
                   <th className="text-center">Skus In Stock</th>
+                  <th className="text-center">Size Chart</th>
                   <th>Last updated</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
@@ -110,22 +151,41 @@ export default function InventoryProductsTable() {
                               <a>{product.name}</a>
                             </Link>
                           </div>
-                          <div className="product-id">
-                            {product.inventoryProductId}
+                          <div className="merch-code">
+                            {product.merchandiseCode}
                           </div>
                         </td>
-                        <td>{product.merchandiseCode}</td>
                         <td className="text-center">{product.sizes.length}</td>
                         <td className="text-center">{product.colors.length}</td>
                         <td className="text-center">{product.skus.length}</td>
                         <td className="text-center">
                           {getTotalAvailableSkus(product.skus)}
                         </td>
+                        <td className="text-center">
+                          <div className="has-size-chart">
+                            {product.sizeChart?.length ? (
+                              <CheckCircleIcon className="check-circle-icon" />
+                            ) : (
+                              ''
+                            )}
+                          </div>
+                        </td>
                         <td className="product-dates">
                           {format(
                             new Date(product.updatedAt),
                             'MMM. dd, yyyy h:mmaa'
                           )}
+                        </td>
+                        <td>
+                          <InventoryProductTableMenu
+                            sizeChart={product.sizeChart}
+                            handleSizeChartClick={mode =>
+                              handleSizeChartClick({
+                                inventoryProduct: product,
+                                mode,
+                              })
+                            }
+                          />
                         </td>
                       </tr>
                     ))}
@@ -145,6 +205,26 @@ export default function InventoryProductsTable() {
           )}
         </div>
       )}
+      <EditSizeChartModal
+        isOpen={showEditSizeChartModal}
+        closeModal={closeEditSizeChartModal}
+        inventoryProduct={selectedProduct}
+      />
+      {selectedProduct && (
+        <ViewSizeChartModal
+          isOpen={showViewSizeChartModal}
+          closeModal={closeViewSizeChartModal}
+          productName={selectedProduct?.name || ''}
+          productSizes={selectedProduct.sizes as Size[]}
+          sizeChart={selectedProduct?.sizeChart}
+        />
+      )}
+      <Notification
+        query="sizeChart"
+        heading="Size chart saved"
+        callbackUrl="/inventory-products?page=1"
+        durationVisible={3000}
+      />
     </InventoryProductsTableStyles>
   );
 }
@@ -205,17 +285,24 @@ const InventoryProductsTableStyles = styled.div`
     max-width: 22rem;
     width: 100%;
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: 600;
     color: #000;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .product-id {
-    font-family: 'Dank Mono', 'Menlo', monospace;
+  .merch-code {
     font-size: 0.875rem;
-    font-weight: 700;
+    font-weight: 500;
     color: #6b7280;
+  }
+
+  .has-size-chart {
+    .check-circle-icon {
+      height: 1.125rem;
+      width: 1.125rem;
+      color: #047857;
+    }
   }
 `;
