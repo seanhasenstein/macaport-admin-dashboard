@@ -51,7 +51,7 @@ export default function InventoryProductTableMenu({
           {sizeChart?.length ? <PencilIcon /> : <FolderPlusIcon />}
           {addEditSizeChartCopy}
         </button>
-        {sizeChart?.length && (
+        {sizeChart?.length ? (
           <button
             type="button"
             className="menu-link-button"
@@ -63,7 +63,7 @@ export default function InventoryProductTableMenu({
             <FolderOpenIcon />
             View size chart
           </button>
-        )}
+        ) : null}
       </div>
     </InventoryProductTableMenuStyles>
   );
