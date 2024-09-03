@@ -1,6 +1,7 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
+import { useReactToPrint } from 'react-to-print';
 
 import { getStoreStatus } from '../../../utils';
 
@@ -29,6 +30,22 @@ import TriggerShipmentModal from '../../../components/store/TriggerShipmentModal
 export default function Store() {
   const router = useRouter();
   const storeQuery = useStoreQuery();
+
+  const printUnfulfilledRef = React.useRef<HTMLDivElement>(null);
+  const printPersonalizedRef = React.useRef<HTMLDivElement>(null);
+  const printSingleRef = React.useRef<HTMLDivElement>(null);
+
+  const handlePrintUnfulfilled = useReactToPrint({
+    content: () => printUnfulfilledRef.current,
+  });
+
+  const handlePrintPersonalized = useReactToPrint({
+    content: () => printPersonalizedRef.current,
+  });
+
+  const handlePrintSingle = useReactToPrint({
+    content: () => printSingleRef.current,
+  });
 
   const deleteProductRef = React.useRef<HTMLDivElement>(null);
   const csvModalRef = React.useRef<HTMLDivElement>(null);
@@ -76,11 +93,17 @@ export default function Store() {
     if (printOption) {
       if (printOption === 'unfulfilled') {
         setReceiptPrintedForUnfulfilledOrders.mutate();
+        handlePrintUnfulfilled();
       }
-      window.print();
+      if (printOption === 'personalization') {
+        handlePrintPersonalized();
+      }
+      if (printOption === 'single') {
+        handlePrintSingle();
+      }
       setPrintOption(undefined);
     }
-  }, [printOption]);
+  }, [handlePrintPersonalized, handlePrintSingle, handlePrintUnfulfilled]);
 
   return (
     <Layout
@@ -205,7 +228,11 @@ export default function Store() {
       )}
 
       {printOption === 'unfulfilled' ? (
-        <div className="printable-orders" aria-hidden="true">
+        <div
+          className="printable-orders"
+          aria-hidden="true"
+          ref={printUnfulfilledRef}
+        >
           {storeQuery?.data?.orders?.map(order => {
             if (order.orderStatus === 'Unfulfilled') {
               return (
@@ -221,7 +248,11 @@ export default function Store() {
       ) : null}
 
       {printOption === 'personalization' ? (
-        <div className="printable-orders" aria-hidden="true">
+        <div
+          className="printable-orders"
+          aria-hidden="true"
+          ref={printPersonalizedRef}
+        >
           {storeQuery?.data?.orders?.map(order => {
             const orderHasAtLeastOnePersonalizationItem = order.items.some(
               item => item.personalizationAddons.length > 0
@@ -241,7 +272,9 @@ export default function Store() {
       ) : null}
 
       {printOption === 'single' ? (
-        <PrintableOrder order={selectedOrder} store={storeQuery.data} />
+        <div ref={printSingleRef}>
+          <PrintableOrder order={selectedOrder} store={storeQuery.data} />
+        </div>
       ) : null}
     </Layout>
   );
