@@ -20,6 +20,7 @@ export default function PrintableOrder({ order, store }: Props) {
               <img
                 src="/images/logo.png"
                 alt="Macaport logo in front of mountains"
+                className="logo"
               />
             </a>
           </Link>
@@ -214,16 +215,16 @@ const PrintableOrderStyles = styled.div`
     page-break-before: always;
     display: block;
     margin: 0 auto;
-    padding: 56px 32px;
-    width: 8.5in;
-    height: 11in;
+    padding: 26px 32px;
+    /* width: 8.5in;
+    height: 11in; */
 
-    @page {
+    /* @page {
       margin: 0 auto;
-      padding: 56px 32px;
+      padding: 26px 32px;
       width: 8.5in;
       height: 11in;
-    }
+    } */
   }
 
   h3 {
@@ -242,6 +243,9 @@ const PrintableOrderStyles = styled.div`
     display: flex;
     justify-content: space-between;
     border-bottom: 1px solid #a1a1aa;
+    .logo {
+      width: 200px;
+    }
   }
 
   .support-links {
