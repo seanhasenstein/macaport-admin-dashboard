@@ -50,6 +50,7 @@ export default NextAuth({
         'nick@macaport.com',
         'joe@macaport.com',
         'ally@macaport.com',
+        'anne@macaport.com',
       ];
       if (user.email && allowedEmailAccounts.includes(user.email)) {
         return true;
