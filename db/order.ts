@@ -176,6 +176,62 @@ export async function updateOrderItemStatus(
   }
 }
 
+export async function updateAllUnfulfilledOrderItemsToFulfilled(
+  db: Db,
+  storeId: string,
+  orderId: string,
+  userId: string
+) {
+  const store = await db
+    .collection<StoreWithId>('stores')
+    .findOne({ _id: new ObjectID(storeId) });
+
+  if (store) {
+    const updatedOrders = store.orders.map(order => {
+      if (order.orderId === orderId) {
+        return {
+          ...order,
+          orderStatus:
+            order.orderStatus === 'PartiallyShipped'
+              ? ('PartiallyShipped' as const)
+              : ('Fulfilled' as const),
+          items: order.items.map(item => {
+            if (item.status.current === 'Unfulfilled') {
+              return {
+                ...item,
+                status: {
+                  current: 'Fulfilled' as const,
+                  meta: {
+                    ...item.status.meta,
+                    Fulfilled: {
+                      user: userId,
+                      updatedAt: new Date().toISOString(),
+                    },
+                  },
+                },
+              };
+            } else {
+              return item;
+            }
+          }),
+        };
+      } else {
+        return order;
+      }
+    });
+
+    const result = await db
+      .collection<StoreWithId>('stores')
+      .findOneAndUpdate(
+        { _id: new ObjectID(storeId) },
+        { $set: { orders: updatedOrders } },
+        { returnDocument: 'after' }
+      );
+
+    return result.value;
+  }
+}
+
 export async function addReceiptPrintedToAllUnfulfilledOrders(
   db: Db,
   storeId: string
