@@ -233,6 +233,9 @@ export default function OrdersTable({
                   ) : (
                     <>
                       {filteredOrders.map((o, index) => {
+                        const orderHasUnfulfilledItems = o.items.some(
+                          i => i.status.current === 'Unfulfilled'
+                        );
                         return (
                           <tr key={o.orderId}>
                             <td>
@@ -342,10 +345,27 @@ export default function OrdersTable({
                                 ) : null}
                               </ButtonWrapper>
                             </td>
-                            <td>
-                              <UnfulfilledToFulfulledButton
-                                {...{ order: o, store, userId }}
-                              />
+                            <td
+                              className={
+                                orderHasUnfulfilledItems ? '' : 'blank-td'
+                              }
+                            >
+                              {orderHasUnfulfilledItems ? (
+                                <UnfulfilledToFulfulledButton
+                                  {...{
+                                    order: o,
+                                    store,
+                                    userId,
+                                    orderHasUnfulfilledItems,
+                                  }}
+                                />
+                              ) : (
+                                <ButtonWrapper
+                                  onClick={() => buttonOnClick(o.orderId)}
+                                >
+                                  <span />
+                                </ButtonWrapper>
+                              )}
                             </td>
                           </tr>
                         );
@@ -538,6 +558,10 @@ const OrdersTableStyles = styled.div`
           color: #4b5563;
         }
       }
+    }
+
+    &.blank-td {
+      padding: 0;
     }
   }
 

@@ -9,12 +9,14 @@ type Props = {
   order: Order;
   store: Store;
   userId: string | undefined;
+  orderHasUnfulfilledItems: boolean;
 };
 
 export default function UnfulfilledToFulfulledButton({
   order,
   store,
   userId,
+  orderHasUnfulfilledItems,
 }: Props) {
   const { updateUnfulfilledOrderItemsToFulfilled } = useOrderItemMutation({
     store,
@@ -24,7 +26,7 @@ export default function UnfulfilledToFulfulledButton({
 
   return (
     <>
-      {order.items.some(i => i.status.current === 'Unfulfilled') ? (
+      {orderHasUnfulfilledItems ? (
         <Button
           type="button"
           onClick={() => updateUnfulfilledOrderItemsToFulfilled.mutate(order)}
