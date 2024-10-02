@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSession } from 'next-auth/client';
 import styled from 'styled-components';
 import { format } from 'date-fns';
 import classNames from 'classnames';
@@ -15,6 +16,7 @@ import {
   OrderStatus,
   StoreWithOrderStatusTotals,
 } from '../../interfaces';
+import UnfulfilledToFulfulledButton from './UnfulfilledToFulfilledButton';
 
 type OrderViewOptions = OrderStatus | 'All' | 'Personalized';
 
@@ -101,6 +103,9 @@ export default function OrdersTable({
   const [prevOrderId, setPrevOrderId] = React.useState<string | undefined>();
   const [nextOrderId, setNextOrderId] = React.useState<string | undefined>();
   const [showSidebar, setShowSidebar] = React.useState(false);
+
+  const session = useSession();
+  const userId = session[0]?.user?.id;
 
   const closeSidebar = () => setShowSidebar(false);
 
@@ -204,9 +209,7 @@ export default function OrdersTable({
                 <thead>
                   <tr>
                     <th>#</th>
-                    {/* <th>Date</th> */}
                     <th>Customer</th>
-                    <th>Total</th>
                     {store.requireGroupSelection && <th>{store.groupTerm}</th>}
                     <th>Shipping</th>
                     <th className="text-center">Unique / Total</th>
@@ -214,6 +217,7 @@ export default function OrdersTable({
                     <th className="text-center">Order Status</th>
                     <th className="text-center">Personlized</th>
                     <th className="text-right">Note</th>
+                    <th />
                   </tr>
                 </thead>
                 <tbody>
@@ -252,13 +256,9 @@ export default function OrdersTable({
                                   )}
                                 </div>
                                 <div className="order-id">#{o.orderId}</div>
-                              </ButtonWrapper>
-                            </td>
-                            <td>
-                              <ButtonWrapper
-                                onClick={() => buttonOnClick(o.orderId)}
-                              >
-                                {formatToMoney(o.summary.total, true)}
+                                <div className="order-total">
+                                  {formatToMoney(o.summary.total, true)}
+                                </div>
                               </ButtonWrapper>
                             </td>
                             {store.requireGroupSelection && (
@@ -310,7 +310,7 @@ export default function OrdersTable({
                                 />
                               </ButtonWrapper>
                             </td>
-                            <td className="text-center">
+                            <td className="text-center personalized">
                               <ButtonWrapper
                                 onClick={() => buttonOnClick(o.orderId)}
                                 customClassName="note-button"
@@ -341,6 +341,11 @@ export default function OrdersTable({
                                   </svg>
                                 ) : null}
                               </ButtonWrapper>
+                            </td>
+                            <td>
+                              <UnfulfilledToFulfulledButton
+                                {...{ order: o, store, userId }}
+                              />
                             </td>
                           </tr>
                         );
@@ -501,34 +506,35 @@ const OrdersTableStyles = styled.div`
       }
     }
 
-    .personalized-span {
-      margin: 0 auto;
-      padding: 0 0 0 0.0625rem;
-      height: 1.25rem;
-      width: 1.25rem;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: #4b5563;
-      color: #fff;
-      font-size: 0.5625rem;
-      font-weight: 700;
-      text-align: center;
-      line-height: 100%;
-      border-radius: 9999px;
+    &.personalized {
+      .personalized-span {
+        margin: 0 auto;
+        padding: 0 0 0 0.0625rem;
+        height: 1.25rem;
+        width: 1.25rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #4b5563;
+        color: #fff;
+        font-size: 0.5625rem;
+        font-weight: 700;
+        text-align: center;
+        line-height: 100%;
+        border-radius: 9999px;
+      }
     }
 
     &.note {
       padding: 0;
       .note-button {
-        padding-right: 2rem;
+        padding-left: 0;
         width: 100%;
         display: flex;
-        justify-content: flex-end;
         align-items: center;
         svg {
-          height: 0.875rem;
-          width: 0.875rem;
+          height: 1.0625rem;
+          width: 1.0625rem;
           color: #4b5563;
         }
       }
@@ -543,7 +549,8 @@ const OrdersTableStyles = styled.div`
   }
 
   .create-at-date,
-  .order-id {
+  .order-id,
+  .order-total {
     margin-top: 0.25rem;
     font-size: 0.75rem;
     font-weight: 500;
