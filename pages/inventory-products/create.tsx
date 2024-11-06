@@ -1,6 +1,8 @@
 import styled from 'styled-components';
 import { useRouter } from 'next/router';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
+import * as Yup from 'yup';
+
 import { createId, createInventoryProductSkus } from '../../utils';
 import {
   useInventoryProductMutations,
@@ -8,6 +10,29 @@ import {
 } from '../../hooks/useInventoryProductMutations';
 import BasicLayout from '../../components/BasicLayout';
 import LoadingSpinner from '../../components/LoadingSpinner';
+
+const CreateInventoryProductSchema = Yup.object().shape({
+  merchandiseCode: Yup.string().required('A merchandise code is required'),
+  name: Yup.string().required('A name is required'),
+  description: Yup.string(),
+  tag: Yup.string(),
+  details: Yup.array().of(Yup.string()),
+  sizes: Yup.array()
+    .of(
+      Yup.object().shape({
+        label: Yup.string().required('A size label is required'),
+      })
+    )
+    .min(1, 'At least one size is required'),
+  colors: Yup.array()
+    .of(
+      Yup.object().shape({
+        label: Yup.string().required('A color label is required'),
+        hex: Yup.string().required('A color hex value is required'),
+      })
+    )
+    .min(1, 'At least one color is required'),
+});
 
 export default function CreateInventoryProduct() {
   const router = useRouter();
@@ -32,6 +57,7 @@ export default function CreateInventoryProduct() {
             sizes: [],
             colors: [],
           }}
+          validationSchema={CreateInventoryProductSchema}
           onSubmit={(values: InitialValues) => {
             const colors = values.colors.map(color => {
               const hex = `#${color.hex
@@ -49,7 +75,7 @@ export default function CreateInventoryProduct() {
             createProduct.mutate({ ...values, colors, skus });
           }}
         >
-          {({ values }) => (
+          {({ values, errors }) => (
             <Form>
               <div className="title">
                 <div>
@@ -277,6 +303,11 @@ export default function CreateInventoryProduct() {
                         </>
                       )}
                     />
+                    {errors.sizes && typeof errors.sizes === 'string' && (
+                      <div className="validation-error required-error">
+                        {errors.sizes}
+                      </div>
+                    )}
                   </div>
                   <div className="section">
                     <h3>Inventory Product Colors</h3>
@@ -374,6 +405,11 @@ export default function CreateInventoryProduct() {
                         </>
                       )}
                     />
+                    {errors.colors && typeof errors.colors === 'string' && (
+                      <div className="validation-error required-error">
+                        {errors.colors}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -753,6 +789,9 @@ const CreateInventoryProductStyles = styled.div`
     font-size: 0.75rem;
     font-weight: 500;
     color: #b91c1c;
+    &.required-error {
+      margin-top: 0.875rem;
+    }
   }
 
   .option {
