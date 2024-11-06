@@ -2,6 +2,7 @@ import React from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
+import * as Yup from 'yup';
 
 import { InventorySize } from '../../../interfaces';
 
@@ -16,6 +17,29 @@ import { useInventoryProductMutations } from '../../../hooks/useInventoryProduct
 
 import BasicLayout from '../../../components/BasicLayout';
 import LoadingSpinner from '../../../components/LoadingSpinner';
+
+const UpdateInventoryProductSchema = Yup.object().shape({
+  merchandiseCode: Yup.string().required('A merchandise code is required'),
+  name: Yup.string().required('A name is required'),
+  description: Yup.string(),
+  tag: Yup.string(),
+  details: Yup.array().of(Yup.string()),
+  sizes: Yup.array()
+    .of(
+      Yup.object().shape({
+        label: Yup.string().required('A size label is required'),
+      })
+    )
+    .min(1, 'At least one size is required'),
+  colors: Yup.array()
+    .of(
+      Yup.object().shape({
+        label: Yup.string().required('A color label is required'),
+        hex: Yup.string().required('A color hex value is required'),
+      })
+    )
+    .min(1, 'At least one color is required'),
+});
 
 export default function UpdateInventoryProduct() {
   const router = useRouter();
@@ -74,6 +98,7 @@ export default function UpdateInventoryProduct() {
       <UpdateInventoryProductStyles>
         <Formik
           initialValues={initialValues}
+          validationSchema={UpdateInventoryProductSchema}
           enableReinitialize={true}
           onSubmit={(values: UpdateFormValues) => {
             const updatedSkus = updateInventoryProductSkus(
@@ -86,7 +111,7 @@ export default function UpdateInventoryProduct() {
             });
           }}
         >
-          {({ values }) => (
+          {({ values, errors }) => (
             <Form>
               <div className="title">
                 <div>
@@ -332,6 +357,11 @@ export default function UpdateInventoryProduct() {
                         </>
                       )}
                     />
+                    {errors.sizes && typeof errors.sizes === 'string' && (
+                      <div className="validation-error required-error">
+                        {errors.sizes}
+                      </div>
+                    )}
                   </div>
                   <div className="section">
                     <h3>Inventory Product Colors</h3>
@@ -429,6 +459,11 @@ export default function UpdateInventoryProduct() {
                         </>
                       )}
                     />
+                    {errors.colors && typeof errors.colors === 'string' && (
+                      <div className="validation-error required-error">
+                        {errors.colors}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -819,6 +854,9 @@ const UpdateInventoryProductStyles = styled.div`
     font-size: 0.75rem;
     font-weight: 500;
     color: #b91c1c;
+    &.required-error {
+      margin-top: 0.875rem;
+    }
   }
 
   .option {
