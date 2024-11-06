@@ -28,7 +28,12 @@ const CreateInventoryProductSchema = Yup.object().shape({
     .of(
       Yup.object().shape({
         label: Yup.string().required('A color label is required'),
-        hex: Yup.string().required('A color hex value is required'),
+        hex: Yup.string()
+          .matches(
+            /^#?([0-9A-Fa-f]{6})$/,
+            'Please enter a valid hex color value'
+          )
+          .required('A color hex value is required'),
       })
     )
     .min(1, 'At least one color is required'),
@@ -75,7 +80,7 @@ export default function CreateInventoryProduct() {
             createProduct.mutate({ ...values, colors, skus });
           }}
         >
-          {({ values, errors }) => (
+          {({ values, errors, touched, setTouched }) => (
             <Form>
               <div className="title">
                 <div>
@@ -255,7 +260,15 @@ export default function CreateInventoryProduct() {
                                 <button
                                   type="button"
                                   className="remove-button"
-                                  onClick={() => arrayHelpers.remove(sizeIndex)}
+                                  onClick={() => {
+                                    arrayHelpers.remove(sizeIndex);
+                                    if (values.sizes.length === 1) {
+                                      setTouched(
+                                        { ...touched, sizes: [] },
+                                        false
+                                      );
+                                    }
+                                  }}
                                 >
                                   <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -303,11 +316,13 @@ export default function CreateInventoryProduct() {
                         </>
                       )}
                     />
-                    {errors.sizes && typeof errors.sizes === 'string' && (
-                      <div className="validation-error required-error">
-                        {errors.sizes}
-                      </div>
-                    )}
+                    {touched.sizes &&
+                      errors.sizes &&
+                      typeof errors.sizes === 'string' && (
+                        <div className="validation-error required-error">
+                          {errors.sizes}
+                        </div>
+                      )}
                   </div>
                   <div className="section">
                     <h3>Inventory Product Colors</h3>
@@ -354,9 +369,15 @@ export default function CreateInventoryProduct() {
                                 <button
                                   type="button"
                                   className="remove-button"
-                                  onClick={() =>
-                                    arrayHelpers.remove(colorIndex)
-                                  }
+                                  onClick={() => {
+                                    arrayHelpers.remove(colorIndex);
+                                    if (values.colors.length === 1) {
+                                      setTouched(
+                                        { ...touched, colors: [] },
+                                        false
+                                      );
+                                    }
+                                  }}
                                 >
                                   <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -405,11 +426,13 @@ export default function CreateInventoryProduct() {
                         </>
                       )}
                     />
-                    {errors.colors && typeof errors.colors === 'string' && (
-                      <div className="validation-error required-error">
-                        {errors.colors}
-                      </div>
-                    )}
+                    {touched.colors &&
+                      errors.colors &&
+                      typeof errors.colors === 'string' && (
+                        <div className="validation-error required-error">
+                          {errors.colors}
+                        </div>
+                      )}
                   </div>
                 </div>
               </div>

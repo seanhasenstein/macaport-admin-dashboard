@@ -35,7 +35,12 @@ const UpdateInventoryProductSchema = Yup.object().shape({
     .of(
       Yup.object().shape({
         label: Yup.string().required('A color label is required'),
-        hex: Yup.string().required('A color hex value is required'),
+        hex: Yup.string()
+          .matches(
+            /^#?([0-9A-Fa-f]{6})$/,
+            'Please enter a valid hex color value'
+          )
+          .required('A color hex value is required'),
       })
     )
     .min(1, 'At least one color is required'),
