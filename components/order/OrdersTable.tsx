@@ -233,9 +233,12 @@ export default function OrdersTable({
                   ) : (
                     <>
                       {filteredOrders.map((o, index) => {
-                        const orderHasUnfulfilledItems = o.items.some(
-                          i => i.status.current === 'Unfulfilled'
-                        );
+                        const orderHasUnfulfilledOrBackorderedItems =
+                          o.items.some(
+                            i =>
+                              i.status.current === 'Unfulfilled' ||
+                              i.status.current === 'Backordered'
+                          );
                         return (
                           <tr key={o.orderId}>
                             <td>
@@ -347,16 +350,18 @@ export default function OrdersTable({
                             </td>
                             <td
                               className={
-                                orderHasUnfulfilledItems ? '' : 'blank-td'
+                                orderHasUnfulfilledOrBackorderedItems
+                                  ? ''
+                                  : 'blank-td'
                               }
                             >
-                              {orderHasUnfulfilledItems ? (
+                              {orderHasUnfulfilledOrBackorderedItems ? (
                                 <UnfulfilledToFulfulledButton
                                   {...{
                                     order: o,
                                     store,
                                     userId,
-                                    orderHasUnfulfilledItems,
+                                    orderHasUnfulfilledOrBackorderedItems,
                                   }}
                                 />
                               ) : (

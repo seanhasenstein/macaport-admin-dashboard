@@ -4,6 +4,11 @@ const colors = {
     lightBackgroundColor: '#f8e3e3',
     color: '#991b1b',
   },
+  backordered: {
+    backgroundColor: '#f9e7fb',
+    lightBackgroundColor: '#fae8ff',
+    color: '#86198f',
+  },
   printed: {
     backgroundColor: '#ffedd5',
     lightBackgroundColor: 'ffedd5',

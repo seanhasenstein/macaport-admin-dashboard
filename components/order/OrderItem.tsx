@@ -178,6 +178,7 @@ const OrderItemStyles = styled.div`
     margin-top: 2.5rem;
   }
   &.unfulfilled,
+  &.backordered,
   &.fulfilled,
   &.shipped,
   &.canceled {
@@ -204,6 +205,18 @@ const OrderItemStyles = styled.div`
     }
     .personalization-details .title span {
       background-color: #fcf3f3;
+    }
+  }
+  &.backordered {
+    background-color: #f9e7fb;
+    .status {
+      span {
+        background: linear-gradient(to bottom, #f9fafb 50%, #f9e7fb 50%);
+        color: #86198f;
+      }
+    }
+    .personalization-details .title span {
+      background-color: #f9e7fb;
     }
   }
   &.fulfilled {

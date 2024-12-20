@@ -15,6 +15,7 @@ export default function OrdersTableItemsBreakdown({ orderItems }: Props) {
   const {
     Unfulfilled: unfulfilledTotal,
     Fulfilled: fulfilledTotal,
+    Backordered: backorderedTotal,
     Shipped: shippedTotal,
     Canceled: canceledTotal,
   } = getOrderItemsStatusTotals(orderItems);
@@ -87,6 +88,19 @@ export default function OrdersTableItemsBreakdown({ orderItems }: Props) {
                   <p className="label">Unfulfilled:</p>
                 </div>
                 <p>{unfulfilledTotal}</p>
+              </div>
+            )}
+            {backorderedTotal > 0 && (
+              <div
+                className={classNames('status-item', 'backordered', {
+                  active: backorderedTotal > 0,
+                })}
+              >
+                <div className="label-info">
+                  <span className="dot" />
+                  <p className="label">Backordered:</p>
+                </div>
+                <p>{backorderedTotal}</p>
               </div>
             )}
             {fulfilledTotal > 0 && (
@@ -175,12 +189,24 @@ const OrderTableItemsBreakdownStyles = styled.div`
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid #d4d4d8;
+    &:first-of-type {
+      border-top-left-radius: 0.25rem;
+      border-top-right-radius: 0.25rem;
+    }
     &:last-of-type {
       border-bottom: none;
+      border-bottom-right-radius: 0.25rem;
+      border-bottom-left-radius: 0.25rem;
     }
     &.unfulfilled {
       .dot {
         background-color: #a32626;
+      }
+    }
+    &.backordered {
+      background-color: #f9e7fb;
+      .dot {
+        background-color: #86198f;
       }
     }
     &.fulfilled {
