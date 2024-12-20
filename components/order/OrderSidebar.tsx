@@ -439,8 +439,8 @@ const OrderSidebarStyles = styled.div`
       background-color: #fff;
       p {
         position: relative;
-        margin: 0 1.5rem 0 2.5rem;
-        width: calc(100% - 4.5rem);
+        margin: 0 1rem 0 1.5rem;
+        width: calc(100% - 2.5rem);
         color: #000;
         font-size: 0.75rem;
         font-weight: 600;
@@ -470,7 +470,7 @@ const OrderSidebarStyles = styled.div`
     }
   }
   .breakdown-section {
-    padding: 1.3125rem 2rem 1.6875rem 2.5rem;
+    padding: 1.3125rem 1rem 1.6875rem 1.5rem;
     background-color: #fff;
     border-bottom: 1px solid #e5e7eb;
     border-radius: 0.625rem 0.625rem 0rem 0rem;
@@ -482,7 +482,7 @@ const OrderSidebarStyles = styled.div`
     top: 0;
     left: 0;
     width: 100%;
-    padding: 1.75rem 1.5rem 1.5rem 2.5rem;
+    padding: 1.75rem 1.25rem 1.5rem 1.75rem;
     display: grid;
     grid-template-columns: 1fr 1.5rem;
     background-color: #fff;
