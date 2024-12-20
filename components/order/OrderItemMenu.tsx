@@ -84,6 +84,14 @@ export default function OrderItemMenu({
           </button>
           <button
             type="button"
+            onClick={e => handleSetStatus(e, 'Backordered')}
+            className="menu-button backordered"
+          >
+            <span className="dot backordered" />
+            Set to backordered
+          </button>
+          <button
+            type="button"
             onClick={e => handleSetStatus(e, 'Fulfilled')}
             className="menu-button fulfilled"
           >
@@ -150,10 +158,11 @@ const OrderItemMenuStyles = styled.div`
     flex-direction: column;
   }
   .menu-button {
+    margin: -1px 0 0 0;
     padding: 0.625rem 1.125rem;
     width: 100%;
     background-color: transparent;
-    border-width: 0 0 1px 0;
+    border-width: 1px 0 1px 0;
     border-style: solid;
     border-color: #dddde2;
     text-align: left;
@@ -166,20 +175,40 @@ const OrderItemMenuStyles = styled.div`
       .dot {
         background-color: #a32626;
       }
+      &:hover {
+        background-color: #f8e4e4;
+      }
+    }
+    &.backordered {
+      .dot {
+        background-color: #86198f;
+      }
+      &:hover {
+        background-color: #f9e7fb;
+      }
     }
     &.fulfilled {
       .dot {
-        background-color: #b29625;
+        background-color: #b2ae25;
+      }
+      &:hover {
+        background-color: #fef9c3;
       }
     }
     &.shipped {
       .dot {
         background-color: #21986c;
       }
+      &:hover {
+        background-color: #d1fae5;
+      }
     }
     &.canceled {
       .dot {
         background-color: #224fb3;
+      }
+      &:hover {
+        background-color: #ecf1fb;
       }
     }
     .dot {
@@ -194,13 +223,15 @@ const OrderItemMenuStyles = styled.div`
     &:hover {
       color: #000;
       background-color: #f5f5f5;
+      border-color: rgba(0, 0, 0, 0.15);
+      z-index: 500;
     }
     &:first-of-type {
       border-radius: 0.375rem 0.375rem 0 0;
     }
     &:last-of-type {
       border-radius: 0 0 0.375rem 0.375rem;
-      border: none;
+      border-bottom: none;
     }
   }
   .custom-menu {
