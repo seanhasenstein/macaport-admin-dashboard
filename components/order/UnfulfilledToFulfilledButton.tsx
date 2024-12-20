@@ -9,14 +9,14 @@ type Props = {
   order: Order;
   store: Store;
   userId: string | undefined;
-  orderHasUnfulfilledItems: boolean;
+  orderHasUnfulfilledOrBackorderedItems: boolean;
 };
 
 export default function UnfulfilledToFulfulledButton({
   order,
   store,
   userId,
-  orderHasUnfulfilledItems,
+  orderHasUnfulfilledOrBackorderedItems,
 }: Props) {
   const { updateUnfulfilledOrderItemsToFulfilled } = useOrderItemMutation({
     store,
@@ -26,7 +26,7 @@ export default function UnfulfilledToFulfulledButton({
 
   return (
     <>
-      {orderHasUnfulfilledItems ? (
+      {orderHasUnfulfilledOrBackorderedItems ? (
         <Button
           type="button"
           onClick={() => updateUnfulfilledOrderItemsToFulfilled.mutate(order)}
@@ -40,7 +40,10 @@ export default function UnfulfilledToFulfulledButton({
             <>
               Set item
               {order.items.reduce((acc, currItem) => {
-                if (currItem.status.current === 'Unfulfilled')
+                if (
+                  currItem.status.current === 'Unfulfilled' ||
+                  currItem.status.current === 'Backordered'
+                )
                   return acc + currItem.quantity;
                 else return acc;
               }, 0) > 1
