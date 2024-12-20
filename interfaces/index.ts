@@ -229,6 +229,7 @@ export interface PersonalizationAddon {
 export type OrderItemStatus =
   | 'Unfulfilled'
   | 'Fulfilled'
+  | 'Backordered'
   | 'Shipped'
   | 'Canceled';
 
