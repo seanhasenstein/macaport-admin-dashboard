@@ -17,6 +17,7 @@ type Props = {
 export default function OrderItemBreakdown({ customClass, orderItems }: Props) {
   const itemStatusTotals = getOrderItemsStatusTotals(orderItems);
   const hasAnUnfulfilledItem = itemStatusTotals.Unfulfilled > 0;
+  const hasABackorderedItem = itemStatusTotals.Backordered > 0;
   const hasAFulfilledItem = itemStatusTotals.Fulfilled > 0;
   const hasAnShippedItem = itemStatusTotals.Shipped > 0;
   const hasAnCanceledItem = itemStatusTotals.Canceled > 0;
@@ -63,6 +64,14 @@ export default function OrderItemBreakdown({ customClass, orderItems }: Props) {
             Unfulfilled: {itemStatusTotals.Unfulfilled}
           </p>
           <p
+            className={classNames('backordered', {
+              active: hasABackorderedItem,
+            })}
+          >
+            <span className="dot" />
+            Backordered: {itemStatusTotals.Backordered}
+          </p>
+          <p
             className={classNames('fulfilled', {
               active: hasAFulfilledItem,
             })}
@@ -92,16 +101,18 @@ export default function OrderItemBreakdown({ customClass, orderItems }: Props) {
   );
 }
 
-const OrderItemBreakdownStyles = styled.div<{ shipped: boolean }>`
+const OrderItemBreakdownStyles = styled.div<{
+  shipped: boolean;
+}>`
   display: grid;
-  grid-template-columns: ${p => (p.shipped ? '1fr' : 'repeat(4, 1fr)')};
-  gap: 0 1rem;
+  grid-template-columns: ${p => (p.shipped ? '1fr' : 'repeat(5, 1fr)')};
+  gap: 0 0.5rem;
   p {
     padding: 0.34375rem 0.75rem;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 500;
     color: #5e5e66;
     border: 1px solid #d4d4d8;
@@ -143,6 +154,12 @@ const OrderItemBreakdownStyles = styled.div<{ shipped: boolean }>`
           background-color: ${colors.unfulfilled.color};
         }
       }
+      &.backordered {
+        background-color: ${colors.backordered.lightBackgroundColor};
+        .dot {
+          background-color: ${colors.backordered.color};
+        }
+      }
       &.fulfilled {
         background-color: ${colors.fulfilled.lightBackgroundColor};
         .dot {
@@ -163,7 +180,7 @@ const OrderItemBreakdownStyles = styled.div<{ shipped: boolean }>`
       }
     }
     .dot {
-      margin-right: 0.375rem;
+      margin-right: 0.3125rem;
       display: inline-block;
       height: 0.625rem;
       width: 0.625rem;
