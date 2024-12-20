@@ -140,50 +140,59 @@ export default function PrintableOrder({ order, store }: Props) {
                   {order.items.map((item, index) => (
                     <tr key={`${item.sku.id}-${index}`}>
                       <td>
-                        <div className="order-item-name">{item.name}</div>
-                        {item.artworkId ? (
-                          <div className="addon-item">
-                            <span className="addon-label">Artwork ID:</span>
-                            <span className="addon-value">
-                              {item.artworkId}
-                            </span>
-                          </div>
-                        ) : null}
-                        {item.personalizationAddons.length > 0 && (
-                          <div className="addon-items">
-                            {item.personalizationAddons.map(addon => (
-                              <div key={addon.id} className="addon-item">
-                                <div className="flex-row-center">
-                                  <span className="addon-label">
-                                    {addon.addon}:
-                                  </span>
-                                  {addon.value}{' '}
-                                  <span className="location">
-                                    [{addon.location.toLowerCase()}]
-                                  </span>
-                                </div>
-                                {addon.subItems.length > 0 && (
-                                  <>
-                                    {addon.subItems.map(subitem => (
-                                      <div
-                                        key={subitem.id}
-                                        className="addon-item flex-row-center"
-                                      >
-                                        <span className="addon-label">
-                                          {subitem.addon}:
-                                        </span>
-                                        {subitem.value}{' '}
-                                        <span className="location">
-                                          [{subitem.location.toLowerCase()}]
-                                        </span>
-                                      </div>
-                                    ))}
-                                  </>
-                                )}
+                        <div className="flex-container">
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="product-image"
+                          />
+                          <div>
+                            <div className="order-item-name">{item.name}</div>
+                            {item.artworkId ? (
+                              <div className="addon-item">
+                                <span className="addon-label">Artwork ID:</span>
+                                <span className="addon-value">
+                                  {item.artworkId}
+                                </span>
                               </div>
-                            ))}
+                            ) : null}
+                            {item.personalizationAddons.length > 0 && (
+                              <div className="addon-items">
+                                {item.personalizationAddons.map(addon => (
+                                  <div key={addon.id} className="addon-item">
+                                    <div className="flex-row-center">
+                                      <span className="addon-label">
+                                        {addon.addon}:
+                                      </span>
+                                      {addon.value}{' '}
+                                      <span className="location">
+                                        [{addon.location.toLowerCase()}]
+                                      </span>
+                                    </div>
+                                    {addon.subItems.length > 0 && (
+                                      <>
+                                        {addon.subItems.map(subitem => (
+                                          <div
+                                            key={subitem.id}
+                                            className="addon-item flex-row-center"
+                                          >
+                                            <span className="addon-label">
+                                              {subitem.addon}:
+                                            </span>
+                                            {subitem.value}{' '}
+                                            <span className="location">
+                                              [{subitem.location.toLowerCase()}]
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </div>
                       </td>
                       <td>{item.sku.color.label}</td>
                       <td className="text-center">{item.sku.size.label}</td>
@@ -379,6 +388,17 @@ const PrintableOrderStyles = styled.div`
         border-bottom: none;
       }
     }
+  }
+
+  .flex-container {
+    display: flex;
+    align-items: center;
+  }
+
+  .product-image {
+    margin: 0 10px 0 0;
+    width: 24px;
+    height: auto;
   }
 
   .order-item-name {
