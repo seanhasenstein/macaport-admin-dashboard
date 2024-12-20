@@ -196,7 +196,10 @@ export async function updateAllUnfulfilledOrderItemsToFulfilled(
               ? ('PartiallyShipped' as const)
               : ('Fulfilled' as const),
           items: order.items.map(item => {
-            if (item.status.current === 'Unfulfilled') {
+            if (
+              item.status.current === 'Unfulfilled' ||
+              item.status.current === 'Backordered'
+            ) {
               return {
                 ...item,
                 status: {
