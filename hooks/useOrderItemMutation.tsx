@@ -100,6 +100,7 @@ export function useOrderItemMutation({ order, store, userId }: Props) {
         queryClient.setQueriesData(['stores', 'store', store._id], store);
       },
       onSettled: () => {
+        queryClient.invalidateQueries(['stores']);
         queryClient.invalidateQueries(['stores', 'store', store._id]);
       },
     }
