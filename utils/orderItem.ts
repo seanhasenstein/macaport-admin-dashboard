@@ -39,6 +39,7 @@ export function getOrderItemsStatusTotals(orderItems: OrderItem[]) {
       Fulfilled: 0,
       Shipped: 0,
       Canceled: 0,
+      Backordered: 0,
     }
   );
 
