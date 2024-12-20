@@ -9,6 +9,8 @@ export function handleUpdateOrderStatus(
       switch (currItem.status.current) {
         case 'Unfulfilled':
           return { ...acc, unfulfilled: acc.unfulfilled + 1 };
+        case 'Backordered':
+          return { ...acc, backordered: acc.backordered + 1 };
         case 'Fulfilled':
           return { ...acc, fulfilled: acc.fulfilled + 1 };
         case 'Shipped':
@@ -19,11 +21,12 @@ export function handleUpdateOrderStatus(
           return acc;
       }
     },
-    { unfulfilled: 0, fulfilled: 0, shipped: 0, canceled: 0 }
+    { unfulfilled: 0, backordered: 0, fulfilled: 0, shipped: 0, canceled: 0 }
   );
 
   const atLeastOneItemIsShipped = orderItemTotals.shipped > 0;
   const atLeastOneItemIsUnfulfilled = orderItemTotals.unfulfilled > 0;
+  const atLeastOneItemIsBackordered = orderItemTotals.backordered > 0;
   const allItemsAreFulfilledOrCanceled =
     orderItemTotals.fulfilled + orderItemTotals.canceled ===
     updatedOrderItems.length;
@@ -51,7 +54,7 @@ export function handleUpdateOrderStatus(
       items: updatedOrderItems,
       orderStatus: 'PartiallyShipped' as const,
     };
-  } else if (atLeastOneItemIsUnfulfilled) {
+  } else if (atLeastOneItemIsUnfulfilled || atLeastOneItemIsBackordered) {
     return {
       ...order,
       items: updatedOrderItems,
