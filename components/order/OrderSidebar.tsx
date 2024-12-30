@@ -1,5 +1,5 @@
 import React from 'react';
-import { useSession } from 'next-auth/client';
+import { useSession } from 'next-auth/react';
 import styled from 'styled-components';
 import { format } from 'date-fns';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/20/solid';
@@ -52,7 +52,7 @@ export default function OrderSidebar({
   const mainContentRef = React.useRef<HTMLDivElement>(null);
 
   const session = useSession();
-  const userId = session[0]?.user?.id;
+  const userId = session?.data?.user.id;
 
   // TODO: move this to a custom hook
   React.useEffect(() => {

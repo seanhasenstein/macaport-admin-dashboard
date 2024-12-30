@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router';
 import { useMutation, useQueryClient } from 'react-query';
-import { useSession } from 'next-auth/client';
+import { useSession } from 'next-auth/react';
 
 import { Order, OrderItem, Store } from '../interfaces';
 
@@ -22,7 +22,7 @@ export function useOrderMutation({ order, store }: Props) {
   const queryClient = useQueryClient();
 
   const session = useSession();
-  const userId = session[0]?.user?.id || '';
+  const userId = session?.data?.user.id || '';
 
   const cancelOrder = useMutation(
     async () => {
