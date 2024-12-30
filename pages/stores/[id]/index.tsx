@@ -84,10 +84,21 @@ export default function Store() {
       );
 
       if (storeQuery.data.orders && !selectedOrder) {
-        setSelectedOrder(storeQuery.data.orders[0]);
+        if (router.query.orderId) {
+          const order = storeQuery.data.orders.find(
+            order => order.orderId === router.query.orderId
+          );
+          if (order) {
+            setSelectedOrder(order);
+          } else {
+            setSelectedOrder(storeQuery.data.orders[0]);
+          }
+        } else {
+          setSelectedOrder(storeQuery.data.orders[0]);
+        }
       }
     }
-  }, [selectedOrder, storeQuery.data]);
+  }, [router.query.orderId, selectedOrder, storeQuery.data]);
 
   React.useEffect(() => {
     if (printOption) {
