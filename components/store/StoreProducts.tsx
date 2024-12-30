@@ -156,7 +156,7 @@ export default function StoreProducts({ store }: Props) {
                               {activeColors.map(color => (
                                 <ProductColor
                                   key={color.id}
-                                  hex={color.hex}
+                                  $hex={color.hex}
                                   title={color.label}
                                 />
                               ))}
@@ -474,8 +474,8 @@ const StoreProductsStyles = styled.div`
   }
 `;
 
-const ProductColor = styled.div<{ hex: string }>`
-  background-color: ${props => props.hex};
+const ProductColor = styled.div<{ $hex: string }>`
+  background-color: ${props => props.$hex};
   height: 1rem;
   width: 1rem;
   border-radius: 9999px;

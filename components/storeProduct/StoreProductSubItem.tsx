@@ -11,7 +11,7 @@ export default function StoreProductSubItem({ item }: ItemProps) {
   const [isSubItemOpen, setIsSubItemOpen] = React.useState(false);
 
   return (
-    <SubItemStyles isSubItemOpen={isSubItemOpen}>
+    <SubItemStyles $isSubItemOpen={isSubItemOpen}>
       <button
         type="button"
         onClick={() => setIsSubItemOpen(!isSubItemOpen)}
@@ -80,7 +80,7 @@ export default function StoreProductSubItem({ item }: ItemProps) {
   );
 }
 
-const SubItemStyles = styled.div<{ isSubItemOpen: boolean }>`
+const SubItemStyles = styled.div<{ $isSubItemOpen: boolean }>`
   margin: -1px 0 0;
   padding: 0 0.5rem;
   max-width: 40rem;
@@ -92,7 +92,7 @@ const SubItemStyles = styled.div<{ isSubItemOpen: boolean }>`
   }
 
   .subitem-button {
-    margin: ${props => (props.isSubItemOpen ? '0 0 0.25rem' : '0')};
+    margin: ${props => (props.$isSubItemOpen ? '0 0 0.25rem' : '0')};
     padding: 0.875rem 0;
     display: flex;
     width: 100%;
@@ -103,14 +103,14 @@ const SubItemStyles = styled.div<{ isSubItemOpen: boolean }>`
     cursor: pointer;
     font-size: 0.9375rem;
     font-weight: 500;
-    color: ${props => (props.isSubItemOpen ? '#111827' : '#4b5563')};
+    color: ${props => (props.$isSubItemOpen ? '#111827' : '#4b5563')};
 
     svg {
       height: 1rem;
       width: 1rem;
       color: #6b7280;
       transform: ${props =>
-        props.isSubItemOpen ? 'rotate(0.5turn)' : 'rotate(0turn)'};
+        props.$isSubItemOpen ? 'rotate(0.5turn)' : 'rotate(0turn)'};
     }
 
     &:hover {

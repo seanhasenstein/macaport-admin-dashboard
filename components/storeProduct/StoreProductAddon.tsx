@@ -12,7 +12,7 @@ export default function StoreProductAddon({ item }: ItemProps) {
   const [isOpen, setIsOpen] = React.useState(false);
 
   return (
-    <StoreProductAddonStyles isOpen={isOpen}>
+    <StoreProductAddonStyles $isOpen={isOpen}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -97,7 +97,7 @@ export default function StoreProductAddon({ item }: ItemProps) {
   );
 }
 
-const StoreProductAddonStyles = styled.div<{ isOpen: boolean }>`
+const StoreProductAddonStyles = styled.div<{ $isOpen: boolean }>`
   margin-top: -1px;
   max-width: 40rem;
   width: 100%;
@@ -119,14 +119,14 @@ const StoreProductAddonStyles = styled.div<{ isOpen: boolean }>`
     cursor: pointer;
     font-size: 0.9375rem;
     font-weight: 500;
-    color: ${props => (props.isOpen ? '#111827' : '#4b5563')};
+    color: ${props => (props.$isOpen ? '#111827' : '#4b5563')};
 
     svg {
       height: 1rem;
       width: 1rem;
       color: #6b7280;
       transform: ${props =>
-        props.isOpen ? 'rotate(0.5turn)' : 'rotate(0turn)'};
+        props.$isOpen ? 'rotate(0.5turn)' : 'rotate(0turn)'};
     }
 
     &:hover {

@@ -129,7 +129,7 @@ export default function SearchModal({ isOpen, closeModal }: Props) {
   if (!isOpen) return null;
 
   return (
-    <SearchModalStyles hasresults={searchResults !== undefined}>
+    <SearchModalStyles $hasresults={searchResults !== undefined}>
       <Modal
         {...{ isOpen, closeModal, hideCloseButton: true }}
         customOverlayClass="custom-modal-overlay"
@@ -244,7 +244,7 @@ export default function SearchModal({ isOpen, closeModal }: Props) {
   );
 }
 
-const SearchModalStyles = styled.div<{ hasresults: boolean }>`
+const SearchModalStyles = styled.div<{ $hasresults: boolean }>`
   .custom-modal-overlay {
     padding-top: 26.7vh;
     align-items: flex-start;
@@ -331,9 +331,9 @@ const SearchModalStyles = styled.div<{ hasresults: boolean }>`
       .search-categories-dropdown {
         position: absolute;
         top: 2.5rem;
-        right: ${p => (p.hasresults ? '0.375rem' : '0')};
+        right: ${p => (p.$hasresults ? '0.375rem' : '0')};
         margin-top: 0.375rem;
-        width: ${p => (p.hasresults ? 'calc(9rem - 0.375rem)' : '9rem')};
+        width: ${p => (p.$hasresults ? 'calc(9rem - 0.375rem)' : '9rem')};
         display: grid;
         grid-template-columns: 1fr;
         background-color: #fff;
