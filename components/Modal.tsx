@@ -13,6 +13,9 @@ type Props = {
   customOverlayClass?: string;
   customModalClass?: string;
   customCloseClass?: string;
+  hideCloseButton?: boolean;
+  disableCloseOnOutsideClick?: boolean;
+  disableCloseOnEscapeKey?: boolean;
 };
 
 export default function Modal({
@@ -22,11 +25,14 @@ export default function Modal({
   customOverlayClass,
   customModalClass,
   customCloseClass,
+  hideCloseButton = false,
+  disableCloseOnOutsideClick = false,
+  disableCloseOnEscapeKey = false,
 }: Props) {
   const modalRef = React.useRef<HTMLDivElement>(null);
 
-  useOutsideClick(isOpen, closeModal, modalRef);
-  useEscapeKeydownClose(isOpen, closeModal);
+  useOutsideClick(isOpen, closeModal, modalRef, disableCloseOnOutsideClick);
+  useEscapeKeydownClose(isOpen, closeModal, disableCloseOnEscapeKey);
 
   return (
     <ModalContainer>
@@ -35,16 +41,18 @@ export default function Modal({
           ref={modalRef}
           className={classNames('modal-container', customModalClass)}
         >
-          <button
-            onClick={e => {
-              e.stopPropagation();
-              closeModal();
-            }}
-            className={classNames('close-modal-button', customCloseClass)}
-          >
-            <XMarkIcon className="icon" />
-            <span className="sr-only">Close modal</span>
-          </button>
+          {!hideCloseButton && (
+            <button
+              onClick={e => {
+                e.stopPropagation();
+                closeModal();
+              }}
+              className={classNames('close-modal-button', customCloseClass)}
+            >
+              <XMarkIcon className="icon" />
+              <span className="sr-only">Close modal</span>
+            </button>
+          )}
           {children}
         </div>
       </div>
