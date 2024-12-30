@@ -118,6 +118,24 @@ export function createId(prefix?: string | false, len = 14) {
   return id;
 }
 
+const NUM = '0123456789';
+
+export function createIdNumber() {
+  const rnd = crypto.randomBytes(11);
+  const value = new Array(11);
+  const charsLength = NUM.length;
+
+  for (let i = 0; i < value.length; i++) {
+    if (i === 5) {
+      value[5] = '-';
+    } else {
+      value[i] = NUM[rnd[i] % charsLength];
+    }
+  }
+
+  return value.join('');
+}
+
 export function getStoreStatus(openDate: string, closeDate: string | null) {
   const open = new Date(openDate);
   const close = new Date(closeDate || 'Jan 01 9999');
@@ -138,12 +156,13 @@ export function getStoreStatus(openDate: string, closeDate: string | null) {
   return;
 }
 
-export async function getCloudinarySignature(publicId: string) {
-  const response = await fetch(`/api/cloudinary/sign?publicId=${publicId}`);
-  const data: { signature: string; timestamp: number } = await response.json();
-  const { signature, timestamp } = data;
-  return { signature, timestamp };
-}
+// WE ARE NO LONGER USING CLOUDINARY
+// export async function getCloudinarySignature(publicId: string) {
+//   const response = await fetch(`/api/cloudinary/sign?publicId=${publicId}`);
+//   const data: { signature: string; timestamp: number } = await response.json();
+//   const { signature, timestamp } = data;
+//   return { signature, timestamp };
+// }
 
 export function createInventoryProductSkus(
   sizes: InventorySize[],
