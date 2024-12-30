@@ -1,8 +1,8 @@
 import { NextApiResponse } from 'next';
 import nc from 'next-connect';
 import { withAuth } from '../../../utils/withAuth';
-import { getSession } from 'next-auth/client';
-import { Order, OrderItem, Request, Store } from '../../../interfaces';
+import { getSession } from 'next-auth/react';
+import { Order, OrderItem, Request } from '../../../interfaces';
 import database from '../../../middleware/db';
 import { inventoryProduct, order } from '../../../db';
 
@@ -22,7 +22,7 @@ const handler = nc<Request, NextApiResponse>()
     const userId = session?.user.id || '';
     const canceledOrder: OrderWithExtendedOrderItems = req.body.order;
 
-    const result: Store = await order.cancelOrder(
+    const result = await order.cancelOrder(
       req.db,
       req.query.sid,
       req.query.oid,

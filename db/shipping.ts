@@ -1,4 +1,4 @@
-import { Db, ObjectID } from 'mongodb';
+import { Db, ObjectId } from 'mongodb';
 import { ShippingData, ShippingDataForm } from '../interfaces';
 
 export async function getShippingData(db: Db) {
@@ -20,7 +20,7 @@ export async function updateShippingData(db: Db, formValues: ShippingDataForm) {
   const result = await db
     .collection('shipping')
     .findOneAndUpdate(
-      { _id: new ObjectID(_id) },
+      { _id: new ObjectId(_id) },
       { $set: formattedUpdated },
       { returnDocument: 'after' }
     );

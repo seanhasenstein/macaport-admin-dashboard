@@ -1,4 +1,4 @@
-import { Db, ObjectID, ObjectId } from 'mongodb';
+import { Db, ObjectId } from 'mongodb';
 
 import {
   Store,
@@ -11,19 +11,9 @@ import { getNextOrderItemStatus } from '../utils/orderItem';
 import { handleUpdateOrderStatus } from '../utils/order';
 
 export async function getOrderById(db: Db, storeId: string, orderId: string) {
-  try {
-    const result: Store = await db
-      .collection('stores')
-      .findOne({ _id: new ObjectID(storeId) });
-
-    if (!result) throw new Error('Invalid store ID provided.');
-    const order = result.orders.find(r => r.orderId === orderId);
-    if (!order) throw new Error('No order found.');
-    return order;
-  } catch (error) {
-    console.error(error);
-    throw new Error('An error occurred getting the order.');
-  }
+  const result = await db.collection<Store>('stores').findOne({ _id: storeId });
+  const order = result?.orders.find(r => r.orderId === orderId);
+  return order;
 }
 
 export async function updateOrderStatus(
@@ -32,20 +22,15 @@ export async function updateOrderStatus(
   orderId: string,
   orderStatus: OrderStatus
 ) {
-  try {
-    const result = await db.collection('stores').findOneAndUpdate(
-      { _id: new ObjectID(storeId) },
-      { $set: { 'orders.$[order].orderStatus': orderStatus } },
-      {
-        arrayFilters: [{ 'order.orderId': orderId }],
-        returnDocument: 'after',
-      }
-    );
-    return result.value;
-  } catch (error) {
-    console.error(error);
-    throw new Error('An error occurred updating the order status.');
-  }
+  const result = await db.collection<StoreWithId>('stores').findOneAndUpdate(
+    { _id: new ObjectId(storeId) },
+    { $set: { 'orders.$[order].orderStatus': orderStatus } },
+    {
+      arrayFilters: [{ 'order.orderId': orderId }],
+      returnDocument: 'after',
+    }
+  );
+  return result.value;
 }
 
 export async function cancelOrder(
@@ -91,9 +76,9 @@ export async function cancelOrder(
   };
 
   const result = await db
-    .collection('stores')
+    .collection<StoreWithId>('stores')
     .findOneAndUpdate(
-      { _id: new ObjectID(storeId) },
+      { _id: new ObjectId(storeId) },
       { $set: { 'orders.$[order]': updatedOrder } },
       { arrayFilters: [{ 'order.orderId': orderId }], returnDocument: 'after' }
     );
@@ -156,7 +141,7 @@ export async function updateOrderItemStatus(
     const updatedOrderStatus = updatedOrder.orderStatus;
 
     const result = await db.collection<StoreWithId>('stores').findOneAndUpdate(
-      { _id: new ObjectID(storeId) },
+      { _id: new ObjectId(storeId) },
       {
         $set: {
           'orders.$[order].items.$[item].status': updatedStatus,
@@ -184,7 +169,7 @@ export async function updateAllUnfulfilledOrderItemsToFulfilled(
 ) {
   const store = await db
     .collection<StoreWithId>('stores')
-    .findOne({ _id: new ObjectID(storeId) });
+    .findOne({ _id: new ObjectId(storeId) });
 
   if (store) {
     const updatedOrders = store.orders.map(order => {
@@ -226,7 +211,7 @@ export async function updateAllUnfulfilledOrderItemsToFulfilled(
     const result = await db
       .collection<StoreWithId>('stores')
       .findOneAndUpdate(
-        { _id: new ObjectID(storeId) },
+        { _id: new ObjectId(storeId) },
         { $set: { orders: updatedOrders } },
         { returnDocument: 'after' }
       );
@@ -241,7 +226,7 @@ export async function addReceiptPrintedToAllUnfulfilledOrders(
 ) {
   const store = await db
     .collection<StoreWithId>('stores')
-    .findOne({ _id: new ObjectID(storeId) });
+    .findOne({ _id: new ObjectId(storeId) });
 
   if (store) {
     const updatedOrders = store.orders.map(order => {
@@ -261,7 +246,7 @@ export async function addReceiptPrintedToAllUnfulfilledOrders(
     const result = await db
       .collection<StoreWithId>('stores')
       .findOneAndUpdate(
-        { _id: new ObjectID(storeId) },
+        { _id: new ObjectId(storeId) },
         { $set: { orders: updatedOrders } },
         { returnDocument: 'after' }
       );

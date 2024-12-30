@@ -13,12 +13,11 @@ const handler = nc<Request, NextApiResponse>()
   .use(database)
   .post(async (req, res) => {
     const update: InventoryProduct = req.body;
-    const result: InventoryProduct =
-      await inventoryProduct.updateInventoryProduct(
-        req.db,
-        req.body._id,
-        update
-      );
+    const result = await inventoryProduct.updateInventoryProduct(
+      req.db,
+      req.body._id,
+      update
+    );
 
     const allStores = await dbStore.getStores(req.db);
 

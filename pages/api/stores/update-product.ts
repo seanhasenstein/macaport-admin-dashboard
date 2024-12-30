@@ -1,14 +1,14 @@
 import { NextApiResponse } from 'next';
 import nc from 'next-connect';
 import { withAuth } from '../../../utils/withAuth';
-import { Request, Store } from '../../../interfaces';
+import { Request } from '../../../interfaces';
 import database from '../../../middleware/db';
 import { store } from '../../../db';
 
 const handler = nc<Request, NextApiResponse>()
   .use(database)
   .post(async (req, res) => {
-    const result: Store = await store.updateStoreProduct(
+    const result = await store.updateStoreProduct(
       req.db,
       req.query.sid,
       req.query.pid,
