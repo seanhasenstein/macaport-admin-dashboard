@@ -86,15 +86,21 @@ const HomepageMenuStyles = styled.div`
     border-radius: 0.375rem;
     box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
     cursor: pointer;
-    transition: color 150ms linear;
+    transition: color 100ms linear;
 
     svg {
       height: 1.5rem;
       width: 1.5rem;
+      transition: all 100ms linear;
     }
 
     &:hover {
-      color: #000;
+      background-color: #eef2f9;
+      border-color: #d1dcef;
+      color: #0e1829;
+      svg {
+        color: #3d65ab;
+      }
     }
   }
 
