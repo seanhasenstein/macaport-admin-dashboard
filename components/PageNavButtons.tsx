@@ -34,7 +34,7 @@ const PageNavButtonstyles = styled.div`
 
     &:hover {
       background-color: #eef2f9;
-      color: #000;
+      color: #0e1829;
       border-color: #d1dcef;
       z-index: 100;
     }
