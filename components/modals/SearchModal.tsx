@@ -219,7 +219,11 @@ export default function SearchModal({ isOpen, closeModal }: Props) {
                 {selectedOption === 'stores' ? (
                   <>
                     {(searchResults as StoreSearchResult[]).map(store => (
-                      <li key={store._id}>{store.name}</li>
+                      <li key={store._id}>
+                        <Link href={`/stores/${store._id}`}>
+                          <a>{store.name}</a>
+                        </Link>
+                      </li>
                     ))}
                   </>
                 ) : null}
@@ -228,8 +232,12 @@ export default function SearchModal({ isOpen, closeModal }: Props) {
                     {(searchResults as InventoryProductSearchResult[]).map(
                       invProd => (
                         <li key={invProd._id}>
-                          {invProd.name} - {invProd.merchandiseCode} -{' '}
-                          {invProd.colorsCount} - {invProd.sizesCount}
+                          <Link href={`/inventory-products/${invProd._id}`}>
+                            <a>
+                              {invProd.name} - {invProd.merchandiseCode} -{' '}
+                              {invProd.colorsCount} - {invProd.sizesCount}
+                            </a>
+                          </Link>
                         </li>
                       )
                     )}
