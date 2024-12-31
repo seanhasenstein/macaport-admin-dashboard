@@ -1,11 +1,21 @@
-import { Db, ObjectId, WithoutId } from 'mongodb';
+import { Db, Filter, ObjectId, WithoutId } from 'mongodb';
 import { formatISO } from 'date-fns';
 import { InventoryProduct } from '../interfaces';
 
-export async function getInventoryProductById(db: Db, id: string) {
+export async function getInventoryProductById(db: Db, _id: string) {
+  const result = await db
+    .collection('inventoryProducts')
+    .findOne<InventoryProduct>({ _id: new ObjectId(_id) });
+  return result;
+}
+
+export async function getInventoryProduct(
+  db: Db,
+  query: Filter<InventoryProduct>
+) {
   const result = await db
     .collection<InventoryProduct>('inventoryProducts')
-    .findOne({ inventoryProductId: id });
+    .findOne({ ...query });
   return result;
 }
 

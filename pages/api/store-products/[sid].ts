@@ -19,11 +19,10 @@ const handler = nc<Request, NextApiResponse>()
       throw new Error('Failed to find storeProduct.');
     }
 
-    const inventoryProduct =
-      await inventoryProductModel.getInventoryProductById(
-        req.db,
-        storeProduct.inventoryProductId
-      );
+    const inventoryProduct = await inventoryProductModel.getInventoryProduct(
+      req.db,
+      { inventoryProductId: storeProduct.inventoryProductId }
+    );
 
     const updatedProductSkus = storeProduct?.productSkus.map(productSku => {
       const inventorySku = inventoryProduct?.skus.find(

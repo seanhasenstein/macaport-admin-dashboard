@@ -145,9 +145,7 @@ export default function InventoryProductsTable() {
                       <tr key={product._id}>
                         <td>
                           <div className="product-name" title={product.name}>
-                            <Link
-                              href={`/inventory-products/${product.inventoryProductId}`}
-                            >
+                            <Link href={`/inventory-products/${product._id}`}>
                               <a>{product.name}</a>
                             </Link>
                           </div>
