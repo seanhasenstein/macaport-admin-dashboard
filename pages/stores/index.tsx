@@ -9,7 +9,7 @@ import Layout from '../../components/Layout';
 import StoresTable from '../../components/storesTable/StoresTable';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import TableLoadingSpinner from '../../components/TableLoadingSpinner';
-import PageNavButtons from '../../components/PageNavButtons';
+import TopPageNav from '../../components/TopPageNav';
 import Pagination from '../../components/Pagination';
 
 export default function Stores() {
@@ -69,7 +69,7 @@ export default function Stores() {
         {(query.isLoading || query.isFetching) && <TableLoadingSpinner />}
         {query.data && !query.isFetching && (
           <div className="container">
-            <PageNavButtons />
+            <TopPageNav />
             <div className="header">
               <div className="row">
                 <div className="row">

@@ -9,7 +9,7 @@ import { CheckCircleIcon } from '@heroicons/react/20/solid';
 import TableLoadingSpinner from './TableLoadingSpinner';
 import LoadingSpinner from './LoadingSpinner';
 import Pagination from './Pagination';
-import PageNavButtons from './PageNavButtons';
+import TopPageNav from './TopPageNav';
 import Table from './common/Table';
 import InventoryProductTableMenu from './inventoryProduct/InventoryProductTableMenu';
 import EditSizeChartModal from './modals/EditSizeChartModal';
@@ -97,7 +97,7 @@ export default function InventoryProductsTable() {
       {isLoading && <TableLoadingSpinner />}
       {data?.inventoryProducts && (
         <div className="container">
-          <PageNavButtons />
+          <TopPageNav />
           <div className="header">
             <div className="row">
               <h2>Inventory Products</h2>

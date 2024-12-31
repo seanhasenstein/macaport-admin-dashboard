@@ -2,30 +2,32 @@ import React from 'react';
 import styled from 'styled-components';
 import { EllipsisVerticalIcon } from '@heroicons/react/24/outline';
 
-import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
-import useOutsideClick from '../../hooks/useOutsideClick';
+import useEscapeKeydownClose from '../hooks/useEscapeKeydownClose';
+import useOutsideClick from '../hooks/useOutsideClick';
+import { formatToMoney } from '../utils';
 
-import { ShippingDataForm } from '../../interfaces';
+import { ShippingData } from '../interfaces';
 
 type Props = {
   showMenu: boolean;
   setShowMenu: React.Dispatch<React.SetStateAction<boolean>>;
   setShowShippingModal: React.Dispatch<React.SetStateAction<boolean>>;
-  shipping: ShippingDataForm;
+  shipping: ShippingData;
   successfulMutation: boolean;
 };
 
-export default function HomepageMenu(props: Props) {
+export default function ShippingMenu(props: Props) {
   const menuRef = React.useRef<HTMLDivElement>(null);
   useOutsideClick(props.showMenu, props.setShowMenu, menuRef);
   useEscapeKeydownClose(props.showMenu, props.setShowMenu);
 
   const handleShowShippngPriceModal = () => {
+    props.setShowMenu(false);
     props.setShowShippingModal(true);
   };
 
   return (
-    <HomepageMenuStyles>
+    <ShippingMenuStyles>
       <button
         type="button"
         onClick={() => props.setShowMenu(!props.showMenu)}
@@ -57,11 +59,15 @@ export default function HomepageMenu(props: Props) {
         <div className="details">
           <div className="item">
             <div className="label">Shipping price</div>
-            <div className="value">${props.shipping.price}</div>
+            <div className="value">
+              {formatToMoney(props.shipping.price, true)}
+            </div>
           </div>
           <div className="item">
             <div className="label">Free at cart of</div>
-            <div className="value">${props.shipping.freeMinimum}</div>
+            <div className="value">
+              {formatToMoney(props.shipping.freeMinimum, true)}
+            </div>
           </div>
         </div>
         <button
@@ -72,11 +78,11 @@ export default function HomepageMenu(props: Props) {
           Update shipping details
         </button>
       </div>
-    </HomepageMenuStyles>
+    </ShippingMenuStyles>
   );
 }
 
-const HomepageMenuStyles = styled.div`
+const ShippingMenuStyles = styled.div`
   .main-menu-button {
     padding: 0 0.5rem;
     height: 100%;
@@ -107,8 +113,8 @@ const HomepageMenuStyles = styled.div`
   .menu-container {
     padding: 0.25rem 1.375rem 1rem;
     position: absolute;
-    top: 7rem;
-    right: -1rem;
+    top: 3.75rem;
+    right: -0.625rem;
     white-space: nowrap;
     display: none;
     flex-direction: column;

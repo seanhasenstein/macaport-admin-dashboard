@@ -5,11 +5,7 @@ import * as Yup from 'yup';
 import styled from 'styled-components';
 import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
 import useOutsideClick from '../../hooks/useOutsideClick';
-import {
-  StoresTableStore,
-  ShippingData,
-  ShippingDataForm,
-} from '../../interfaces';
+import { ShippingData, ShippingDataForm } from '../../interfaces';
 import LoadingSpinner from '../LoadingSpinner';
 
 const validationSchema = Yup.object().shape({
@@ -22,24 +18,14 @@ const validationSchema = Yup.object().shape({
 });
 
 type Props = {
-  initialValues: ShippingDataForm;
-  homepageStores: StoresTableStore[];
+  initialValues: ShippingData;
   showModal: boolean;
   setShowModal: React.Dispatch<React.SetStateAction<boolean>>;
   updateShippingDetails: UseMutationResult<
-    {
-      shipping: ShippingData;
-      stores: StoresTableStore[];
-    },
+    ShippingData,
     unknown,
-    {
-      formValues: ShippingDataForm;
-      homepageStores: StoresTableStore[];
-    },
-    {
-      shipping: ShippingDataForm;
-      stores: StoresTableStore[];
-    }
+    ShippingDataForm,
+    ShippingDataForm
   >;
   onSuccess?: () => void;
 };
@@ -51,15 +37,12 @@ export default function ShippingPriceModal(props: Props) {
   useEscapeKeydownClose(props.showModal, props.setShowModal);
 
   const handleSubmit = (formValues: ShippingDataForm) => {
-    props.updateShippingDetails.mutate(
-      { formValues, homepageStores: props.homepageStores },
-      {
-        onSuccess: () => {
-          props.setShowModal(false);
-          props.onSuccess && props.onSuccess();
-        },
-      }
-    );
+    props.updateShippingDetails.mutate(formValues, {
+      onSuccess: () => {
+        props.setShowModal(false);
+        props.onSuccess && props.onSuccess();
+      },
+    });
   };
 
   return (
@@ -68,8 +51,8 @@ export default function ShippingPriceModal(props: Props) {
         <Formik
           initialValues={{
             _id: props.initialValues._id,
-            price: props.initialValues.price,
-            freeMinimum: props.initialValues.freeMinimum,
+            price: (props.initialValues.price / 100).toFixed(2),
+            freeMinimum: (props.initialValues.freeMinimum / 100).toFixed(2),
           }}
           validationSchema={validationSchema}
           onSubmit={handleSubmit}
