@@ -7,6 +7,7 @@ import { withAuth } from '../../../utils/withAuth';
 import database from '../../../middleware/db';
 
 import { OrderSearchResult, Store } from '../../../interfaces';
+import { calculateTotalItems } from '../../../utils';
 
 interface ExtendedRequest {
   db: Db;
@@ -109,8 +110,11 @@ const handler = nc<ExtendedRequest, NextApiResponse>()
                 _id: store._id,
                 name: o.store.name,
               },
-              total: o.summary.total,
+              totalItems: calculateTotalItems(o.items),
+              uniqueItems: o.items.length,
+              orderTotal: o.summary.total,
               status: o.orderStatus,
+              shippingMethod: o.shippingMethod,
               createdAt: o.createdAt,
             };
             return [...acc, reducedOrder];
