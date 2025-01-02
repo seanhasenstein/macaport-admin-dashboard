@@ -1,28 +1,13 @@
 import { useMutation, useQueryClient } from 'react-query';
-import {
-  ShippingData,
-  ShippingDataForm,
-  StoresTableStore,
-} from '../interfaces';
+import { ShippingData, ShippingDataForm } from '../interfaces';
 
-type Props =
-  | {
-      shipping: ShippingDataForm;
-      stores: StoresTableStore[];
-    }
-  | undefined;
-
-export default function useShippingDetailsMutation(props: Props) {
+export default function useShippingDetailsMutation(
+  shippingData: ShippingData | undefined
+) {
   const queryClient = useQueryClient();
 
   const updateShippingDetails = useMutation(
-    async ({
-      formValues,
-      homepageStores,
-    }: {
-      formValues: ShippingDataForm;
-      homepageStores: StoresTableStore[];
-    }) => {
+    async (formValues: ShippingDataForm) => {
       const response = await fetch('/api/shipping/update-shipping-details', {
         method: 'POST',
         body: JSON.stringify(formValues),
@@ -35,26 +20,19 @@ export default function useShippingDetailsMutation(props: Props) {
         throw new Error('Failed to update shipping details');
       }
       const data: { shipping: ShippingData } = await response.json();
-      return { shipping: data.shipping, stores: homepageStores };
+      return data.shipping;
     },
     {
       onMutate: data => {
-        queryClient.cancelQueries(['stores', 'homepage']);
-        const updatedData = {
-          shipping: data.formValues,
-          stores: data.homepageStores,
-        };
-        queryClient.setQueryData(['stores', 'homepage'], updatedData);
-        return updatedData;
+        queryClient.cancelQueries(['shipping']);
+        queryClient.setQueryData(['shipping'], data);
+        return data;
       },
       onError: () => {
-        queryClient.setQueryData(['stores', 'homepage'], {
-          stores: props?.stores,
-          shipping: props?.shipping,
-        });
+        queryClient.setQueryData(['shipping'], shippingData);
       },
       onSettled: () => {
-        queryClient.invalidateQueries(['stores', 'homepage']);
+        queryClient.invalidateQueries(['shipping']);
       },
     }
   );

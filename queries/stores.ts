@@ -1,13 +1,7 @@
-import {
-  StoresTableStore,
-  ShippingData,
-  ShippingDataForm,
-  StoreStatusFilter,
-} from '../interfaces';
+import { StoresTableStore, StoreStatusFilter } from '../interfaces';
 
 interface FetchHomepageData {
   stores: StoresTableStore[];
-  shipping: ShippingDataForm;
 }
 
 export async function fetchHomepageData(): Promise<FetchHomepageData> {
@@ -17,15 +11,8 @@ export async function fetchHomepageData(): Promise<FetchHomepageData> {
     throw new Error('Failed to fetch the stores.');
   }
 
-  const data: { stores: StoresTableStore[]; shipping: ShippingData } =
-    await response.json();
-
-  const shipping: ShippingDataForm = {
-    ...data.shipping,
-    price: (data.shipping.price / 100).toFixed(2),
-    freeMinimum: (data.shipping.freeMinimum / 100).toFixed(2),
-  };
-  return { ...data, shipping };
+  const data: { stores: StoresTableStore[] } = await response.json();
+  return data;
 }
 
 export async function fetchPaginatedStores(

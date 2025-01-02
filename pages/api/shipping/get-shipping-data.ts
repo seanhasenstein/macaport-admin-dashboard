@@ -1,23 +1,16 @@
 import { NextApiResponse } from 'next';
 import nc from 'next-connect';
+import database from '../../../middleware/db';
+import { shipping } from '../../../db';
 import { withAuth } from '../../../utils/withAuth';
 import { Request } from '../../../interfaces';
-import database from '../../../middleware/db';
-import { order } from '../../../db';
 
 const handler = nc<Request, NextApiResponse>()
   .use(database)
   .get(async (req, res) => {
-    if (!req.query.sid) {
-      throw new Error('Store ID is required.');
-    }
+    const shippingData = await shipping.getShippingData(req.db);
 
-    const result = await order.getOrderById(
-      req.db,
-      req.query.sid,
-      req.query.id
-    );
-    res.json({ order: result });
+    res.json({ shipping: shippingData });
   });
 
 export default withAuth(handler);

@@ -105,7 +105,7 @@ export default function InventoryProductSkus({
             </div>
             <div>{s.size.label}</div>
             <div className="color">
-              <Color hex={s.color.hex} />
+              <Color $hex={s.color.hex} />
               {s.color.label}
             </div>
             <div
@@ -376,14 +376,14 @@ const InventoryProductSkusStyles = styled.div`
   }
 `;
 
-function Color({ hex }: { hex: string }) {
-  return <ColorStyle hex={hex} title={hex} />;
+function Color({ $hex }: { $hex: string }) {
+  return <ColorStyle $hex={$hex} title={$hex} />;
 }
 
-const ColorStyle = styled.span<{ hex: string }>`
+const ColorStyle = styled.span<{ $hex: string }>`
   margin: 0 0.6875rem 0 0;
   display: flex;
-  background-color: ${props => props.hex};
+  background-color: ${props => props.$hex};
   height: 1rem;
   width: 1rem;
   border-radius: 9999px;

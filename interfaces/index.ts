@@ -259,6 +259,8 @@ export type OrderStatus =
   | 'Canceled'
   | 'Completed'; // todo - remove
 
+export type ShippingMethod = 'Primary' | 'Direct' | 'Store Pickup' | 'None';
+
 export interface OrderSummary {
   subtotal: number;
   shipping: number;
@@ -284,7 +286,7 @@ export interface Order {
   group: string;
   orderStatus: OrderStatus; // todo - replace with status
   // status: OrderStatus;
-  shippingMethod: 'Primary' | 'Direct' | 'Store Pickup' | 'None';
+  shippingMethod: ShippingMethod;
   shippingAddress: {
     name?: string;
     street: string;
@@ -337,3 +339,45 @@ export interface Request extends NextApiRequest {
     onlyUnfulfilled: string;
   };
 }
+
+// Search types
+
+export type OrderSearchResult = {
+  id: string;
+  customer: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+  };
+  store: {
+    _id: string;
+    name: string;
+  };
+  shippingMethod: ShippingMethod;
+  totalItems: number;
+  uniqueItems: number;
+  orderTotal: number;
+  status: string;
+  createdAt: string;
+};
+
+export type StoreSearchResult = {
+  _id: string;
+  name: string;
+  openDate: string;
+  closeDate?: string;
+  permanentlyOpen: boolean;
+  productsCount: number;
+  ordersCount: number;
+};
+
+export type InventoryProductSearchResult = {
+  _id: string;
+  name: string;
+  merchandiseCode: string;
+  tag?: string;
+  colorsCount: number;
+  sizesCount: number;
+  updatedAt: string;
+};

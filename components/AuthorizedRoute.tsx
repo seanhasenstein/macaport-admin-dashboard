@@ -1,5 +1,6 @@
 import React from 'react';
-import { useSession } from '../hooks/useSession';
+import { useRouter } from 'next/router';
+import { useSession } from 'next-auth/react';
 
 type Props = {
   children: JSX.Element;
@@ -7,9 +8,15 @@ type Props = {
 };
 
 export default function AuthorizedRoute(props: Props) {
-  const [session, sessionLoading] = useSession({ required: props.required });
+  const router = useRouter();
+  const { data: session, status: sessionStatus } = useSession({
+    required: props.required,
+    onUnauthenticated: () => {
+      router.push('/login');
+    },
+  });
 
-  if (props.required && (sessionLoading || !session)) {
+  if (props.required && (sessionStatus === 'loading' || !session)) {
     return <div className="sr-only">Verifying authentication</div>;
   }
 

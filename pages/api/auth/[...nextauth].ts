@@ -1,50 +1,38 @@
-import NextAuth from 'next-auth';
-import Providers from 'next-auth/providers';
+import NextAuth, { NextAuthOptions } from 'next-auth';
+import EmailProvider from 'next-auth/providers/email';
 import nodemailer from 'nodemailer';
-import { format } from 'date-fns';
+import { MongoDBAdapter } from '@next-auth/mongodb-adapter';
 
-export default NextAuth({
+import { mongoClientPromise } from '../../../db/connect';
+
+import { createIdNumber } from '../../../utils';
+
+export const authOptions: NextAuthOptions = {
   providers: [
-    Providers.Email({
+    EmailProvider({
       server: process.env.NEXTAUTH_EMAIL_SERVER,
       from: process.env.NEXTAUTH_EMAIL_FROM,
-      sendVerificationRequest: ({
+      sendVerificationRequest: async ({
         identifier: email,
         url,
-        baseUrl,
-        provider,
+        provider: { server, from },
       }) => {
-        return new Promise((resolve, reject) => {
-          const { server, from } = provider;
-          // strip protocol from URL and use domain as site name
-          const site = baseUrl.replace(/^https?:\/\//, '');
-
-          nodemailer.createTransport(server).sendMail(
-            {
-              to: email,
-              from,
-              subject: `Sign in to Admin Dashboard [${format(
-                new Date(),
-                'iii MMM dd yyyy HH:mm:ss'
-              )}]`,
-              text: text({ url, site }),
-              html: html({ url }),
-            },
-            error => {
-              if (error) {
-                console.error('SEND_VERIFICATION_EMAIL_ERROR', email, error);
-                return reject(new Error(error.message));
-              }
-              return resolve();
-            }
-          );
+        const id = createIdNumber();
+        const transport = nodemailer.createTransport(server);
+        await transport.sendMail({
+          to: email,
+          from,
+          subject: `Sign in to Macaport Dashboard [#${id}]`,
+          text: text({ url }),
+          html: html({ url }),
         });
       },
     }),
   ],
-  database: process.env.NEXTAUTH_DATABASE_URL,
+  adapter: MongoDBAdapter(mongoClientPromise),
+  secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
-    async signIn(user) {
+    async signIn({ user }) {
       const allowedEmailAccounts = [
         'seanhasenstein@gmail.com',
         'nick@macaport.com',
@@ -58,12 +46,12 @@ export default NextAuth({
         return '/unauthorized';
       }
     },
-    async session(session, userOrToken) {
+    async session({ session, user }) {
       return {
         ...session,
         user: {
           ...session.user,
-          id: userOrToken.id as string,
+          id: user.id as string,
         },
       };
     },
@@ -73,7 +61,14 @@ export default NextAuth({
     error: '/authentication-error',
     verifyRequest: '/verify-login',
   },
-});
+  session: {
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60, // 24 hours
+    strategy: 'database',
+  },
+};
+
+export default NextAuth(authOptions);
 
 // Email HTML body
 const html = ({ url }: { url: string }) => {
@@ -86,8 +81,8 @@ const html = ({ url }: { url: string }) => {
       <meta http-equiv="X-UA-Compatible" content="IE=edge" />
       <style type="text/css">
         /* CLIENT_SPECIFIC STYLES */
-        body,
         table,
+        body,
         td,
         a {
           -webkit-text-size-adjust: 100%;
@@ -338,8 +333,8 @@ const html = ({ url }: { url: string }) => {
                                 [endif]--><a
                                   href="${url}"
                                   style="
-                                    background-color: #059669;
-                                    border: 1px solid #047857;
+                                    background-color: #111827;
+                                    border: 1px solid #111827;
                                     border-radius: 6px;
                                     color: #ffffff;
                                     display: inline-block;
@@ -418,6 +413,4 @@ const html = ({ url }: { url: string }) => {
   `;
 };
 
-// Email text body - fallback for email clients that don't render HTML
-const text = ({ url, site }: { url: string; site: string }) =>
-  `Sign in to ${site}\n${url}\n\n`;
+const text = ({ url }: { url: string }) => `Sign in to ${url}\n\n`;

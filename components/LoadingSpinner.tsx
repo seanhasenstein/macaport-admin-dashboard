@@ -17,7 +17,7 @@ export default function LoadingSpinner({
   return (
     <LoadingSpinnerStyles
       className={`${className && `${className} `}${isLoading ? 'show' : ''}`}
-      theme={theme}
+      $theme={theme}
       aria-hidden="true"
     >
       <span className="spinner" />
@@ -25,7 +25,7 @@ export default function LoadingSpinner({
   );
 }
 
-const LoadingSpinnerStyles = styled.div<{ theme: Theme }>`
+const LoadingSpinnerStyles = styled.div<{ $theme: Theme }>`
   margin: 1px 0 0;
   display: inline-flex;
   align-items: center;
@@ -41,10 +41,11 @@ const LoadingSpinnerStyles = styled.div<{ theme: Theme }>`
     height: 1rem;
     border-width: 2px;
     border-style: solid;
-    border-color: ${props => (props.theme === 'light' ? '#eaeaee' : '#535f6e')};
+    border-color: ${props =>
+      props.$theme === 'light' ? '#eaeaee' : '#535f6e'};
     border-radius: 9999px;
     border-top-color: ${props =>
-      props.theme === 'light' ? '#bbc1ca' : '#1f2937'};
+      props.$theme === 'light' ? '#bbc1ca' : '#1f2937'};
     animation: spin 0.7s linear infinite;
   }
 

@@ -1,5 +1,6 @@
 import React from 'react';
-import { useSession } from 'next-auth/client';
+import { useRouter } from 'next/router';
+import { useSession } from 'next-auth/react';
 import styled from 'styled-components';
 import { format } from 'date-fns';
 import classNames from 'classnames';
@@ -95,6 +96,8 @@ export default function OrdersTable({
   setShowCancelOrderModal,
   openTriggerStoreShipmentModal,
 }: Props) {
+  const router = useRouter();
+
   const [orderViewOption, setOrderViewOption] =
     React.useState<OrderViewOptions>('All');
   const [filteredOrders, setFilteredOrders] = React.useState(store.orders);
@@ -105,13 +108,12 @@ export default function OrdersTable({
   const [showSidebar, setShowSidebar] = React.useState(false);
 
   const session = useSession();
-  const userId = session[0]?.user?.id;
+  const userId = session?.data?.user.id;
 
   const closeSidebar = () => setShowSidebar(false);
 
   const updateSelectedOrder = (orderId: string) => {
     const order = filteredOrders.find(o => o.orderId === orderId);
-    setSelectedOrder(order);
     const newSelectedIndex = filteredOrders.findIndex(
       o => o.orderId === orderId
     );
@@ -123,6 +125,8 @@ export default function OrdersTable({
       newSelectedIndex === filteredOrders.length - 1
         ? undefined
         : filteredOrders[newSelectedIndex + 1].orderId;
+
+    setSelectedOrder(order);
     setSelectedOrderIndex(newSelectedIndex);
     setPrevOrderId(prevOrderId);
     setNextOrderId(nextOrderId);
@@ -132,6 +136,28 @@ export default function OrdersTable({
     updateSelectedOrder(orderId);
     setShowSidebar(true);
   };
+
+  React.useEffect(() => {
+    if (router.query.orderId) {
+      const order = store.orders.find(o => o.orderId === router.query.orderId);
+      if (order) {
+        setSelectedOrder(order);
+        const orderIndex = store.orders.findIndex(
+          o => o.orderId === router.query.orderId
+        );
+        setSelectedOrderIndex(orderIndex);
+        setPrevOrderId(
+          orderIndex === 0 ? undefined : store.orders[orderIndex - 1].orderId
+        );
+        setNextOrderId(
+          orderIndex === store.orders.length - 1
+            ? undefined
+            : store.orders[orderIndex + 1].orderId
+        );
+        setShowSidebar(true);
+      }
+    }
+  }, [router.query.orderId, setSelectedOrder, store.orders]);
 
   React.useEffect(() => {
     if (orderViewOption === 'All') {

@@ -8,18 +8,18 @@ export default function useOutsideClick(
 ) {
   React.useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
         e.stopPropagation();
         setOpen(false);
       }
     };
 
     if (open && !disabled) {
-      document.addEventListener('click', handleClick);
+      document.addEventListener('mousedown', handleClick);
     }
 
     return () => {
-      document.removeEventListener('click', handleClick);
+      document.removeEventListener('mousedown', handleClick);
     };
   }, [disabled, open, ref, setOpen]);
 }
