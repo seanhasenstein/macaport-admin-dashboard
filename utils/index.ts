@@ -136,7 +136,10 @@ export function createIdNumber() {
   return value.join('');
 }
 
-export function getStoreStatus(openDate: string, closeDate: string | null) {
+export function getStoreStatus(
+  openDate: string,
+  closeDate: string | null | undefined
+) {
   const open = new Date(openDate);
   const close = new Date(closeDate || 'Jan 01 9999');
   const now = new Date();
