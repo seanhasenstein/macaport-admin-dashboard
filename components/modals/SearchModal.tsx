@@ -1,5 +1,4 @@
 import React from 'react';
-import Link from 'next/link';
 import styled from 'styled-components';
 import classNames from 'classnames';
 import {
@@ -7,6 +6,7 @@ import {
   CheckIcon,
   MagnifyingGlassIcon,
 } from '@heroicons/react/20/solid';
+import { ExclamationCircleIcon } from '@heroicons/react/24/solid';
 
 import Modal from '../Modal';
 
@@ -15,13 +15,15 @@ import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
 import usePreventBodyScroll from '../../hooks/usePreventBodyScroll';
 import useThrottle from '../../hooks/useThrottle';
 
-import { formatPhoneNumber } from '../../utils';
-
 import {
-  InventoryProductSearchResult,
-  OrderSearchResult,
-  StoreSearchResult,
+  InventoryProductSearchResult as InvProdSearchResultType,
+  OrderSearchResult as OrderSearchResultType,
+  StoreSearchResult as StoreSearchResultType,
 } from '../../interfaces';
+import LoadingSpinner from '../LoadingSpinner';
+import OrderSearchResult from '../search/OrderSearchResult';
+import StoreSearchResult from '../search/StoreSearchResult';
+import InventoryProductSearchResult from '../search/InventoryProductSearchResult';
 
 type Props = {
   isOpen: boolean;
@@ -63,7 +65,9 @@ export default function SearchModal({ isOpen, closeModal }: Props) {
   );
   const [searchTerm, setSearchTerm] = React.useState('');
   const [searchResults, setSearchResults] = React.useState<
-    OrderSearchResult[] | StoreSearchResult[] | InventoryProductSearchResult[]
+    | OrderSearchResultType[]
+    | StoreSearchResultType[]
+    | InvProdSearchResultType[]
   >();
   const [loading, setLoading] = React.useState(false);
 
@@ -150,6 +154,9 @@ export default function SearchModal({ isOpen, closeModal }: Props) {
               className="search-input"
             />
             <MagnifyingGlassIcon className="magnifying-glass-icon" />
+            {loading ? (
+              <LoadingSpinner isLoading={loading} className="loading-spinner" />
+            ) : null}
           </div>
           <div className="search-categories">
             <div className="category-toggle-container">
@@ -158,6 +165,7 @@ export default function SearchModal({ isOpen, closeModal }: Props) {
                 onClick={() => setIsOptionsOpen(prev => !prev)}
                 className={classNames('category-toggle-button', {
                   optionsOpen: isOptionsOpen,
+                  hasResults: searchResults !== undefined,
                 })}
               >
                 {options.find(option => option.value === selectedOption)?.name}
@@ -188,7 +196,8 @@ export default function SearchModal({ isOpen, closeModal }: Props) {
         {searchResults !== undefined ? (
           <div className="results-container">
             {searchResults.length === 0 && !loading ? (
-              <p>
+              <p className="no-results">
+                <ExclamationCircleIcon className="x-circle-icon" />
                 {
                   options.find(option => option.value === selectedOption)
                     ?.notFoundCopy
@@ -199,46 +208,26 @@ export default function SearchModal({ isOpen, closeModal }: Props) {
               <ul>
                 {selectedOption === 'orders' ? (
                   <>
-                    {(searchResults as OrderSearchResult[]).map(order => (
-                      <li key={order.id}>
-                        <Link
-                          href={`/stores/${order.store._id}?orderId=${order.id}`}
-                        >
-                          <a>
-                            #{order.id} {order.createdAt} -{' '}
-                            {order.customer.firstName} {order.customer.lastName}{' '}
-                            - {order.customer.email}{' '}
-                            {formatPhoneNumber(order.customer.phone)} -
-                            {order.store.name} - {order.total} - {order.status}
-                          </a>
-                        </Link>
-                      </li>
-                    ))}
+                    {(searchResults as OrderSearchResultType[]).map(order => {
+                      return <OrderSearchResult {...order} key={order.id} />;
+                    })}
                   </>
                 ) : null}
                 {selectedOption === 'stores' ? (
                   <>
-                    {(searchResults as StoreSearchResult[]).map(store => (
-                      <li key={store._id}>
-                        <Link href={`/stores/${store._id}`}>
-                          <a>{store.name}</a>
-                        </Link>
-                      </li>
+                    {(searchResults as StoreSearchResultType[]).map(store => (
+                      <StoreSearchResult {...store} key={store._id} />
                     ))}
                   </>
                 ) : null}
                 {selectedOption === 'inventoryProducts' ? (
                   <>
-                    {(searchResults as InventoryProductSearchResult[]).map(
+                    {(searchResults as InvProdSearchResultType[]).map(
                       invProd => (
-                        <li key={invProd._id}>
-                          <Link href={`/inventory-products/${invProd._id}`}>
-                            <a>
-                              {invProd.name} - {invProd.merchandiseCode} -{' '}
-                              {invProd.colorsCount} - {invProd.sizesCount}
-                            </a>
-                          </Link>
-                        </li>
+                        <InventoryProductSearchResult
+                          key={invProd._id}
+                          {...invProd}
+                        />
                       )
                     )}
                   </>
@@ -294,6 +283,11 @@ const SearchModalStyles = styled.div<{ $hasresults: boolean }>`
         width: 1.1875rem;
         color: #9ca3af;
       }
+      .loading-spinner {
+        position: absolute;
+        right: 0.75rem;
+        top: 0.6875rem;
+      }
     }
     .search-categories {
       width: 100%;
@@ -323,6 +317,9 @@ const SearchModalStyles = styled.div<{ $hasresults: boolean }>`
           width: 1.25rem;
           color: #9ca3af;
           transition: all 100ms linear;
+        }
+        &.hasResults {
+          border-radius: 0 0.375rem 0 0;
         }
         &.optionsOpen {
           cursor: default;
@@ -402,19 +399,29 @@ const SearchModalStyles = styled.div<{ $hasresults: boolean }>`
     overflow-y: auto;
     max-height: 30rem;
     border-radius: 0 0 0.375rem 0.375rem;
-    border-top: 1px solid #e5e7eb;
+    .no-results {
+      margin: 0;
+      padding: 0.875rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0 0.3125rem;
+      font-size: 0.8125rem;
+      font-weight: 400;
+      line-height: 100%;
+      color: #111827;
+      border-top: 1px solid #e5e7eb;
+      .x-circle-icon {
+        height: 0.9375rem;
+        width: 0.9375rem;
+        color: #991b1b;
+      }
+    }
     ul {
       margin: 0;
       padding: 0;
       list-style-type: none;
-      li {
-        padding: 0.5rem 1rem;
-        font-size: 0.875rem;
-        color: #111827;
-        border-bottom: 1px solid #e5e7eb;
-        &:last-of-type {
-          border-bottom: none;
-        }
+      li:first-of-type {
+        border-top: 1px solid #e5e7eb;
       }
     }
   }
