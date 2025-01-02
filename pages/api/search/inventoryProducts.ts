@@ -1,6 +1,6 @@
 import { NextApiResponse } from 'next';
 import nc from 'next-connect';
-import { Db, MongoClient } from 'mongodb';
+import { Db, Document, MongoClient } from 'mongodb';
 
 import { withAuth } from '../../../utils/withAuth';
 
@@ -15,6 +15,7 @@ interface ExtendedRequest {
     searchTerm?: string;
     page?: number;
     limit?: number;
+    returnAll?: boolean;
   };
 }
 
@@ -22,7 +23,7 @@ const handler = nc<ExtendedRequest, NextApiResponse>()
   .use(database)
   .get(async (req, res) => {
     try {
-      const { searchTerm, page = 1, limit = 1000 } = req.query;
+      const { searchTerm, page = 1, limit = 1000, returnAll } = req.query;
 
       const trimmedSearchTerm = searchTerm?.trim();
 
@@ -31,7 +32,7 @@ const handler = nc<ExtendedRequest, NextApiResponse>()
         return;
       }
 
-      const pipeline = [
+      const pipeline: Document[] = [
         {
           $search: {
             index: 'default',
@@ -59,16 +60,21 @@ const handler = nc<ExtendedRequest, NextApiResponse>()
         {
           $limit: limit,
         },
-        {
+      ];
+
+      if (!returnAll) {
+        pipeline.push({
           $project: {
             _id: 1,
             name: 1,
             merchandiseCode: 1,
+            tag: 1,
+            updatedAt: 1,
             colorsCount: { $size: '$colors' },
             sizesCount: { $size: '$sizes' },
           },
-        },
-      ];
+        });
+      }
 
       const invProdResult = await req.db
         .collection('inventoryProducts')
