@@ -9,7 +9,7 @@ import Layout from '../../components/Layout';
 import StoresTable from '../../components/storesTable/StoresTable';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import TableLoadingSpinner from '../../components/TableLoadingSpinner';
-import PageNavButtons from '../../components/PageNavButtons';
+import TopPageNav from '../../components/TopPageNav';
 import Pagination from '../../components/Pagination';
 
 export default function Stores() {
@@ -65,11 +65,11 @@ export default function Stores() {
       requiresAuth={true}
       title="All stores | Macaport Dashboard"
     >
-      <StoresStyles unfulfilledChecked={unfulfilledChecked}>
+      <StoresStyles $unfulfilledChecked={unfulfilledChecked}>
         {(query.isLoading || query.isFetching) && <TableLoadingSpinner />}
         {query.data && !query.isFetching && (
           <div className="container">
-            <PageNavButtons />
+            <TopPageNav />
             <div className="header">
               <div className="row">
                 <div className="row">
@@ -161,7 +161,7 @@ export default function Stores() {
   );
 }
 
-const StoresStyles = styled.div<{ unfulfilledChecked: boolean }>`
+const StoresStyles = styled.div<{ $unfulfilledChecked: boolean }>`
   .container {
     margin: 0 auto;
     padding: 3rem 0 6rem;
@@ -248,12 +248,12 @@ const StoresStyles = styled.div<{ unfulfilledChecked: boolean }>`
       display: inline-flex;
       align-items: center;
       border: 1px solid
-        ${props => (props.unfulfilledChecked ? '#b8c8f4' : '#d1d5db')};
+        ${props => (props.$unfulfilledChecked ? '#b8c8f4' : '#d1d5db')};
       border-radius: 0.3125rem;
       font-size: 0.8125rem;
       background-color: ${props =>
-        props.unfulfilledChecked ? '#ecf0fc' : '#f9fafb'};
-      color: ${props => (props.unfulfilledChecked ? '#173797' : '#374151')};
+        props.$unfulfilledChecked ? '#ecf0fc' : '#f9fafb'};
+      color: ${props => (props.$unfulfilledChecked ? '#173797' : '#374151')};
       cursor: pointer;
     }
 

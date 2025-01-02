@@ -1,6 +1,6 @@
 import { NextApiResponse } from 'next';
 import nc from 'next-connect';
-import { getSession } from 'next-auth/client';
+import { getSession } from 'next-auth/react';
 
 import database from '../../../middleware/db';
 import { store } from '../../../db';

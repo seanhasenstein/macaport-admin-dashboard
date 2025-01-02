@@ -28,7 +28,7 @@ export default function OrderItemBreakdown({ customClass, orderItems }: Props) {
 
   return (
     <OrderItemBreakdownStyles
-      shipped={allItemsShippedOrCanceled}
+      $shipped={allItemsShippedOrCanceled}
       className={classNames(customClass)}
     >
       {allItemsAreShipped && (
@@ -102,10 +102,10 @@ export default function OrderItemBreakdown({ customClass, orderItems }: Props) {
 }
 
 const OrderItemBreakdownStyles = styled.div<{
-  shipped: boolean;
+  $shipped: boolean;
 }>`
   display: grid;
-  grid-template-columns: ${p => (p.shipped ? '1fr' : 'repeat(5, 1fr)')};
+  grid-template-columns: ${p => (p.$shipped ? '1fr' : 'repeat(5, 1fr)')};
   gap: 0 0.5rem;
   p {
     padding: 0.34375rem 0.75rem;

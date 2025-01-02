@@ -1,4 +1,4 @@
-import { Db, ObjectID, ObjectId } from 'mongodb';
+import { Db, ObjectId, WithoutId } from 'mongodb';
 import { formatISO } from 'date-fns';
 import {
   Store,
@@ -17,7 +17,7 @@ interface StoreWithId extends Omit<Store, '_id'> {
 export async function getStoreById(db: Db, id: string) {
   const result = await db
     .collection('stores')
-    .findOne<Store>({ _id: new ObjectID(id) });
+    .findOne<Store>({ _id: new ObjectId(id) });
   if (!result) throw new Error('Invalid store ID provided.');
   return result;
 }
@@ -44,7 +44,7 @@ export async function getPaginatedStores({
 }: GetPaginatedStores) {
   const limit = pageSize;
   const skip = (currentPage - 1) * limit;
-  const result = await db.collection<Store>('stores').aggregate().toArray();
+  const result = await db.collection<Store>('stores').find().toArray();
 
   // sort stores first by openDate and then by name
   const sortedStores = result.sort((storeA, storeB) => {
@@ -80,18 +80,20 @@ export async function getPaginatedStores({
   };
 }
 
-export async function createStore(db: Db, store: Store) {
+type StoreWithoutId = Omit<Store, '_id'>;
+
+export async function createStore(db: Db, storeInput: StoreWithoutId) {
   const storeId = createId('str');
   const now = formatISO(new Date());
-  const result = await db.collection<Store>('stores').insertOne({
-    ...store,
+  const result = await db.collection<WithoutId<Store>>('stores').insertOne({
+    ...storeInput,
     storeId,
     orders: [],
     products: [],
     createdAt: now,
     updatedAt: now,
   });
-  return result.ops[0];
+  return { _id: result.insertedId };
 }
 
 export async function updateStore(
@@ -102,7 +104,7 @@ export async function updateStore(
   const result = await db
     .collection<StoreWithId>('stores')
     .findOneAndUpdate(
-      { _id: new ObjectID(id) },
+      { _id: new ObjectId(id) },
       { $set: { ...updates, updatedAt: formatISO(new Date()) } },
       { upsert: true, returnDocument: 'after' }
     );
@@ -115,9 +117,9 @@ export async function addProductToStore(
   product: StoreProduct
 ) {
   const result = await db
-    .collection('stores')
+    .collection<StoreWithId>('stores')
     .findOneAndUpdate(
-      { _id: new ObjectID(storeId) },
+      { _id: new ObjectId(storeId) },
       { $push: { products: product } },
       { upsert: true, returnDocument: 'after' }
     );
@@ -130,8 +132,8 @@ export async function updateStoreProduct(
   productId: string,
   updatedProduct: StoreProduct
 ) {
-  const result = await db.collection('stores').findOneAndUpdate(
-    { _id: new ObjectID(storeId) },
+  const result = await db.collection<StoreWithId>('stores').findOneAndUpdate(
+    { _id: new ObjectId(storeId) },
     { $set: { 'products.$[product]': updatedProduct } },
     {
       arrayFilters: [{ 'product.id': productId }],
@@ -148,8 +150,8 @@ export async function updateProductColor(
   colorId: string,
   updatedColor: Color
 ) {
-  const result = await db.collection('stores').findOneAndUpdate(
-    { _id: new ObjectID(storeId) },
+  const result = await db.collection<StoreWithId>('stores').findOneAndUpdate(
+    { _id: new ObjectId(storeId) },
     { $set: { 'products.$[product].colors.$[color]': updatedColor } },
     {
       arrayFilters: [{ 'product.id': productId }, { 'color.id': colorId }],
@@ -173,8 +175,8 @@ export async function updateStoreProductSkuStatus(
     updatedProductSku: ProductSku;
   }
 ) {
-  const result = await db.collection('stores').findOneAndUpdate(
-    { _id: new ObjectID(storeId) },
+  const result = await db.collection<StoreWithId>('stores').findOneAndUpdate(
+    { _id: new ObjectId(storeId) },
     {
       $set: {
         'products.$[product].productSkus.$[productSku]': updatedProductSku,
@@ -188,7 +190,7 @@ export async function updateStoreProductSkuStatus(
     }
   );
 
-  const updatedStoreProduct: StoreProduct = result.value.products.find(
+  const updatedStoreProduct = result?.value?.products.find(
     (p: StoreProduct) => p.id === storeProductId
   );
 
@@ -197,7 +199,7 @@ export async function updateStoreProductSkuStatus(
 
 export async function deleteStore(db: Db, id: string) {
   const result = await db
-    .collection('stores')
-    .findOneAndDelete({ _id: new ObjectID(id) });
-  return result;
+    .collection<WithoutId<Store>>('stores')
+    .findOneAndDelete({ _id: new ObjectId(id) });
+  return result.value;
 }

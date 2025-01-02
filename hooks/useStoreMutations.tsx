@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router';
 import { useMutation, useQueryClient } from 'react-query';
-import { useSession } from 'next-auth/client';
+import { useSession } from 'next-auth/react';
 
 import {
   Order,
@@ -21,7 +21,8 @@ export function useStoreMutations({ store }: Props = {}) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const session = useSession();
-  const userId = session[0]?.user?.id || '';
+
+  const userId = session?.data?.user.id || '';
 
   // ***********************************************************
   const createStore = useMutation(

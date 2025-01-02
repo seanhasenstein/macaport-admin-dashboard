@@ -1,19 +1,28 @@
-import { Db, ObjectID } from 'mongodb';
+import { Db, Filter, ObjectId, WithoutId } from 'mongodb';
 import { formatISO } from 'date-fns';
 import { InventoryProduct } from '../interfaces';
 
-export async function getInventoryProductById(db: Db, id: string) {
+export async function getInventoryProductById(db: Db, _id: string) {
   const result = await db
     .collection('inventoryProducts')
-    .findOne({ inventoryProductId: id });
-  if (!result) throw new Error('Invalid inventory product ID.');
+    .findOne<InventoryProduct>({ _id: new ObjectId(_id) });
+  return result;
+}
+
+export async function getInventoryProduct(
+  db: Db,
+  query: Filter<InventoryProduct>
+) {
+  const result = await db
+    .collection<InventoryProduct>('inventoryProducts')
+    .findOne({ ...query });
   return result;
 }
 
 export async function getAllInventoryProducts(db: Db) {
   const result = await db
-    .collection<InventoryProduct>('inventoryProducts')
-    .aggregate([{ $sort: { updatedAt: -1 } }])
+    .collection('inventoryProducts')
+    .aggregate<InventoryProduct>([{ $sort: { updatedAt: -1 } }])
     .toArray();
   return result;
 }
@@ -34,7 +43,7 @@ export async function getPaginatedInventoryProducts(
     ])
     .toArray();
 
-  const count = await db.collection('inventoryProducts').count();
+  const count = await db.collection('inventoryProducts').countDocuments();
 
   return { inventoryProducts: result, count };
 }
@@ -44,39 +53,45 @@ export async function getInventoryProductSku(
   inventoryProductId: string,
   inventorySkuId: string
 ) {
-  const result: InventoryProduct = await db
-    .collection('inventoryProducts')
+  const result = await db
+    .collection<InventoryProduct>('inventoryProducts')
     .findOne({ inventoryProductId });
 
-  return result.skus.find(s => s.id === inventorySkuId);
+  return result?.skus.find(s => s.id === inventorySkuId);
 }
+
+type InventoryProductWithoutId = Omit<InventoryProduct, '_id'>;
 
 export async function createInventoryProduct(
   db: Db,
-  product: InventoryProduct
-) {
+  product: InventoryProductWithoutId
+): Promise<InventoryProduct> {
   const now = formatISO(new Date());
-  const inventoryProduct = {
+  const inventoryProductInput = {
     ...product,
     createdAt: now,
     updatedAt: now,
   };
   const result = await db
-    .collection('inventoryProducts')
-    .insertOne(inventoryProduct);
-  return result.ops[0];
+    .collection<WithoutId<InventoryProduct>>('inventoryProducts')
+    .insertOne(inventoryProductInput);
+  return { _id: result.insertedId.toString(), ...inventoryProductInput };
+}
+
+interface InventoryProductWithObjectId extends Omit<InventoryProduct, '_id'> {
+  _id: ObjectId;
 }
 
 export async function updateInventoryProduct(
   db: Db,
-  id: string,
+  inventoryProductId: string,
   data: InventoryProduct
 ) {
   const { _id, ...updates } = data;
   const result = await db
-    .collection('inventoryProducts')
+    .collection<InventoryProductWithObjectId>('inventoryProducts')
     .findOneAndUpdate(
-      { _id: new ObjectID(id) },
+      { _id: new ObjectId(inventoryProductId) },
       { $set: { ...updates, updatedAt: formatISO(new Date()) } },
       { upsert: true, returnDocument: 'after' }
     );
@@ -90,7 +105,7 @@ export async function updateInventoryProductSkusInventory(
   updatedInventory: number
 ) {
   const result = await db
-    .collection('inventoryProducts')
+    .collection<InventoryProductWithObjectId>('inventoryProducts')
     .updateOne(
       { inventoryProductId },
       { $set: { 'skus.$[sku].inventory': updatedInventory } },

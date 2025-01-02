@@ -19,29 +19,10 @@ type Props = {
 };
 
 export default function StoreOrders(props: Props) {
-  const {
-    store,
-    selectedOrder,
-    setSelectedOrder,
-    setPrintOption,
-    showCancelOrderModal,
-    setShowCancelOrderModal,
-    openTriggerStoreShipmentModal,
-  } = props;
   return (
     <StoreOrdersStyles id="orders">
-      {store.orders ? (
-        <OrdersTable
-          {...{
-            store,
-            selectedOrder,
-            setSelectedOrder,
-            setPrintOption,
-            showCancelOrderModal,
-            setShowCancelOrderModal,
-            openTriggerStoreShipmentModal,
-          }}
-        />
+      {props.store.orders ? (
+        <OrdersTable {...props} />
       ) : (
         <div className="empty">This store has no orders.</div>
       )}

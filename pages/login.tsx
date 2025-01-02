@@ -1,6 +1,6 @@
 import { GetServerSideProps } from 'next';
 import styled from 'styled-components';
-import { signIn, getSession } from 'next-auth/client';
+import { signIn, getSession } from 'next-auth/react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import BasicLayout from '../components/BasicLayout';
@@ -71,7 +71,7 @@ export default function Login() {
                     className="validation-error"
                   />
                 </div>
-                <button type="submit">
+                <button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? (
                     <span className="spinner" />
                   ) : (

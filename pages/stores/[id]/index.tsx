@@ -13,7 +13,7 @@ import useOutsideClick from '../../../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../../../hooks/useEscapeKeydownClose';
 
 import Layout from '../../../components/Layout';
-import PageNavButtons from '../../../components/PageNavButtons';
+import TopPageNav from '../../../components/TopPageNav';
 import StoreMenu from '../../../components/store/StoreMenu';
 import StoreDetails from '../../../components/store/StoreDetails';
 import StoreProducts from '../../../components/store/StoreProducts';
@@ -84,10 +84,21 @@ export default function Store() {
       );
 
       if (storeQuery.data.orders && !selectedOrder) {
-        setSelectedOrder(storeQuery.data.orders[0]);
+        if (router.query.orderId) {
+          const order = storeQuery.data.orders.find(
+            order => order.orderId === router.query.orderId
+          );
+          if (order) {
+            setSelectedOrder(order);
+          } else {
+            setSelectedOrder(storeQuery.data.orders[0]);
+          }
+        } else {
+          setSelectedOrder(storeQuery.data.orders[0]);
+        }
       }
     }
-  }, [selectedOrder, storeQuery.data]);
+  }, [router.query.orderId, selectedOrder, storeQuery.data]);
 
   React.useEffect(() => {
     if (printOption) {
@@ -122,7 +133,7 @@ export default function Store() {
 
           {storeQuery.data && (
             <>
-              <PageNavButtons />
+              <TopPageNav />
 
               <div>
                 <FetchingSpinner isLoading={storeQuery.isFetching} />

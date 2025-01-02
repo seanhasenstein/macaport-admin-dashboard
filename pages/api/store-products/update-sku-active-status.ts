@@ -1,7 +1,7 @@
 import { NextApiResponse } from 'next';
 import nc from 'next-connect';
 import { withAuth } from '../../../utils/withAuth';
-import { Request, StoreProduct } from '../../../interfaces';
+import { Request } from '../../../interfaces';
 import database from '../../../middleware/db';
 import { store } from '../../../db';
 
@@ -10,15 +10,12 @@ const handler = nc<Request, NextApiResponse>()
   .post(async (req, res) => {
     const { storeId, storeProductId, productSkuId, updatedProductSku } =
       req.body;
-    const result: StoreProduct = await store.updateStoreProductSkuStatus(
-      req.db,
-      {
-        storeId,
-        storeProductId,
-        productSkuId,
-        updatedProductSku,
-      }
-    );
+    const result = await store.updateStoreProductSkuStatus(req.db, {
+      storeId,
+      storeProductId,
+      productSkuId,
+      updatedProductSku,
+    });
     res.json({ storeProduct: result });
   });
 

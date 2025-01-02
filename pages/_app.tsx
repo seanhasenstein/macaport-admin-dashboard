@@ -1,21 +1,20 @@
 import React from 'react';
 import { AppProps } from 'next/app';
-import { Provider } from 'next-auth/client';
+import { SessionProvider } from 'next-auth/react';
 import { QueryClientProvider, QueryClient } from 'react-query';
 import { ReactQueryDevtools } from 'react-query/devtools';
 import GlobalStyles from '../styles/globalStyles';
 
 function MyApp({ Component, pageProps }: AppProps) {
   const [queryClient] = React.useState(() => new QueryClient());
-
   return (
-    <Provider session={pageProps.session}>
+    <SessionProvider>
       <QueryClientProvider client={queryClient}>
         <GlobalStyles />
         <Component {...pageProps} />
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
-    </Provider>
+    </SessionProvider>
   );
 }
 export default MyApp;

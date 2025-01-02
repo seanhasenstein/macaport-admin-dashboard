@@ -1,9 +1,12 @@
 import React from 'react';
 import { useRouter } from 'next/router';
-import { useQuery, useQueryClient } from 'react-query';
 import styled from 'styled-components';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
+import {
+  ExclamationCircleIcon,
+  MagnifyingGlassIcon,
+} from '@heroicons/react/20/solid';
 
 import {
   createId,
@@ -19,12 +22,12 @@ import {
 
 import { useStoreQuery } from '../../../../hooks/useStoreQuery';
 import { useStoreProductMutations } from '../../../../hooks/useStoreProductMutations';
-
-import { fetchAllInventoryProducts } from '../../../../queries/inventory-products';
+import useThrottle from '../../../../hooks/useThrottle';
 
 import BasicLayout from '../../../../components/BasicLayout';
 import Notification from '../../../../components/Notification';
 import LoadingSpinner from '../../../../components/LoadingSpinner';
+import InventoryProductSearchResult from '../../../../components/search/InventoryProductSearchResult';
 
 import {
   CloudinaryStatus,
@@ -76,8 +79,11 @@ const validationSchema = Yup.object().shape({
 
 export default function AddProduct() {
   const router = useRouter();
-  const queryClient = useQueryClient();
 
+  const [invProdSearch, setInvProdSearch] = React.useState('');
+  const [invProdSearchResults, setInvProdSearchResults] =
+    React.useState<InventoryProduct[]>();
+  const [invProdSearchLoading, setInvProdSearchLoading] = React.useState(false);
   const [primaryImageStatus, setPrimaryImageStatus] =
     React.useState<CloudinaryStatus>('idle');
   const [secondaryImageStatus, setSecondaryImageStatus] =
@@ -85,31 +91,31 @@ export default function AddProduct() {
   const [inventoryProduct, setInventoryProduct] =
     React.useState<InventoryProduct>();
 
-  const inventoryProductsQuery = useQuery<InventoryProduct[]>(
-    ['inventory-products'],
-    fetchAllInventoryProducts,
-    {
-      initialData: () => {
-        return queryClient.getQueryData(['inventory-products']);
-      },
-      initialDataUpdatedAt: () => {
-        return queryClient.getQueryState(['inventory-products'])?.dataUpdatedAt;
-      },
-      staleTime: 1000 * 60 * 10,
+  const throttledSearch = useThrottle(invProdSearch, 700);
+
+  const fetchInventoryProducts = React.useCallback(async (term: string) => {
+    if (!term && !invProdSearchResults === undefined) return;
+    if (!term && invProdSearchResults !== undefined) {
+      setInvProdSearchResults(undefined);
+      return;
     }
-  );
+
+    setInvProdSearchLoading(true);
+    try {
+      const response = await fetch(
+        `/api/search/inventoryProducts?searchTerm=${term}&returnAll=true`
+      );
+      const data: { results: InventoryProduct[] } = await response.json();
+      setInvProdSearchResults(data.results);
+    } catch (error) {
+      // todo: handle this error
+    } finally {
+      setInvProdSearchLoading(false);
+    }
+  }, []);
 
   const storeQuery = useStoreQuery();
   const { addProduct } = useStoreProductMutations({ store: storeQuery.data });
-
-  const handleInventoryProductChange = (
-    e: React.ChangeEvent<HTMLSelectElement>
-  ) => {
-    const updatedInventoryProduct = inventoryProductsQuery?.data?.find(
-      ip => ip._id === e.target.value
-    );
-    setInventoryProduct(updatedInventoryProduct);
-  };
 
   type HandleAwsImageType = {
     productId: string;
@@ -292,12 +298,20 @@ export default function AddProduct() {
     document.querySelector<HTMLInputElement>(selector)?.focus();
   };
 
+  React.useEffect(() => {
+    if (!throttledSearch || invProdSearch === '' || invProdSearch.length < 3) {
+      setInvProdSearchResults(undefined);
+      return;
+    }
+    fetchInventoryProducts(throttledSearch);
+  }, [throttledSearch, fetchInventoryProducts]);
+
   return (
     <BasicLayout
       title="Add a store product | Macaport Dashboard"
       requiresAuth={true}
     >
-      <AddProductStyles>
+      <AddProductStyles $hasSearchResults={invProdSearchResults !== undefined}>
         <Formik
           initialValues={initialValues}
           enableReinitialize
@@ -344,7 +358,7 @@ export default function AddProduct() {
             });
           }}
         >
-          {({ values, setFieldValue, setFieldTouched }) => (
+          {({ values, setFieldValue, setFieldTouched, resetForm }) => (
             <Form>
               <div className="title">
                 <div>
@@ -386,31 +400,108 @@ export default function AddProduct() {
               <div className="main-content">
                 <div className="form-container">
                   <div className="section">
-                    <div className="item">
-                      <label htmlFor="inventoryProduct">
-                        Inventory product
-                      </label>
-                      <select
-                        name="inventoryProduct"
-                        id="inventoryProduct"
-                        onBlur={handleInventoryProductChange}
-                      >
-                        <option value="">Select inventory product</option>
-                        {inventoryProductsQuery?.data?.map(ip => (
-                          <option key={ip._id} value={ip._id}>
-                            {ip.name} (
-                            {ip.merchandiseCode
-                              ? `Merch. Code: ${ip.merchandiseCode}`
-                              : `${ip.inventoryProductId}`}
-                            )
-                          </option>
-                        ))}
-                      </select>
+                    <div className="item inventory-product-search">
+                      <p className="form-instructions">
+                        <span>Inventory product</span>
+                      </p>
+                      {inventoryProduct ? (
+                        <div className="selected-inventory-product">
+                          <div className="action-row">
+                            <p>Selected inventory product:</p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setInventoryProduct(undefined);
+                                resetForm();
+                              }}
+                              className="change-button"
+                            >
+                              Change products
+                            </button>
+                          </div>
+                          <div className="product-container">
+                            <InventoryProductSearchResult
+                              _id={inventoryProduct._id}
+                              name={inventoryProduct.name}
+                              merchandiseCode={inventoryProduct.merchandiseCode}
+                              tag={inventoryProduct.tag}
+                              updatedAt={inventoryProduct.updatedAt}
+                              colorsCount={inventoryProduct.colors.length}
+                              sizesCount={inventoryProduct.sizes.length}
+                              readOnly={true}
+                              as="div"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <label htmlFor="inventoryProduct">
+                            Choose an inventory product
+                          </label>
+                          <div className="input-and-results-container">
+                            <div className="input-container">
+                              <input
+                                type="text"
+                                value={invProdSearch}
+                                onChange={e => setInvProdSearch(e.target.value)}
+                                placeholder="Search for an inventory product"
+                                className="search-input"
+                              />
+                              <MagnifyingGlassIcon className="magnifying-glass-icon" />
+                              {invProdSearchLoading ? (
+                                <LoadingSpinner
+                                  isLoading={invProdSearchLoading}
+                                  className="loading-spinner"
+                                />
+                              ) : null}
+                            </div>
+                            {invProdSearchResults !== undefined && (
+                              <div className="results-container">
+                                {invProdSearchResults.length === 0 &&
+                                !invProdSearchLoading ? (
+                                  <p className="no-results-found">
+                                    <ExclamationCircleIcon className="x-circle-icon" />
+                                    No inventory products found
+                                  </p>
+                                ) : null}
+                                {invProdSearchResults.length ? (
+                                  <>
+                                    {invProdSearchResults.map(invProd => (
+                                      <InventoryProductSearchResult
+                                        key={invProd._id}
+                                        {...{
+                                          _id: invProd._id,
+                                          name: invProd.name,
+                                          merchandiseCode:
+                                            invProd.merchandiseCode,
+                                          tag: invProd.tag,
+                                          updatedAt: invProd.updatedAt,
+                                          colorsCount: invProd.colors.length,
+                                          sizesCount: invProd.sizes.length,
+                                          buttonOnClick: () => {
+                                            setInventoryProduct(invProd);
+                                            setInvProdSearch('');
+                                            setInvProdSearchResults(undefined);
+                                          },
+                                        }}
+                                        as="div"
+                                      />
+                                    ))}
+                                  </>
+                                ) : null}
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                   {values.inventoryProductId && (
                     <>
-                      <div className="section">
+                      <p className="form-instructions">
+                        <span>Store product form</span>
+                      </p>
+                      <div className="section no-top-padding">
                         <div className="item">
                           <label htmlFor="name">Product name</label>
                           <Field name="name" id="name" />
@@ -1272,7 +1363,7 @@ export default function AddProduct() {
   );
 }
 
-const AddProductStyles = styled.div`
+const AddProductStyles = styled.div<{ $hasSearchResults: boolean }>`
   .title {
     padding: 1.5rem 2.5rem;
     position: fixed;
@@ -1429,8 +1520,39 @@ const AddProductStyles = styled.div`
     width: 32rem;
   }
 
+  .form-instructions {
+    position: relative;
+    margin: 0 0 2.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #111827;
+    text-transform: uppercase;
+    letter-spacing: 0.075em;
+    text-align: center;
+    span {
+      position: relative;
+      background-color: #f4f4f5;
+      padding: 0 1.25rem;
+      z-index: 10;
+    }
+    &::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background-color: #d1d5db;
+      z-index: 1;
+    }
+  }
+
   .section {
     padding: 3rem 0;
+
+    &.no-top-padding {
+      padding-top: 0;
+    }
 
     &.product-details {
       button {
@@ -1471,6 +1593,107 @@ const AddProductStyles = styled.div`
     margin: 0 0 1.5rem;
     display: flex;
     flex-direction: column;
+  }
+
+  .inventory-product-search {
+    .selected-inventory-product {
+      .action-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        p {
+          margin: 0;
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: #6e788c;
+        }
+        .change-button {
+          padding: 0;
+          background-color: transparent;
+          border: none;
+          font-size: 0.8125rem;
+          font-weight: 500;
+          color: #1d4ed8;
+          cursor: pointer;
+          text-decoration: underline;
+          transition: color 0.2s ease;
+          &:hover {
+            color: #1e3a8a;
+          }
+        }
+      }
+      .product-container {
+        margin: 0.5rem 0 0;
+        background-color: #fff;
+        border-radius: 0.375rem;
+        border: 1px solid #dddde2;
+        background-color: #fff;
+        box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      }
+    }
+    .input-and-results-container {
+      box-shadow: ${p =>
+        p.$hasSearchResults
+          ? '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
+          : 'none'};
+      border-radius: 0.375rem;
+      .input-container {
+        position: relative;
+        margin-top: 0.3125rem;
+        .search-input {
+          padding: 0 1rem 0 2.3125rem;
+          height: 2.5rem;
+          width: 100%;
+          border-radius: ${p =>
+            p.$hasSearchResults ? '0.375rem 0.375rem 0 0' : '0.375rem'};
+          ${p => (p.$hasSearchResults ? 'box-shadow: none;' : '')}
+          &:focus-visible {
+            outline: none;
+            border-color: transparent;
+            box-shadow: none;
+            border-color: #dddde2;
+          }
+        }
+        .magnifying-glass-icon {
+          position: absolute;
+          top: 0.625rem;
+          left: 0.75rem;
+          height: 1.1875rem;
+          width: 1.1875rem;
+          color: #9ca3af;
+        }
+        .loading-spinner {
+          position: absolute;
+          right: 0.75rem;
+          top: 0.6875rem;
+        }
+      }
+    }
+    .results-container {
+      margin: 0;
+      overflow-y: auto;
+      max-height: 30rem;
+      border-radius: 0 0 0.375rem 0.375rem;
+      border: 1px solid #dddde2;
+      border-top: none;
+      background-color: #fff;
+      .no-results-found {
+        margin: 0;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0 0.3125rem;
+        font-size: 0.8125rem;
+        font-weight: 400;
+        line-height: 100%;
+        color: #111827;
+        .x-circle-icon {
+          height: 0.9375rem;
+          width: 0.9375rem;
+          color: #991b1b;
+        }
+      }
+    }
   }
 
   .details-item {

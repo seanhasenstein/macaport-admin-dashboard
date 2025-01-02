@@ -5,9 +5,6 @@ if (!process.env.DATABASE_URL) {
 }
 
 const uri: string = process.env.DATABASE_URL;
-const options = {
-  useUnifiedTopology: true,
-};
 let client: MongoClient;
 let mongoClientPromise: Promise<MongoClient>;
 
@@ -20,13 +17,14 @@ if (process.env.NODE_ENV === 'development') {
   };
 
   if (!globalClientPromise._mongoClientPromise) {
-    client = new MongoClient(uri, options);
+    client = new MongoClient(uri);
     globalClientPromise._mongoClientPromise = client.connect();
   }
   mongoClientPromise = globalClientPromise._mongoClientPromise;
+  console.log('connected to DB');
 } else {
   // In production mode, it's best to not use a global variable.
-  client = new MongoClient(uri, options);
+  client = new MongoClient(uri);
   mongoClientPromise = client.connect();
 }
 

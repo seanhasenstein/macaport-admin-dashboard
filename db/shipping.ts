@@ -1,4 +1,4 @@
-import { Db, ObjectID } from 'mongodb';
+import { Db, ObjectId } from 'mongodb';
 import { ShippingData, ShippingDataForm } from '../interfaces';
 
 export async function getShippingData(db: Db) {
@@ -11,6 +11,10 @@ export async function getShippingData(db: Db) {
   return result;
 }
 
+interface ShippingDataWithObjectId extends Omit<ShippingData, '_id'> {
+  _id: ObjectId;
+}
+
 export async function updateShippingData(db: Db, formValues: ShippingDataForm) {
   const { _id, price, freeMinimum } = formValues;
   const formattedUpdated = {
@@ -18,9 +22,9 @@ export async function updateShippingData(db: Db, formValues: ShippingDataForm) {
     freeMinimum: Number(freeMinimum) * 100,
   };
   const result = await db
-    .collection('shipping')
+    .collection<ShippingDataWithObjectId>('shipping')
     .findOneAndUpdate(
-      { _id: new ObjectID(_id) },
+      { _id: new ObjectId(_id) },
       { $set: formattedUpdated },
       { returnDocument: 'after' }
     );

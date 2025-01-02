@@ -1,4 +1,4 @@
-import { useQuery, UseQueryOptions } from 'react-query';
+import { useQuery } from 'react-query';
 import { useRouter } from 'next/router';
 
 export async function fetchSession() {
@@ -13,19 +13,12 @@ export async function fetchSession() {
 type Props = {
   required: boolean;
   redirectTo?: string;
-  queryConfig?: UseQueryOptions;
 };
 
-export function useSession({
-  required,
-  redirectTo = '/login',
-  queryConfig = {},
-}: Props) {
+export function useSession({ required, redirectTo = '/login' }: Props) {
   const router = useRouter();
   const query = useQuery(['session'], fetchSession, {
-    ...queryConfig,
-    onSettled(data, error) {
-      if (queryConfig.onSettled) queryConfig.onSettled(data, error);
+    onSettled(data) {
       if (data || !required) return;
       router.push(redirectTo);
     },
