@@ -193,7 +193,7 @@ export default function SearchModal({ isOpen, closeModal }: Props) {
             )}
           </div>
         </div>
-        {searchResults !== undefined ? (
+        {searchResults !== undefined && !loading ? (
           <div className="results-container">
             {searchResults.length === 0 && !loading ? (
               <p className="no-results">
@@ -399,6 +399,7 @@ const SearchModalStyles = styled.div<{ $hasresults: boolean }>`
     overflow-y: auto;
     max-height: 30rem;
     border-radius: 0 0 0.375rem 0.375rem;
+    border-top: 1px solid #e5e7eb;
     .no-results {
       margin: 0;
       padding: 0.875rem 1rem;
@@ -409,7 +410,6 @@ const SearchModalStyles = styled.div<{ $hasresults: boolean }>`
       font-weight: 400;
       line-height: 100%;
       color: #111827;
-      border-top: 1px solid #e5e7eb;
       .x-circle-icon {
         height: 0.9375rem;
         width: 0.9375rem;
@@ -420,9 +420,6 @@ const SearchModalStyles = styled.div<{ $hasresults: boolean }>`
       margin: 0;
       padding: 0;
       list-style-type: none;
-      li:first-of-type {
-        border-top: 1px solid #e5e7eb;
-      }
     }
   }
 `;
