@@ -263,6 +263,7 @@ export type ShippingMethod = 'Primary' | 'Direct' | 'Store Pickup' | 'None';
 
 export interface OrderSummary {
   subtotal: number;
+  discount?: number;
   shipping: number;
   salesTax: number;
   total: number;
@@ -301,6 +302,14 @@ export interface Order {
     amount: number;
   };
   note?: string;
+  teacherAppreciation?: {
+    id: string;
+    email: string;
+  };
+  switchFitnessDiscount?: {
+    id: string;
+    email: string;
+  };
   meta: {
     receiptPrinted: boolean;
   };
