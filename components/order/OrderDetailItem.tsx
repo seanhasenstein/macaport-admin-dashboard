@@ -34,12 +34,12 @@ const OrderDetailItemStyles = styled.div`
     color: #09090b;
     font-size: 0.9375rem;
     font-weight: 500;
-    line-height: 100%;
+    line-height: 120%;
   }
   .value {
     color: #52525b;
     font-size: 0.9375rem;
     font-weight: 500;
-    line-height: 100%;
+    line-height: 120%;
   }
 `;
