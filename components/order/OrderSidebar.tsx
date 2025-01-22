@@ -101,6 +101,7 @@ export default function OrderSidebar({
     stripeId,
     summary,
     orderStatus,
+    switchFitnessDiscount,
   } = selectedOrder;
   const { email, firstName, lastName, phone } = customer;
   const { subtotal, salesTax, shipping, total, stripeFee } = summary;
@@ -233,6 +234,23 @@ export default function OrderSidebar({
                     customValueClass="shipping-address-value"
                   />
                 )}
+                {switchFitnessDiscount && summary.discount ? (
+                  <OrderDetailItem
+                    label="Switch discount:"
+                    value={
+                      <>
+                        {formatToMoney(summary.discount, true)} discount applied
+                        for{' '}
+                        <span
+                          title={switchFitnessDiscount.email}
+                          className="switch-discount-email"
+                        >
+                          {switchFitnessDiscount.email}
+                        </span>
+                      </>
+                    }
+                  />
+                ) : null}
                 <OrderDetailItem
                   label="Order note:"
                   value={note ? note : 'None provided'}
@@ -248,6 +266,15 @@ export default function OrderSidebar({
                   customLabelClass="summary-label"
                   customValueClass="summary-value"
                 />
+                {switchFitnessDiscount && summary.discount ? (
+                  <OrderDetailItem
+                    label="Discount:"
+                    value={`-${formatToMoney(summary.discount, true)}`}
+                    customClass="summary-item"
+                    customLabelClass="summary-label"
+                    customValueClass="summary-value"
+                  />
+                ) : null}
                 <OrderDetailItem
                   label="Sales tax:"
                   value={formatToMoney(salesTax, true)}
@@ -490,6 +517,11 @@ const OrderSidebarStyles = styled.div`
     .details {
       padding: 0 2rem 0 0;
     }
+    .discount {
+      display: flex;
+      p {
+      }
+    }
     .order-status {
       display: flex;
       justify-content: flex-end;
@@ -526,27 +558,31 @@ const OrderSidebarStyles = styled.div`
       padding-right: 3rem;
       display: flex;
       flex-direction: column;
-      gap: 1.125rem 0;
+      gap: 1rem 0;
       border-right: 1px solid #d4d4d8;
+    }
+    .switch-discount-email {
+      display: inline-block;
+      max-width: 14.75rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .note-item {
       flex-direction: column;
       align-items: flex-start;
       gap: 0.625rem 0;
     }
-    .shipping-address-value,
     .note-value {
       line-height: 150%;
-    }
-    .shipping-address-value {
-      margin-top: -0.1875rem;
     }
   }
   .summary {
     padding-left: 4rem;
     display: flex;
     flex-direction: column;
-    gap: 0.875rem 0;
+    gap: 0.8125rem 0;
+    min-width: 14.3125rem;
     .summary-item {
       justify-content: space-between;
     }
