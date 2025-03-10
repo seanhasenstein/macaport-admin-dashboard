@@ -1,5 +1,6 @@
 import React from 'react';
 import { useRouter } from 'next/router';
+import { useQuery } from 'react-query';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import styled from 'styled-components';
@@ -20,7 +21,6 @@ import {
 import { useUpdateStoreProduct } from '../../../../hooks/useUpdateStoreProduct';
 import { useStoreQuery } from '../../../../hooks/useStoreQuery';
 import { useStoreProductMutations } from '../../../../hooks/useStoreProductMutations';
-import { useInventoryProductQuery } from '../../../../hooks/useInventoryProductQuery';
 
 import BasicLayout from '../../../../components/BasicLayout';
 import LoadingSpinner from '../../../../components/LoadingSpinner';
@@ -99,7 +99,25 @@ export default function UpdateProduct() {
 
   const storeQuery = useStoreQuery();
 
-  const inventoryProductQuery = useInventoryProductQuery(invProdId);
+  const inventoryProductQuery = useQuery(
+    ['inventory-products', 'inventory-product', invProdId],
+    async () => {
+      if (!invProdId) return;
+      const response = await fetch(
+        `/api/inventory-products/find-by-inventoryProductId?inventoryProductId=${invProdId}`
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch the inventory product.');
+      }
+
+      const data = await response.json();
+      return data.inventoryProduct;
+    },
+    {
+      staleTime: 0,
+    }
+  );
 
   const { updateProduct } = useStoreProductMutations({
     store: storeQuery.data,
