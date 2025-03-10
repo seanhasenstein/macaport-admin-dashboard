@@ -346,6 +346,7 @@ export interface Request extends NextApiRequest {
     pageSize: string;
     statusFilter: StoreStatusFilter;
     onlyUnfulfilled: string;
+    inventoryProductId: string;
   };
 }
 
