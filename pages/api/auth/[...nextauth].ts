@@ -40,6 +40,7 @@ export const authOptions: NextAuthOptions = {
         'ally@macaport.com',
         'anne@macaport.com',
         'nschaefer@coveme.com',
+        'aschaefer@macaport.com',
       ];
       if (user.email && allowedEmailAccounts.includes(user.email)) {
         return true;
