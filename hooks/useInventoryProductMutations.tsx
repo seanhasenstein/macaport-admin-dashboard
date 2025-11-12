@@ -52,9 +52,7 @@ export function useInventoryProductMutations(
         return queryClient.invalidateQueries(['inventory-products']);
       },
       onSuccess: ({ inventoryProduct }) => {
-        router.push(
-          `/inventory-products/${inventoryProduct.inventoryProductId}`
-        );
+        router.push(`/inventory-products/${inventoryProduct._id}`);
       },
     }
   );
@@ -158,7 +156,7 @@ export function useInventoryProductMutations(
         return queryClient.invalidateQueries();
       },
       onSuccess: (_data, variables) => {
-        router.push(`/inventory-products/${variables.inventoryProductId}`);
+        router.push(`/inventory-products/${variables._id}`);
       },
     }
   );
