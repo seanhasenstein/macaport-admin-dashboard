@@ -192,6 +192,8 @@ export interface Store {
   products: StoreProduct[];
   orders: Order[];
   showOnStoresPage: boolean;
+  teacherAppreciationId?: string;
+  sheboyganLutheranStaffId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -309,6 +311,11 @@ export interface Order {
   switchFitnessDiscount?: {
     id: string;
     email: string;
+  };
+  sheboyganLutheranStaffDiscount?: {
+    id: string;
+    email: string;
+    discount: number;
   };
   meta: {
     receiptPrinted: boolean;
