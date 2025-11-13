@@ -102,6 +102,7 @@ export default function OrderSidebar({
     summary,
     orderStatus,
     switchFitnessDiscount,
+    sheboyganLutheranStaffDiscount,
   } = selectedOrder;
   const { email, firstName, lastName, phone } = customer;
   const { subtotal, salesTax, shipping, total, stripeFee } = summary;
@@ -251,6 +252,23 @@ export default function OrderSidebar({
                     }
                   />
                 ) : null}
+                {sheboyganLutheranStaffDiscount && summary.discount ? (
+                  <OrderDetailItem
+                    label="Staff discount:"
+                    value={
+                      <>
+                        {formatToMoney(summary.discount, true)} discount applied
+                        for{' '}
+                        <span
+                          title={sheboyganLutheranStaffDiscount.email}
+                          className="switch-discount-email"
+                        >
+                          {sheboyganLutheranStaffDiscount.email}
+                        </span>
+                      </>
+                    }
+                  />
+                ) : null}
                 <OrderDetailItem
                   label="Order note:"
                   value={note ? note : 'None provided'}
@@ -267,6 +285,15 @@ export default function OrderSidebar({
                   customValueClass="summary-value"
                 />
                 {switchFitnessDiscount && summary.discount ? (
+                  <OrderDetailItem
+                    label="Discount:"
+                    value={`-${formatToMoney(summary.discount, true)}`}
+                    customClass="summary-item"
+                    customLabelClass="summary-label"
+                    customValueClass="summary-value"
+                  />
+                ) : null}
+                {sheboyganLutheranStaffDiscount && summary.discount ? (
                   <OrderDetailItem
                     label="Discount:"
                     value={`-${formatToMoney(summary.discount, true)}`}
