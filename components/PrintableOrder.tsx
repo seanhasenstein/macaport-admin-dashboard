@@ -191,6 +191,13 @@ export default function PrintableOrder({ order, store }: Props) {
                                 ))}
                               </div>
                             )}
+                            {item.merchandiseCode ? (
+                              <div className="addon-item">
+                                <span className="addon-label">
+                                  {item.merchandiseCode}
+                                </span>
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       </td>
