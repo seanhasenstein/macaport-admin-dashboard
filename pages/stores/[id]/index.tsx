@@ -16,6 +16,7 @@ import Layout from '../../../components/Layout';
 import TopPageNav from '../../../components/TopPageNav';
 import StoreMenu from '../../../components/store/StoreMenu';
 import StoreDetails from '../../../components/store/StoreDetails';
+import TeacherAppreciationPanel from '../../../components/store/teacherAppreciation/TeacherAppreciationPanel';
 import StoreProducts from '../../../components/store/StoreProducts';
 import StoreOrders from '../../../components/store/StoreOrders';
 import LoadingSpinner from '../../../components/LoadingSpinner';
@@ -165,6 +166,9 @@ export default function Store() {
                   </div>
                   <StoreDetails store={storeQuery.data} />
                 </div>
+                {storeQuery.data.teacherAppreciationId && (
+                  <TeacherAppreciationPanel store={storeQuery.data} />
+                )}
                 <StoreProducts store={storeQuery.data} />
                 <StoreOrders
                   store={storeQuery.data}
