@@ -62,8 +62,13 @@ function parseEmailInput(
 
 export default function AddEligibleEmailsModal(props: Props) {
   const ref = React.useRef<HTMLDivElement>(null);
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const [show, setShow] = React.useState(true);
   const [bulkInput, setBulkInput] = React.useState('');
+
+  React.useEffect(() => {
+    textareaRef.current?.focus();
+  }, []);
 
   useOutsideClick(
     show,
@@ -108,11 +113,11 @@ export default function AddEligibleEmailsModal(props: Props) {
           and invalid entries are detected automatically.
         </p>
         <textarea
+          ref={textareaRef}
           value={bulkInput}
           onChange={e => setBulkInput(e.target.value)}
           placeholder="jane@example.com&#10;john@example.com"
           rows={6}
-          autoFocus
           disabled={props.isLoading}
         />
 
