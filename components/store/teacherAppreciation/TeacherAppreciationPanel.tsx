@@ -60,13 +60,21 @@ export default function TeacherAppreciationPanel({ store }: Props) {
   }
 
   const ta = query.data;
-  const eligibleCount = ta.eligibleEmails.length;
+  const enrolledCount = ta.eligibleEmails.length;
   const usedCount = ta.usedEmails.length;
-  const total = eligibleCount + usedCount;
-  const usedPct = total === 0 ? 0 : Math.round((usedCount / total) * 100);
+  const usedPct =
+    enrolledCount === 0
+      ? 0
+      : Math.round((usedCount / enrolledCount) * 100);
+
+  const usedSet = new Set(ta.usedEmails.map(e => e.toLowerCase()));
+  const unusedEligible = ta.eligibleEmails.filter(
+    e => !usedSet.has(e.toLowerCase())
+  );
+  const eligibleCount = unusedEligible.length;
 
   const searchLower = search.trim().toLowerCase();
-  const filteredEligible = ta.eligibleEmails
+  const filteredEligible = unusedEligible
     .filter(e => e.toLowerCase().includes(searchLower))
     .sort((a, b) => a.localeCompare(b));
 
@@ -162,15 +170,15 @@ export default function TeacherAppreciationPanel({ store }: Props) {
                 />
               </svg>
             )}
-            {ta.active ? 'Pause program' : 'Resume program'}
+            {ta.active ? 'Pause discount' : 'Resume discount'}
           </button>
         </div>
       </div>
 
       <div className="stats">
         <div className="stat">
-          <div className="stat-value">{eligibleCount}</div>
-          <div className="stat-label">Eligible</div>
+          <div className="stat-value">{enrolledCount}</div>
+          <div className="stat-label">Total Eligible</div>
         </div>
         <div className="stat">
           <div className="stat-value">{usedCount}</div>

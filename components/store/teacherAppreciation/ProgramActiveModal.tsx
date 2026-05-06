@@ -39,13 +39,13 @@ export default function ProgramActiveModal(props: Props) {
   return (
     <Styles>
       <div ref={ref} className="modal">
-        <h3>{isPausing ? 'Pause program' : 'Resume program'}</h3>
+        <h3>{isPausing ? 'Pause discount' : 'Resume discount'}</h3>
         <p>
           {isPausing ? (
             <>
               Pausing will immediately stop accepting Teacher Appreciation
               discounts at checkout. Eligible customers will see an{' '}
-              <strong>ineligible</strong> rejection until the program is
+              <strong>ineligible</strong> rejection until the discount is
               resumed.
             </>
           ) : (
@@ -78,8 +78,8 @@ export default function ProgramActiveModal(props: Props) {
                 ? 'Pausing...'
                 : 'Resuming...'
               : isPausing
-              ? 'Pause program'
-              : 'Resume program'}
+              ? 'Pause discount'
+              : 'Resume discount'}
           </button>
         </div>
         <ModalSpinner isLoading={props.isLoading} />
