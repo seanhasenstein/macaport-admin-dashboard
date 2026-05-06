@@ -27,7 +27,7 @@ export function useStoreQuery() {
       },
       initialDataUpdatedAt: () =>
         queryClient.getQueryState(['stores'])?.dataUpdatedAt,
-      staleTime: 1000 * 60 * 10,
+      staleTime: 1000 * 60,
     }
   );
 }

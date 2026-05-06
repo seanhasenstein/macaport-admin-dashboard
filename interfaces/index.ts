@@ -398,3 +398,12 @@ export type InventoryProductSearchResult = {
   sizesCount: number;
   updatedAt: string;
 };
+
+export interface TeacherAppreciation {
+  _id: string;
+  active: boolean;
+  year: number;
+  storeId: string;
+  eligibleEmails: string[];
+  usedEmails: string[];
+}
