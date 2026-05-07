@@ -13,6 +13,8 @@ export default function useCsvDownload(
   storeId: string | undefined,
   fields: Field[],
   selectedView: OrderView | undefined,
+  groupFilter: string,
+  shippingFilter: string,
   options: Record<string, unknown> = {}
 ) {
   const [enabled, setEnabled] = React.useState(false);
@@ -24,7 +26,12 @@ export default function useCsvDownload(
   async function getCsvData() {
     const response = await fetch(`/api/stores/${storeId}/orders-to-csv`, {
       method: 'post',
-      body: JSON.stringify({ fields, view: selectedView ?? 'all' }),
+      body: JSON.stringify({
+        fields,
+        view: selectedView ?? 'all',
+        groupFilter: groupFilter || undefined,
+        shippingFilter: shippingFilter || undefined,
+      }),
       headers: {
         'Content-Type': 'application/json',
       },
@@ -41,7 +48,15 @@ export default function useCsvDownload(
   return [
     setEnabled,
     useQuery(
-      ['stores', 'store', storeId, 'csv-orders', selectedView ?? 'all'],
+      [
+        'stores',
+        'store',
+        storeId,
+        'csv-orders',
+        selectedView ?? 'all',
+        groupFilter,
+        shippingFilter,
+      ],
       getCsvData,
       {
         ...options,

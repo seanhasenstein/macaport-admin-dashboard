@@ -28,7 +28,7 @@ type Props = {
   store: Store;
   setPrintOption: React.Dispatch<
     React.SetStateAction<
-      'unfulfilled' | 'personalization' | 'single' | undefined
+      'unfulfilled' | 'personalization' | 'filtered' | 'single' | undefined
     >
   >;
   showCancelOrderModal: boolean;

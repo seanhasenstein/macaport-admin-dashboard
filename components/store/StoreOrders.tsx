@@ -17,15 +17,21 @@ type Props = {
   setSelectedOrder: React.Dispatch<React.SetStateAction<Order | undefined>>;
   setPrintOption: React.Dispatch<
     React.SetStateAction<
-      'unfulfilled' | 'personalization' | 'single' | undefined
+      'unfulfilled' | 'personalization' | 'filtered' | 'single' | undefined
     >
   >;
+  setFilteredOrdersForPrint: React.Dispatch<React.SetStateAction<Order[]>>;
   showCancelOrderModal: boolean;
   setShowCancelOrderModal: React.Dispatch<React.SetStateAction<boolean>>;
   openTriggerStoreShipmentModal: () => void;
+  openCSVModal: () => void;
   viewOptions: OrderViewOption[];
   selectedView: OrderView | undefined;
   setSelectedView: (view: OrderView) => void;
+  groupFilter: string;
+  setGroupFilter: React.Dispatch<React.SetStateAction<string>>;
+  shippingFilter: string;
+  setShippingFilter: React.Dispatch<React.SetStateAction<string>>;
 };
 
 export default function StoreOrders({

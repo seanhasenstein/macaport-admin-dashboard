@@ -15,13 +15,13 @@ export default function StoreProductMenu({
   productId,
   inventoryProductId,
 }: Props) {
-  const menuRef = React.useRef<HTMLDivElement>(null);
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
   const [showMenu, setShowMenu] = React.useState(false);
-  useOutsideClick(showMenu, setShowMenu, menuRef);
+  useOutsideClick(showMenu, setShowMenu, wrapperRef);
   useEscapeKeydownClose(showMenu, setShowMenu);
 
   return (
-    <StoreProductMenuStyles>
+    <StoreProductMenuStyles ref={wrapperRef}>
       <button
         type="button"
         className="menu-button"
@@ -35,7 +35,7 @@ export default function StoreProductMenu({
           <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
         </svg>
       </button>
-      <div ref={menuRef} className={`menu ${showMenu ? 'show' : ''}`}>
+      <div className={`menu ${showMenu ? 'show' : ''}`}>
         <Link href={`/stores/${storeId}/product?pid=${productId}`}>
           <a className="menu-link">
             <svg

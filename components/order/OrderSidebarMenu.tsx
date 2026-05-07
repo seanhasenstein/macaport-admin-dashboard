@@ -15,7 +15,7 @@ type Props = {
   stripeId: string;
   setPrintOption: React.Dispatch<
     React.SetStateAction<
-      'unfulfilled' | 'personalization' | 'single' | undefined
+      'unfulfilled' | 'personalization' | 'filtered' | 'single' | undefined
     >
   >;
   setShowCancelOrderModal: React.Dispatch<React.SetStateAction<boolean>>;

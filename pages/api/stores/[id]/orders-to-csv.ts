@@ -31,10 +31,22 @@ const handler = nc<Request, NextApiResponse>()
       rawView === 'outstanding' || rawView === 'all' || rawView === undefined
         ? rawView ?? 'all'
         : Number(rawView);
-    queriedStore.orders = filterOrdersByView(
+    const groupFilter: string | undefined = req.body.groupFilter || undefined;
+    const shippingFilter: string | undefined =
+      req.body.shippingFilter || undefined;
+
+    let scopedOrders = filterOrdersByView(
       queriedStore.orders ?? [],
       viewFilter
     );
+    if (groupFilter || shippingFilter) {
+      scopedOrders = scopedOrders.filter(o => {
+        if (groupFilter && o.group !== groupFilter) return false;
+        if (shippingFilter && o.shippingMethod !== shippingFilter) return false;
+        return true;
+      });
+    }
+    queriedStore.orders = scopedOrders;
 
     const headerFields = [
       { id: 'orderId', title: 'ORDER ID' },

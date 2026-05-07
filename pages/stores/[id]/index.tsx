@@ -40,6 +40,7 @@ export default function Store() {
 
   const printUnfulfilledRef = React.useRef<HTMLDivElement>(null);
   const printPersonalizedRef = React.useRef<HTMLDivElement>(null);
+  const printFilteredRef = React.useRef<HTMLDivElement>(null);
   const printSingleRef = React.useRef<HTMLDivElement>(null);
 
   const handlePrintUnfulfilled = useReactToPrint({
@@ -48,6 +49,10 @@ export default function Store() {
 
   const handlePrintPersonalized = useReactToPrint({
     content: () => printPersonalizedRef.current,
+  });
+
+  const handlePrintFiltered = useReactToPrint({
+    content: () => printFilteredRef.current,
   });
 
   const handlePrintSingle = useReactToPrint({
@@ -63,8 +68,11 @@ export default function Store() {
   const [showDeleteStoreModal, setShowDeleteStoreModal] = React.useState(false);
   const [showCSVModal, setShowCSVModal] = React.useState(false);
   const [printOption, setPrintOption] = React.useState<
-    'unfulfilled' | 'personalization' | 'single' | undefined
+    'unfulfilled' | 'personalization' | 'filtered' | 'single' | undefined
   >(undefined);
+  const [filteredOrdersForPrint, setFilteredOrdersForPrint] = React.useState<
+    Order[]
+  >([]);
   const [selectedOrder, setSelectedOrder] = React.useState<Order | undefined>(
     undefined
   );
@@ -74,6 +82,8 @@ export default function Store() {
   const [selectedView, setSelectedView] = React.useState<OrderView | undefined>(
     undefined
   );
+  const [groupFilter, setGroupFilter] = React.useState('');
+  const [shippingFilter, setShippingFilter] = React.useState('');
 
   const viewOptions = React.useMemo(
     () => getOrderViewOptions(storeQuery.data?.orders ?? []),
@@ -120,6 +130,15 @@ export default function Store() {
     return filterOrdersByView(storeQuery.data.orders, selectedView);
   }, [storeQuery.data?.orders, selectedView]);
 
+  const bulkScopedOrders = React.useMemo(() => {
+    if (!groupFilter && !shippingFilter) return viewScopedOrders;
+    return viewScopedOrders.filter(o => {
+      if (groupFilter && o.group !== groupFilter) return false;
+      if (shippingFilter && o.shippingMethod !== shippingFilter) return false;
+      return true;
+    });
+  }, [viewScopedOrders, groupFilter, shippingFilter]);
+
   const { setReceiptPrintedForUnfulfilledOrders } = useOrderMutation({
     store: storeQuery.data,
   });
@@ -164,12 +183,20 @@ export default function Store() {
       if (printOption === 'personalization') {
         handlePrintPersonalized();
       }
+      if (printOption === 'filtered') {
+        handlePrintFiltered();
+      }
       if (printOption === 'single') {
         handlePrintSingle();
       }
       setPrintOption(undefined);
     }
-  }, [handlePrintPersonalized, handlePrintSingle, handlePrintUnfulfilled]);
+  }, [
+    handlePrintFiltered,
+    handlePrintPersonalized,
+    handlePrintSingle,
+    handlePrintUnfulfilled,
+  ]);
 
   return (
     <Layout
@@ -211,11 +238,6 @@ export default function Store() {
                       storeId={storeQuery.data._id}
                       storeStatus={storeStatus}
                       setShowDeleteModal={setShowDeleteStoreModal}
-                      setShowCSVModal={setShowCSVModal}
-                      setPrintOption={setPrintOption}
-                      showTriggerStoreShipmentModal={() =>
-                        setShowTriggerShipmentModal(true)
-                      }
                     />
                   </div>
                   <StoreDetails store={storeQuery.data} />
@@ -230,13 +252,19 @@ export default function Store() {
                     selectedOrder,
                     setSelectedOrder,
                     setPrintOption,
+                    setFilteredOrdersForPrint,
                     showCancelOrderModal,
                     setShowCancelOrderModal,
                     openTriggerStoreShipmentModal: () =>
                       setShowTriggerShipmentModal(true),
+                    openCSVModal: () => setShowCSVModal(true),
                     viewOptions,
                     selectedView,
                     setSelectedView,
+                    groupFilter,
+                    setGroupFilter,
+                    shippingFilter,
+                    setShippingFilter,
                   }}
                 />
               </div>
@@ -297,6 +325,8 @@ export default function Store() {
           showModal={showCSVModal}
           setShowModal={setShowCSVModal}
           selectedView={selectedView}
+          groupFilter={groupFilter}
+          shippingFilter={shippingFilter}
         />
       )}
 
@@ -306,7 +336,7 @@ export default function Store() {
           aria-hidden="true"
           ref={printUnfulfilledRef}
         >
-          {viewScopedOrders.map(order => {
+          {bulkScopedOrders.map(order => {
             if (order.orderStatus === 'Unfulfilled') {
               return (
                 <PrintableOrder
@@ -326,7 +356,7 @@ export default function Store() {
           aria-hidden="true"
           ref={printPersonalizedRef}
         >
-          {viewScopedOrders.map(order => {
+          {bulkScopedOrders.map(order => {
             const orderHasAtLeastOnePersonalizationItem = order.items.some(
               item => item.personalizationAddons.length > 0
             );
@@ -341,6 +371,22 @@ export default function Store() {
               );
             }
           })}
+        </div>
+      ) : null}
+
+      {printOption === 'filtered' ? (
+        <div
+          className="printable-orders"
+          aria-hidden="true"
+          ref={printFilteredRef}
+        >
+          {filteredOrdersForPrint.map(order => (
+            <PrintableOrder
+              key={order.orderId}
+              order={order}
+              store={storeQuery.data}
+            />
+          ))}
         </div>
       ) : null}
 

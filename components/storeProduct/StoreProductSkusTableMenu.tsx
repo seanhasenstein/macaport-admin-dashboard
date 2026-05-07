@@ -11,13 +11,13 @@ type Props = {
 export default function StoreProductSkusTableMenu({
   inventoryProductId,
 }: Props) {
-  const menuRef = React.useRef<HTMLDivElement>(null);
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
   const [showMenu, setShowMenu] = React.useState(false);
-  useOutsideClick(showMenu, setShowMenu, menuRef);
+  useOutsideClick(showMenu, setShowMenu, wrapperRef);
   useEscapeKeydownClose(showMenu, setShowMenu);
 
   return (
-    <StoreProductSkusTableMenuStyles>
+    <StoreProductSkusTableMenuStyles ref={wrapperRef}>
       <div className="menu-container text-right">
         <button
           type="button"
@@ -40,7 +40,7 @@ export default function StoreProductSkusTableMenu({
           <span className="sr-only">Menu</span>
         </button>
       </div>
-      <div ref={menuRef} className={`menu ${showMenu ? 'show' : ''}`}>
+      <div className={`menu ${showMenu ? 'show' : ''}`}>
         <Link href={`/inventory-products/${inventoryProductId}`}>
           <a className="link">
             <svg

@@ -10,6 +10,7 @@ import OrderStatusComponent from './OrderStatus';
 import Table from '../common/Table';
 import OrderSidebar from './OrderSidebar';
 import OrdersTableItemsBreakdown from './OrdersTableItemsBreakdown';
+import OrdersActionsMenu from './OrdersActionsMenu';
 import OrderViewSelector from '../store/OrderViewSelector';
 
 import { calculateTotalItems, formatToMoney } from '../../utils';
@@ -112,23 +113,33 @@ function orderMatchesQuery(order: Order, query: string): boolean {
   return false;
 }
 
+type PrintOption =
+  | 'unfulfilled'
+  | 'personalization'
+  | 'filtered'
+  | 'single';
+
 type Props = {
   store: StoreWithOrderStatusTotals;
   selectedOrder: Order | undefined;
   setSelectedOrder: React.Dispatch<React.SetStateAction<Order | undefined>>;
   setPrintOption: React.Dispatch<
-    React.SetStateAction<
-      'unfulfilled' | 'personalization' | 'single' | undefined
-    >
+    React.SetStateAction<PrintOption | undefined>
   >;
+  setFilteredOrdersForPrint: React.Dispatch<React.SetStateAction<Order[]>>;
   showCancelOrderModal: boolean;
   setShowCancelOrderModal: React.Dispatch<React.SetStateAction<boolean>>;
   openTriggerStoreShipmentModal: () => void;
+  openCSVModal: () => void;
   viewOrders: Order[];
   viewOrderStatusTotals: Record<OrderStatusKey | 'Personalized', number>;
   viewOptions: OrderViewOption[];
   selectedView: OrderView | undefined;
   setSelectedView: (view: OrderView) => void;
+  groupFilter: string;
+  setGroupFilter: React.Dispatch<React.SetStateAction<string>>;
+  shippingFilter: string;
+  setShippingFilter: React.Dispatch<React.SetStateAction<string>>;
 };
 
 export default function OrdersTable({
@@ -136,22 +147,30 @@ export default function OrdersTable({
   selectedOrder,
   setSelectedOrder,
   setPrintOption,
+  setFilteredOrdersForPrint,
   showCancelOrderModal,
   setShowCancelOrderModal,
   openTriggerStoreShipmentModal,
+  openCSVModal,
   viewOrders,
   viewOrderStatusTotals,
   viewOptions,
   selectedView,
   setSelectedView,
+  groupFilter,
+  setGroupFilter,
+  shippingFilter,
+  setShippingFilter,
 }: Props) {
   const router = useRouter();
+
+  const [copyEmailsState, setCopyEmailsState] = React.useState<
+    'idle' | 'copied' | 'empty'
+  >('idle');
 
   const [orderViewOption, setOrderViewOption] =
     React.useState<OrderViewOptions>('All');
   const [searchTerm, setSearchTerm] = React.useState('');
-  const [groupFilter, setGroupFilter] = React.useState('');
-  const [shippingFilter, setShippingFilter] = React.useState('');
   const [sortOption, setSortOption] = React.useState<SortOption>('newest');
   const throttledSearchTerm = useThrottle(searchTerm, 200);
   const queryTrimmed = throttledSearchTerm.trim().toLowerCase();
@@ -183,7 +202,7 @@ export default function OrdersTable({
     if (groupFilter && !distinctGroups.includes(groupFilter)) {
       setGroupFilter('');
     }
-  }, [distinctGroups, groupFilter]);
+  }, [distinctGroups, groupFilter, setGroupFilter]);
 
   React.useEffect(() => {
     if (
@@ -192,7 +211,7 @@ export default function OrdersTable({
     ) {
       setShippingFilter('');
     }
-  }, [distinctShippingMethods, shippingFilter]);
+  }, [distinctShippingMethods, shippingFilter, setShippingFilter]);
 
   React.useEffect(() => {
     if (sortOption === 'group' && !showGroupControls) setSortOption('newest');
@@ -216,6 +235,29 @@ export default function OrdersTable({
       return true;
     });
   }, [searchedOrders, groupFilter, shippingFilter]);
+
+  const bulkPrintCounts = React.useMemo(() => {
+    let total = 0;
+    let unfulfilled = 0;
+    let personalized = 0;
+    for (const o of viewOrders) {
+      if (groupFilter && o.group !== groupFilter) continue;
+      if (shippingFilter && o.shippingMethod !== shippingFilter) continue;
+      total += 1;
+      if (o.orderStatus === 'Unfulfilled') unfulfilled += 1;
+      if (o.items.some(i => i.personalizationAddons.length > 0))
+        personalized += 1;
+    }
+    return { total, unfulfilled, personalized };
+  }, [viewOrders, groupFilter, shippingFilter]);
+
+  const canTriggerShipment = React.useMemo(
+    () =>
+      store.orders.some(o =>
+        o.items.some(i => i.status.current === 'Fulfilled')
+      ),
+    [store.orders]
+  );
 
   const hasActiveNarrowing =
     isSearching || !!groupFilter || !!shippingFilter;
@@ -325,6 +367,29 @@ export default function OrdersTable({
 
   const closeSidebar = () => setShowSidebar(false);
 
+  const handleCopyEmails = async () => {
+    const emails = Array.from(
+      new Set(
+        filteredOrders
+          .map(o => o.customer?.email)
+          .filter((e): e is string => !!e)
+      )
+    );
+    if (emails.length === 0) {
+      setCopyEmailsState('empty');
+      setTimeout(() => setCopyEmailsState('idle'), 1200);
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(emails.join(', '));
+      setCopyEmailsState('copied');
+    } catch {
+      setCopyEmailsState('idle');
+      return;
+    }
+    setTimeout(() => setCopyEmailsState('idle'), 1200);
+  };
+
   const { selectedOrderIndex, prevOrderId, nextOrderId } = React.useMemo(() => {
     if (!selectedOrder) {
       return {
@@ -408,7 +473,30 @@ export default function OrdersTable({
   return (
     <OrdersTableStyles>
       <div className="orders-header">
-        <h3>Orders</h3>
+        <div className="orders-header-row">
+          <h3>Orders</h3>
+          {store.orders && (
+            <OrdersActionsMenu
+              hasActiveFilters={hasActiveNarrowing}
+              canPrintUnfulfilled={bulkPrintCounts.unfulfilled > 0}
+              canPrintPersonalized={bulkPrintCounts.personalized > 0}
+              canPrintFiltered={filteredOrders.length > 0}
+              canDownloadCsv={bulkPrintCounts.total > 0}
+              canCopyEmails={filteredOrders.length > 0}
+              canTriggerShipment={canTriggerShipment}
+              onPrintUnfulfilled={() => setPrintOption('unfulfilled')}
+              onPrintPersonalized={() => setPrintOption('personalization')}
+              onPrintFiltered={() => {
+                setFilteredOrdersForPrint(filteredOrders);
+                setPrintOption('filtered');
+              }}
+              onDownloadCsv={openCSVModal}
+              onTriggerShipment={openTriggerStoreShipmentModal}
+              onCopyEmails={handleCopyEmails}
+              copyEmailsState={copyEmailsState}
+            />
+          )}
+        </div>
         {totalDisplayed > 0 && (
           <p className="orders-stats">
             <span className="total">
@@ -753,6 +841,13 @@ export default function OrdersTable({
 const OrdersTableStyles = styled.div`
   .orders-header {
     margin: 0 0 1.25rem;
+  }
+
+  .orders-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
   }
 
   h3 {

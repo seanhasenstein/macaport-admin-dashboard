@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import Link from 'next/link';
-import { CheckCircleIcon, PrinterIcon } from '@heroicons/react/24/outline';
+import { EllipsisVerticalIcon } from '@heroicons/react/20/solid';
 
 import { StoreStatus } from '../../interfaces';
 
@@ -14,30 +14,20 @@ type Props = {
   storeId: string;
   storeStatus: StoreStatus | undefined;
   setShowDeleteModal: React.Dispatch<React.SetStateAction<boolean>>;
-  setShowCSVModal: React.Dispatch<React.SetStateAction<boolean>>;
-  setPrintOption: React.Dispatch<
-    React.SetStateAction<
-      'unfulfilled' | 'personalization' | 'single' | undefined
-    >
-  >;
-  showTriggerStoreShipmentModal: () => void;
 };
 
 export default function StoreMenu({
   storeId,
   storeStatus,
   setShowDeleteModal,
-  setShowCSVModal,
-  setPrintOption,
-  showTriggerStoreShipmentModal,
 }: Props) {
-  const menuRef = React.useRef<HTMLDivElement>(null);
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
   const [showMenu, setShowMenu] = React.useState(false);
   const [copyLinkClicked, setCopyLinkClicked] = React.useState<
     'demo' | 'live' | undefined
   >(undefined);
 
-  useOutsideClick(showMenu, setShowMenu, menuRef);
+  useOutsideClick(showMenu, setShowMenu, wrapperRef);
   useEscapeKeydownClose(showMenu, setShowMenu);
 
   const handleDeleteStoreMenuClick = () => {
@@ -45,104 +35,18 @@ export default function StoreMenu({
     setShowDeleteModal(true);
   };
 
-  const handlePrintUnfulfilledOrders = () => {
-    setPrintOption('unfulfilled');
-    setShowMenu(false);
-  };
-
-  const handlePrintPersonalizedOrders = () => {
-    setPrintOption('personalization');
-    setShowMenu(false);
-  };
-
   return (
-    <StoreMenuStyles>
+    <StoreMenuStyles ref={wrapperRef}>
       <button
         type="button"
         onClick={() => setShowMenu(!showMenu)}
         className="menu-button"
       >
         <span className="sr-only">Menu</span>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-          />
-        </svg>
+        <EllipsisVerticalIcon aria-hidden="true" />
       </button>
 
-      <div ref={menuRef} className={`menu-container${showMenu ? ' show' : ''}`}>
-        <button
-          type="button"
-          onClick={() => {
-            showTriggerStoreShipmentModal();
-            setShowMenu(false);
-          }}
-          className="menu-link"
-        >
-          <CheckCircleIcon strokeWidth={2} />
-          <span>
-            Trigger a shipment
-            <span className="subtitle">
-              Set all fulfilled order items to shipped
-            </span>
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={handlePrintUnfulfilledOrders}
-          className="menu-link"
-        >
-          <PrinterIcon />
-          <span>
-            Print unfulfilled orders
-            <span className="subtitle">
-              Sets all unfulfilled orders to printed
-            </span>
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={handlePrintPersonalizedOrders}
-          className="menu-link"
-        >
-          <PrinterIcon />
-          Print personalized orders
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setShowCSVModal(true);
-            setShowMenu(false);
-          }}
-          className="menu-link"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M17 16v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a2 2 0 012-2h2m3-4H9a2 2 0 00-2 2v7a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-1m-1 4l-3 3m0 0l-3-3m3 3V3"
-            />
-          </svg>
-          Download orders to csv
-        </button>
-
+      <div className={`menu-container${showMenu ? ' show' : ''}`}>
         <button
           type="button"
           className="menu-link"
@@ -317,6 +221,8 @@ export default function StoreMenu({
 }
 
 const StoreMenuStyles = styled.div`
+  position: relative;
+
   .menu-button {
     padding: 0;
     height: 2rem;
@@ -340,77 +246,92 @@ const StoreMenuStyles = styled.div`
     }
   }
 
+  @keyframes menuOpen {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
   .menu-container {
-    margin: 0.375rem 0 0;
-    padding: 0 1rem;
     position: absolute;
-    right: 2.75rem;
-    white-space: nowrap;
+    top: calc(100% + 0.375rem);
+    right: 0;
+    min-width: 18rem;
+    padding: 0.375rem 0;
     display: none;
     flex-direction: column;
-    align-items: flex-start;
-    background-color: #fbfbfb;
-    border-radius: 0.375rem;
+    align-items: stretch;
+    background-color: #fff;
     border: 1px solid #d1d5db;
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1),
+      0 4px 6px -4px rgb(0 0 0 / 0.1);
+    z-index: 100;
+    transform-origin: top right;
 
     &.show {
       display: flex;
-      z-index: 100;
+      animation: menuOpen 120ms ease-out;
+
+      @media (prefers-reduced-motion: reduce) {
+        animation: none;
+      }
     }
   }
 
   .menu-link,
   .delete-button {
-    padding: 0.75rem 0.5rem 0.75rem 0;
+    padding: 0.625rem 0.875rem;
     width: 100%;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.625rem;
     background-color: transparent;
     border: none;
-    font-size: 0.875rem;
-    font-weight: 400;
-    color: #1f2937;
     text-align: left;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1f2937;
     cursor: pointer;
-
-    .subtitle {
-      margin: 0.1875rem 0 0;
-      display: block;
-      font-size: 0.6875rem;
-      color: #6b7280;
-    }
-
-    &:hover {
-      color: #000;
-
-      .subtitle {
-        color: #4b5563;
-      }
-
-      svg {
-        color: #6b7280;
-      }
-    }
 
     svg {
       flex-shrink: 0;
       height: 1rem;
       width: 1rem;
-      color: #9ca3af;
+      color: #6b7280;
+    }
+
+    &:hover {
+      background-color: #f3f4f6;
+
+      svg {
+        color: #4b5563;
+      }
+    }
+
+    &:focus {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+
+    &:focus-visible {
+      background-color: #f3f4f6;
     }
   }
 
-  .menu-link {
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  .delete-button:hover {
-    color: #991b1b;
-
-    svg {
+  .delete-button {
+    &:hover {
       color: #991b1b;
+      background-color: #fef2f2;
+
+      svg {
+        color: #991b1b;
+      }
     }
   }
 `;

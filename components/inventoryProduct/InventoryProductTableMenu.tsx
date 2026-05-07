@@ -21,9 +21,9 @@ export default function InventoryProductTableMenu({
   sizeChart,
   handleSizeChartClick,
 }: Props) {
-  const menuRef = React.useRef<HTMLDivElement>(null);
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
   const [showMenu, setShowMenu] = React.useState(false);
-  useOutsideClick(showMenu, setShowMenu, menuRef);
+  useOutsideClick(showMenu, setShowMenu, wrapperRef);
   useEscapeKeydownClose(showMenu, setShowMenu);
 
   const addEditSizeChartCopy = sizeChart?.length
@@ -31,7 +31,7 @@ export default function InventoryProductTableMenu({
     : 'Add Size Chart';
 
   return (
-    <InventoryProductTableMenuStyles>
+    <InventoryProductTableMenuStyles ref={wrapperRef}>
       <button
         type="button"
         onClick={() => setShowMenu(!showMenu)}
@@ -39,7 +39,7 @@ export default function InventoryProductTableMenu({
       >
         <EllipsisVerticalIcon className="ellipsis-icon" />
       </button>
-      <div ref={menuRef} className={`menu-container${showMenu ? ' show' : ''}`}>
+      <div className={`menu-container${showMenu ? ' show' : ''}`}>
         <button
           type="button"
           className="menu-link-button"
