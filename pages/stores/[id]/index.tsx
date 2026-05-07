@@ -5,7 +5,6 @@ import { useReactToPrint } from 'react-to-print';
 
 import { getStoreStatus } from '../../../utils';
 import {
-  filterOrdersByView,
   getOrderViewOptions,
   isOrderOutstanding,
   OrderView,
@@ -122,13 +121,6 @@ export default function Store() {
     storeQuery.data?.orders,
     viewOptions,
   ]);
-
-  const viewScopedOrders = React.useMemo(() => {
-    if (!storeQuery.data?.orders || selectedView === undefined) {
-      return storeQuery.data?.orders ?? [];
-    }
-    return filterOrdersByView(storeQuery.data.orders, selectedView);
-  }, [storeQuery.data?.orders, selectedView]);
 
   const { markReceiptsPrinted } = useOrderMutation({
     store: storeQuery.data,
