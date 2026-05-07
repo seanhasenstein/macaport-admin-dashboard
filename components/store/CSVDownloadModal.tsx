@@ -7,6 +7,7 @@ import useCsvDownload from '../../hooks/useCsvDownload';
 import useOutsideClick from '../../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
 import { getQueryParameter, slugify } from '../../utils';
+import { OrderView } from '../../utils/store';
 import LoadingSpinner from '../LoadingSpinner';
 
 type Props = {
@@ -14,6 +15,7 @@ type Props = {
   store: Store;
   showModal: boolean;
   setShowModal: React.Dispatch<React.SetStateAction<boolean>>;
+  selectedView: OrderView | undefined;
 };
 
 export default function CSVDownloadModal({
@@ -21,6 +23,7 @@ export default function CSVDownloadModal({
   store,
   showModal,
   setShowModal,
+  selectedView,
 }: Props) {
   const router = useRouter();
   const csvLinkRef = React.useRef<HTMLAnchorElement>(null);
@@ -63,6 +66,7 @@ export default function CSVDownloadModal({
   const [enableCsvQuery, csvQuery] = useCsvDownload(
     getQueryParameter(router.query.id),
     fields,
+    selectedView,
     {
       onSuccess: (data: string) => {
         csvLinkRef.current?.setAttribute(

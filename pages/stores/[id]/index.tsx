@@ -4,6 +4,12 @@ import styled from 'styled-components';
 import { useReactToPrint } from 'react-to-print';
 
 import { getStoreStatus } from '../../../utils';
+import {
+  filterOrdersByView,
+  getOrderViewOptions,
+  isOrderOutstanding,
+  OrderView,
+} from '../../../utils/store';
 
 import { Order, StoreStatus } from '../../../interfaces';
 
@@ -65,6 +71,54 @@ export default function Store() {
   const [showCancelOrderModal, setShowCancelOrderModal] = React.useState(false);
   const [showTriggerShipmentModal, setShowTriggerShipmentModal] =
     React.useState(false);
+  const [selectedView, setSelectedView] = React.useState<OrderView | undefined>(
+    undefined
+  );
+
+  const viewOptions = React.useMemo(
+    () => getOrderViewOptions(storeQuery.data?.orders ?? []),
+    [storeQuery.data?.orders]
+  );
+
+  React.useEffect(() => {
+    if (selectedView !== undefined || viewOptions.length === 0) return;
+
+    if (router.query.orderId && storeQuery.data?.orders) {
+      const linkedOrder = storeQuery.data.orders.find(
+        o => o.orderId === router.query.orderId
+      );
+      if (linkedOrder) {
+        setSelectedView(
+          isOrderOutstanding(linkedOrder)
+            ? 'outstanding'
+            : new Date(linkedOrder.createdAt).getFullYear()
+        );
+        return;
+      }
+    }
+
+    const outstandingOption = viewOptions.find(o => o.view === 'outstanding');
+    if (outstandingOption) {
+      setSelectedView('outstanding');
+      return;
+    }
+    const firstYear = viewOptions.find(
+      o => o.view !== 'outstanding' && o.view !== 'all'
+    );
+    if (firstYear) setSelectedView(firstYear.view);
+  }, [
+    router.query.orderId,
+    selectedView,
+    storeQuery.data?.orders,
+    viewOptions,
+  ]);
+
+  const viewScopedOrders = React.useMemo(() => {
+    if (!storeQuery.data?.orders || selectedView === undefined) {
+      return storeQuery.data?.orders ?? [];
+    }
+    return filterOrdersByView(storeQuery.data.orders, selectedView);
+  }, [storeQuery.data?.orders, selectedView]);
 
   const { setReceiptPrintedForUnfulfilledOrders } = useOrderMutation({
     store: storeQuery.data,
@@ -180,6 +234,9 @@ export default function Store() {
                     setShowCancelOrderModal,
                     openTriggerStoreShipmentModal: () =>
                       setShowTriggerShipmentModal(true),
+                    viewOptions,
+                    selectedView,
+                    setSelectedView,
                   }}
                 />
               </div>
@@ -239,6 +296,7 @@ export default function Store() {
           store={storeQuery.data}
           showModal={showCSVModal}
           setShowModal={setShowCSVModal}
+          selectedView={selectedView}
         />
       )}
 
@@ -248,7 +306,7 @@ export default function Store() {
           aria-hidden="true"
           ref={printUnfulfilledRef}
         >
-          {storeQuery?.data?.orders?.map(order => {
+          {viewScopedOrders.map(order => {
             if (order.orderStatus === 'Unfulfilled') {
               return (
                 <PrintableOrder
@@ -268,7 +326,7 @@ export default function Store() {
           aria-hidden="true"
           ref={printPersonalizedRef}
         >
-          {storeQuery?.data?.orders?.map(order => {
+          {viewScopedOrders.map(order => {
             const orderHasAtLeastOnePersonalizationItem = order.items.some(
               item => item.personalizationAddons.length > 0
             );

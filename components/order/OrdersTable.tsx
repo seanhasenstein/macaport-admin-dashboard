@@ -4,22 +4,33 @@ import { useSession } from 'next-auth/react';
 import styled from 'styled-components';
 import { format } from 'date-fns';
 import classNames from 'classnames';
+import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/20/solid';
 
 import OrderStatusComponent from './OrderStatus';
 import Table from '../common/Table';
 import OrderSidebar from './OrderSidebar';
 import OrdersTableItemsBreakdown from './OrdersTableItemsBreakdown';
+import OrderViewSelector from '../store/OrderViewSelector';
 
 import { calculateTotalItems, formatToMoney } from '../../utils';
+import useThrottle from '../../hooks/useThrottle';
 
 import {
   Order,
   OrderStatus,
+  OrderStatusKey,
   StoreWithOrderStatusTotals,
 } from '../../interfaces';
+import {
+  getStoresOrderStatusNumbers,
+  OrderView,
+  OrderViewOption,
+} from '../../utils/store';
 import UnfulfilledToFulfulledButton from './UnfulfilledToFulfilledButton';
 
 type OrderViewOptions = OrderStatus | 'All' | 'Personalized';
+
+type SortOption = 'newest' | 'oldest' | 'group' | 'shipping';
 
 interface OrderFilterItem {
   id: number;
@@ -35,6 +46,18 @@ const orderFilterItems: OrderFilterItem[] = [
   { id: 6, option: 'Shipped' },
   { id: 7, option: 'Canceled' },
   { id: 8, option: 'Personalized' },
+];
+
+const STATS_BREAKDOWN: Array<{
+  key: Exclude<OrderStatusKey, 'All'>;
+  label: string;
+}> = [
+  { key: 'Unfulfilled', label: 'unfulfilled' },
+  { key: 'Printed', label: 'printed' },
+  { key: 'Fulfilled', label: 'fulfilled' },
+  { key: 'PartiallyShipped', label: 'partially shipped' },
+  { key: 'Shipped', label: 'shipped' },
+  { key: 'Canceled', label: 'canceled' },
 ];
 
 interface ButtonWrapperProps {
@@ -73,6 +96,22 @@ const ButtonWrapperStyles = styled.button`
   cursor: pointer;
 `;
 
+function orderMatchesQuery(order: Order, query: string): boolean {
+  if (!query) return true;
+  const haystacks = [
+    order.orderId,
+    `${order.customer.firstName} ${order.customer.lastName}`,
+    order.customer.email,
+  ];
+  if (haystacks.some(h => h?.toLowerCase().includes(query))) return true;
+  const queryDigits = query.replace(/\D/g, '');
+  if (queryDigits) {
+    const phoneDigits = (order.customer.phone || '').replace(/\D/g, '');
+    if (phoneDigits.includes(queryDigits)) return true;
+  }
+  return false;
+}
+
 type Props = {
   store: StoreWithOrderStatusTotals;
   selectedOrder: Order | undefined;
@@ -85,6 +124,11 @@ type Props = {
   showCancelOrderModal: boolean;
   setShowCancelOrderModal: React.Dispatch<React.SetStateAction<boolean>>;
   openTriggerStoreShipmentModal: () => void;
+  viewOrders: Order[];
+  viewOrderStatusTotals: Record<OrderStatusKey | 'Personalized', number>;
+  viewOptions: OrderViewOption[];
+  selectedView: OrderView | undefined;
+  setSelectedView: (view: OrderView) => void;
 };
 
 export default function OrdersTable({
@@ -95,16 +139,185 @@ export default function OrdersTable({
   showCancelOrderModal,
   setShowCancelOrderModal,
   openTriggerStoreShipmentModal,
+  viewOrders,
+  viewOrderStatusTotals,
+  viewOptions,
+  selectedView,
+  setSelectedView,
 }: Props) {
   const router = useRouter();
 
   const [orderViewOption, setOrderViewOption] =
     React.useState<OrderViewOptions>('All');
-  const [filteredOrders, setFilteredOrders] = React.useState(store.orders);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [groupFilter, setGroupFilter] = React.useState('');
+  const [shippingFilter, setShippingFilter] = React.useState('');
+  const [sortOption, setSortOption] = React.useState<SortOption>('newest');
+  const throttledSearchTerm = useThrottle(searchTerm, 200);
+  const queryTrimmed = throttledSearchTerm.trim().toLowerCase();
+  const isSearching = queryTrimmed.length > 0;
 
-  const [selectedOrderIndex, setSelectedOrderIndex] = React.useState(0);
-  const [prevOrderId, setPrevOrderId] = React.useState<string | undefined>();
-  const [nextOrderId, setNextOrderId] = React.useState<string | undefined>();
+  const distinctGroups = React.useMemo(
+    () =>
+      Array.from(
+        new Set(store.orders.map(o => o.group).filter(Boolean) as string[])
+      ).sort((a, b) => a.localeCompare(b)),
+    [store.orders]
+  );
+
+  const distinctShippingMethods = React.useMemo(
+    () =>
+      Array.from(
+        new Set(
+          store.orders.map(o => o.shippingMethod).filter(Boolean) as string[]
+        )
+      ).sort((a, b) => a.localeCompare(b)),
+    [store.orders]
+  );
+
+  const showGroupControls =
+    !!store.requireGroupSelection && distinctGroups.length > 0;
+  const showShippingFilter = distinctShippingMethods.length >= 2;
+
+  React.useEffect(() => {
+    if (groupFilter && !distinctGroups.includes(groupFilter)) {
+      setGroupFilter('');
+    }
+  }, [distinctGroups, groupFilter]);
+
+  React.useEffect(() => {
+    if (
+      shippingFilter &&
+      !distinctShippingMethods.includes(shippingFilter)
+    ) {
+      setShippingFilter('');
+    }
+  }, [distinctShippingMethods, shippingFilter]);
+
+  React.useEffect(() => {
+    if (sortOption === 'group' && !showGroupControls) setSortOption('newest');
+    if (sortOption === 'shipping' && !showShippingFilter)
+      setSortOption('newest');
+  }, [sortOption, showGroupControls, showShippingFilter]);
+
+  const searchedOrders = React.useMemo(
+    () =>
+      isSearching
+        ? store.orders.filter(o => orderMatchesQuery(o, queryTrimmed))
+        : viewOrders,
+    [isSearching, queryTrimmed, store.orders, viewOrders]
+  );
+
+  const dimensionedOrders = React.useMemo(() => {
+    if (!groupFilter && !shippingFilter) return searchedOrders;
+    return searchedOrders.filter(o => {
+      if (groupFilter && o.group !== groupFilter) return false;
+      if (shippingFilter && o.shippingMethod !== shippingFilter) return false;
+      return true;
+    });
+  }, [searchedOrders, groupFilter, shippingFilter]);
+
+  const hasActiveNarrowing =
+    isSearching || !!groupFilter || !!shippingFilter;
+
+  const scopedStatusTotals = React.useMemo(
+    () =>
+      hasActiveNarrowing
+        ? getStoresOrderStatusNumbers({ ...store, orders: dimensionedOrders })
+        : viewOrderStatusTotals,
+    [hasActiveNarrowing, dimensionedOrders, store, viewOrderStatusTotals]
+  );
+
+  const visibleFilterItems = React.useMemo(
+    () =>
+      orderFilterItems.filter(
+        item =>
+          item.option === 'All' || scopedStatusTotals[item.option] > 0
+      ),
+    [scopedStatusTotals]
+  );
+
+  React.useEffect(() => {
+    if (!visibleFilterItems.some(i => i.option === orderViewOption)) {
+      setOrderViewOption('All');
+    }
+  }, [visibleFilterItems, orderViewOption]);
+
+  const statsBreakdown = React.useMemo(
+    () =>
+      STATS_BREAKDOWN.filter(({ key }) => scopedStatusTotals[key] > 0).map(
+        ({ key, label }) => `${scopedStatusTotals[key]} ${label}`
+      ),
+    [scopedStatusTotals]
+  );
+  const totalDisplayed = scopedStatusTotals.All;
+
+  const filteredOrders = React.useMemo(() => {
+    const statusFiltered = (() => {
+      if (orderViewOption === 'All') return dimensionedOrders;
+      if (orderViewOption === 'Personalized') {
+        return dimensionedOrders.filter(o =>
+          o.items.some(item => item.personalizationAddons.length > 0)
+        );
+      }
+      return dimensionedOrders.filter(o => {
+        if (
+          orderViewOption === 'Printed' &&
+          o.orderStatus === 'Unfulfilled' &&
+          o.meta.receiptPrinted
+        ) {
+          return true;
+        } else if (
+          orderViewOption === 'Unfulfilled' &&
+          o.orderStatus === 'Unfulfilled' &&
+          o.meta.receiptPrinted
+        ) {
+          return false;
+        } else {
+          return o.orderStatus === orderViewOption;
+        }
+      });
+    })();
+
+    const sorted = [...statusFiltered];
+    switch (sortOption) {
+      case 'oldest':
+        sorted.sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+        break;
+      case 'group':
+        sorted.sort((a, b) => {
+          const cmp = (a.group || '').localeCompare(b.group || '');
+          if (cmp !== 0) return cmp;
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        });
+        break;
+      case 'shipping':
+        sorted.sort((a, b) => {
+          const cmp = (a.shippingMethod || '').localeCompare(
+            b.shippingMethod || ''
+          );
+          if (cmp !== 0) return cmp;
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        });
+        break;
+      case 'newest':
+      default:
+        sorted.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        break;
+    }
+    return sorted;
+  }, [orderViewOption, dimensionedOrders, sortOption]);
+
   const [showSidebar, setShowSidebar] = React.useState(false);
 
   const session = useSession();
@@ -112,24 +325,37 @@ export default function OrdersTable({
 
   const closeSidebar = () => setShowSidebar(false);
 
+  const { selectedOrderIndex, prevOrderId, nextOrderId } = React.useMemo(() => {
+    if (!selectedOrder) {
+      return {
+        selectedOrderIndex: -1,
+        prevOrderId: undefined,
+        nextOrderId: undefined,
+      };
+    }
+    const idx = filteredOrders.findIndex(
+      o => o.orderId === selectedOrder.orderId
+    );
+    if (idx < 0) {
+      return {
+        selectedOrderIndex: -1,
+        prevOrderId: undefined,
+        nextOrderId: undefined,
+      };
+    }
+    return {
+      selectedOrderIndex: idx,
+      prevOrderId: idx === 0 ? undefined : filteredOrders[idx - 1].orderId,
+      nextOrderId:
+        idx === filteredOrders.length - 1
+          ? undefined
+          : filteredOrders[idx + 1].orderId,
+    };
+  }, [filteredOrders, selectedOrder]);
+
   const updateSelectedOrder = (orderId: string) => {
     const order = filteredOrders.find(o => o.orderId === orderId);
-    const newSelectedIndex = filteredOrders.findIndex(
-      o => o.orderId === orderId
-    );
-    const prevOrderId =
-      newSelectedIndex === 0
-        ? undefined
-        : filteredOrders[newSelectedIndex - 1].orderId;
-    const nextOrderId =
-      newSelectedIndex === filteredOrders.length - 1
-        ? undefined
-        : filteredOrders[newSelectedIndex + 1].orderId;
-
-    setSelectedOrder(order);
-    setSelectedOrderIndex(newSelectedIndex);
-    setPrevOrderId(prevOrderId);
-    setNextOrderId(nextOrderId);
+    if (order) setSelectedOrder(order);
   };
 
   const buttonOnClick = (orderId: string) => {
@@ -142,54 +368,17 @@ export default function OrdersTable({
       const order = store.orders.find(o => o.orderId === router.query.orderId);
       if (order) {
         setSelectedOrder(order);
-        const orderIndex = store.orders.findIndex(
-          o => o.orderId === router.query.orderId
-        );
-        setSelectedOrderIndex(orderIndex);
-        setPrevOrderId(
-          orderIndex === 0 ? undefined : store.orders[orderIndex - 1].orderId
-        );
-        setNextOrderId(
-          orderIndex === store.orders.length - 1
-            ? undefined
-            : store.orders[orderIndex + 1].orderId
-        );
         setShowSidebar(true);
       }
     }
   }, [router.query.orderId, setSelectedOrder, store.orders]);
 
   React.useEffect(() => {
-    if (orderViewOption === 'All') {
-      setFilteredOrders(store.orders);
-      return;
+    if (!showSidebar || !selectedOrder) return;
+    if (!filteredOrders.some(o => o.orderId === selectedOrder.orderId)) {
+      setShowSidebar(false);
     }
-    if (orderViewOption === 'Personalized') {
-      const updatedFilteredOrders = store.orders.filter(o =>
-        o.items.some(item => item.personalizationAddons.length > 0)
-      );
-      setFilteredOrders(updatedFilteredOrders);
-      return;
-    }
-    const updatedFilteredOrders = store.orders.filter(o => {
-      if (
-        orderViewOption === 'Printed' &&
-        o.orderStatus === 'Unfulfilled' &&
-        o.meta.receiptPrinted
-      ) {
-        return true;
-      } else if (
-        orderViewOption === 'Unfulfilled' &&
-        o.orderStatus === 'Unfulfilled' &&
-        o.meta.receiptPrinted
-      ) {
-        return false;
-      } else {
-        return o.orderStatus === orderViewOption;
-      }
-    });
-    setFilteredOrders(updatedFilteredOrders);
-  }, [orderViewOption, store.orders]);
+  }, [filteredOrders, selectedOrder, showSidebar]);
 
   // NOTE: this is needed to update the order status in the sidebar
   // TODO: find see if there is a better way to do this
@@ -200,36 +389,164 @@ export default function OrdersTable({
     setSelectedOrder(updatedSelectedOrder);
   }, [selectedOrder?.orderId, setSelectedOrder, store]);
 
+  const showViewSelector =
+    selectedView !== undefined && viewOptions.length > 1;
+  const activeFilterCount =
+    (searchTerm.trim().length > 0 ? 1 : 0) +
+    (groupFilter ? 1 : 0) +
+    (shippingFilter ? 1 : 0) +
+    (orderViewOption !== 'All' ? 1 : 0);
+  const hasActiveFilters = activeFilterCount > 0;
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setGroupFilter('');
+    setShippingFilter('');
+    setOrderViewOption('All');
+  };
+
   return (
     <OrdersTableStyles>
-      <h3>
-        {orderViewOption === 'PartiallyShipped'
-          ? 'Partially shipped'
-          : orderViewOption}{' '}
-        orders
-      </h3>
+      <div className="orders-header">
+        <h3>Orders</h3>
+        {totalDisplayed > 0 && (
+          <p className="orders-stats">
+            <span className="total">
+              {totalDisplayed}
+              {hasActiveNarrowing ? ' matching' : ''}{' '}
+              {totalDisplayed === 1 ? 'order' : 'orders'}
+            </span>
+            {statsBreakdown.length > 0 && (
+              <>
+                <span className="separator" aria-hidden="true">
+                  {' — '}
+                </span>
+                {statsBreakdown.join(' · ')}
+              </>
+            )}
+          </p>
+        )}
+      </div>
+
       {store.orders && (
         <>
-          <div>
-            <div className="buttons">
-              <div className="container">
-                {orderFilterItems.map(item => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={orderViewOption === item.option ? 'active' : ''}
-                    onClick={() => setOrderViewOption(item.option)}
-                  >
-                    {item.option === 'PartiallyShipped'
-                      ? 'Partially Shipped'
-                      : item.option}{' '}
-                    <span className="status-total">
-                      {store.orderStatusTotals[item.option]}
-                    </span>
-                  </button>
-                ))}
-              </div>
+          <div className="orders-toolbar">
+            <div className="search">
+              <MagnifyingGlassIcon className="search-icon" aria-hidden="true" />
+              <label htmlFor="orders-search" className="sr-only">
+                Search orders
+              </label>
+              <input
+                id="orders-search"
+                type="search"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                placeholder="Search by name, email, phone, or order #"
+                autoComplete="off"
+              />
             </div>
+            {showViewSelector && (
+              <OrderViewSelector
+                viewOptions={viewOptions}
+                selectedView={selectedView as OrderView}
+                setSelectedView={setSelectedView}
+              />
+            )}
+            {showGroupControls && (
+              <div className="toolbar-select">
+                <label htmlFor="orders-group-filter" className="sr-only">
+                  Filter by {store.groupTerm}
+                </label>
+                <select
+                  id="orders-group-filter"
+                  value={groupFilter}
+                  onChange={e => setGroupFilter(e.target.value)}
+                >
+                  <option value="">All {store.groupTerm}s</option>
+                  {distinctGroups.map(g => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {showShippingFilter && (
+              <div className="toolbar-select">
+                <label htmlFor="orders-shipping-filter" className="sr-only">
+                  Filter by shipping method
+                </label>
+                <select
+                  id="orders-shipping-filter"
+                  value={shippingFilter}
+                  onChange={e => setShippingFilter(e.target.value)}
+                >
+                  <option value="">All shipping</option>
+                  {distinctShippingMethods.map(s => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="toolbar-select">
+              <label htmlFor="orders-sort" className="sr-only">
+                Sort orders
+              </label>
+              <select
+                id="orders-sort"
+                value={sortOption}
+                onChange={e => setSortOption(e.target.value as SortOption)}
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                {showGroupControls && (
+                  <option value="group">{store.groupTerm} A→Z</option>
+                )}
+                {showShippingFilter && (
+                  <option value="shipping">Shipping method</option>
+                )}
+              </select>
+            </div>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                className="clear-filters-button"
+                onClick={clearFilters}
+              >
+                <XMarkIcon className="clear-icon" aria-hidden="true" />
+                <span>Clear filters</span>
+                <span className="clear-count" aria-hidden="true">
+                  {activeFilterCount}
+                </span>
+                <span className="sr-only">
+                  ({activeFilterCount} active)
+                </span>
+              </button>
+            )}
+          </div>
+
+          <div className="buttons">
+            <div className="container">
+              {visibleFilterItems.map(item => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={orderViewOption === item.option ? 'active' : ''}
+                  onClick={() => setOrderViewOption(item.option)}
+                >
+                  {item.option === 'PartiallyShipped'
+                    ? 'Partially Shipped'
+                    : item.option}{' '}
+                  <span className="status-total">
+                    {scopedStatusTotals[item.option]}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="table-scroll-area">
             <Table customClass="table-container">
               <table>
                 <thead>
@@ -250,10 +567,13 @@ export default function OrdersTable({
                   {filteredOrders.length === 0 ? (
                     <tr>
                       <td className="empty">
-                        There are no{' '}
-                        {orderViewOption !== 'All' &&
-                          orderViewOption.toLowerCase()}{' '}
-                        orders
+                        {isSearching
+                          ? `No orders match “${throttledSearchTerm.trim()}”`
+                          : `There are no${
+                              orderViewOption !== 'All'
+                                ? ' ' + orderViewOption.toLowerCase()
+                                : ''
+                            } orders`}
                       </td>
                     </tr>
                   ) : (
@@ -413,6 +733,7 @@ export default function OrdersTable({
               isOpen: showSidebar,
               selectedOrder,
               selectedOrderIndex,
+              totalCount: filteredOrders.length,
               prevOrderId,
               nextOrderId,
               updateSelectedOrder,
@@ -430,17 +751,175 @@ export default function OrdersTable({
 }
 
 const OrdersTableStyles = styled.div`
-  overflow-x: auto;
+  .orders-header {
+    margin: 0 0 1.25rem;
+  }
+
+  h3 {
+    margin: 0;
+  }
+
+  .orders-stats {
+    margin: 0.375rem 0 0;
+    font-size: 0.875rem;
+    color: #4b5563;
+    line-height: 1.4;
+
+    .total {
+      font-weight: 600;
+      color: #1f2937;
+    }
+
+    .separator {
+      color: #9ca3af;
+    }
+  }
+
+  .orders-toolbar {
+    margin: 0 0 1.25rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .clear-filters-button {
+    padding: 0.375rem 0.5rem 0.375rem 0.625rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    background-color: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #4b5563;
+    cursor: pointer;
+    transition: color 100ms ease-in-out, border-color 100ms ease-in-out,
+      background-color 100ms ease-in-out;
+
+    .clear-icon {
+      height: 0.875rem;
+      width: 0.875rem;
+      color: #9ca3af;
+    }
+
+    .clear-count {
+      padding: 0 0.375rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.125rem;
+      height: 1.125rem;
+      background-color: #e5e7eb;
+      border-radius: 9999px;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      color: #374151;
+      line-height: 1;
+    }
+
+    &:hover {
+      color: #1f2937;
+      border-color: #9ca3af;
+      background-color: #f9fafb;
+
+      .clear-icon {
+        color: #4b5563;
+      }
+    }
+
+    &:focus {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+
+    &:focus-visible {
+      border-color: #1c44b9;
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
+        #1c44b9 0px 0px 0px 1px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+    }
+  }
+
+  .toolbar-select select {
+    padding: 0.4375rem 2rem 0.4375rem 0.75rem;
+    background-color: #fff;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236b7280'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z' clip-rule='evenodd' /%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1f2937;
+    cursor: pointer;
+    appearance: none;
+
+    &:focus {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+      border-color: #1c44b9;
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
+        #1c44b9 0px 0px 0px 1px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+    }
+
+    &:hover {
+      border-color: #9199a6;
+    }
+  }
+
+  .search {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+
+    .search-icon {
+      position: absolute;
+      top: 50%;
+      left: 0.75rem;
+      transform: translateY(-50%);
+      height: 1.125rem;
+      width: 1.125rem;
+      color: #9ca3af;
+      pointer-events: none;
+    }
+
+    input {
+      padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+      width: 100%;
+      background-color: #fff;
+      border: 1px solid #d1d5db;
+      border-radius: 0.375rem;
+      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      font-size: 0.875rem;
+      color: #1f2937;
+
+      &::placeholder {
+        color: #9ca3af;
+      }
+
+      &:focus {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+        border-color: #1c44b9;
+        box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
+          #1c44b9 0px 0px 0px 1px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+      }
+    }
+  }
+
   .buttons {
     margin: 0 0 1.75rem;
     width: 100%;
 
     .container {
       padding: 0.1875rem;
-      min-width: 67rem;
       width: 100%;
       display: flex;
-      justify-content: space-between;
+      gap: 0.25rem;
       background-color: #e8eaee;
       border: 1px solid #d1d5db;
       border-radius: 0.375rem;
@@ -448,6 +927,7 @@ const OrdersTableStyles = styled.div`
     }
 
     button {
+      flex: 1 1 0;
       padding: 0.625rem 0.9375rem;
       display: flex;
       justify-content: center;
@@ -485,11 +965,11 @@ const OrdersTableStyles = styled.div`
         box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px,
           rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
       }
-
-      &:not(:first-of-type, :last-of-type) {
-        margin: 0 0.5rem;
-      }
     }
+  }
+
+  .table-scroll-area {
+    overflow-x: auto;
   }
 
   .table-container {

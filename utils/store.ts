@@ -1,6 +1,7 @@
 import { getStoreStatus } from '.';
 import {
   InventoryProduct,
+  Order,
   OrderStatusKey,
   Store,
   StoresTableStore,
@@ -8,6 +9,60 @@ import {
 } from '../interfaces';
 import { hydrateOrderItemsWithArtworkId } from './orderItem';
 import { convertStoreToStoresTableStore } from './storesTable';
+
+export type OrderView = number | 'all' | 'outstanding';
+
+export type OrderViewOption = {
+  view: OrderView;
+  count: number;
+};
+
+const SETTLED_ORDER_STATUSES: ReadonlySet<string> = new Set([
+  'Shipped',
+  'Canceled',
+]);
+
+export function isOrderOutstanding(order: Order): boolean {
+  return !SETTLED_ORDER_STATUSES.has(order.orderStatus);
+}
+
+export function getOrderViewOptions(orders: Order[]): OrderViewOption[] {
+  if (!orders || orders.length === 0) return [];
+
+  const counts = new Map<number, number>();
+  let outstandingCount = 0;
+  for (const order of orders) {
+    const year = new Date(order.createdAt).getFullYear();
+    counts.set(year, (counts.get(year) ?? 0) + 1);
+    if (isOrderOutstanding(order)) outstandingCount += 1;
+  }
+
+  const yearOptions: OrderViewOption[] = Array.from(counts.entries())
+    .sort(([a], [b]) => b - a)
+    .map(([year, count]) => ({ view: year, count }));
+
+  const options: OrderViewOption[] = [];
+  if (outstandingCount > 0) {
+    options.push({ view: 'outstanding', count: outstandingCount });
+  }
+  options.push(...yearOptions);
+  if (yearOptions.length > 1) {
+    options.push({ view: 'all', count: orders.length });
+  }
+
+  return options;
+}
+
+export function filterOrdersByView(
+  orders: Order[],
+  selectedView: OrderView
+): Order[] {
+  if (selectedView === 'all') return orders;
+  if (selectedView === 'outstanding') return orders.filter(isOrderOutstanding);
+  return orders.filter(
+    o => new Date(o.createdAt).getFullYear() === selectedView
+  );
+}
 
 export function addArtworkIdToStoreOrders(store: Store) {
   return store.orders.map(order => {
