@@ -220,9 +220,10 @@ export async function updateAllUnfulfilledOrderItemsToFulfilled(
   }
 }
 
-export async function addReceiptPrintedToAllUnfulfilledOrders(
+export async function unmarkReceiptPrintedForOrder(
   db: Db,
-  storeId: string
+  storeId: string,
+  orderId: string
 ) {
   const store = await db
     .collection<StoreWithId>('stores')
@@ -230,7 +231,46 @@ export async function addReceiptPrintedToAllUnfulfilledOrders(
 
   if (store) {
     const updatedOrders = store.orders.map(order => {
-      if (order.orderStatus === 'Unfulfilled') {
+      if (order.orderId === orderId) {
+        return {
+          ...order,
+          meta: {
+            ...order.meta,
+            receiptPrinted: false,
+          },
+        };
+      }
+      return order;
+    });
+
+    const result = await db
+      .collection<StoreWithId>('stores')
+      .findOneAndUpdate(
+        { _id: new ObjectId(storeId) },
+        { $set: { orders: updatedOrders } },
+        { returnDocument: 'after' }
+      );
+
+    return result.value;
+  }
+}
+
+export async function markReceiptsPrintedForOrders(
+  db: Db,
+  storeId: string,
+  orderIds: string[]
+) {
+  const store = await db
+    .collection<StoreWithId>('stores')
+    .findOne({ _id: new ObjectId(storeId) });
+
+  if (store) {
+    const targetIds = new Set(orderIds);
+    const updatedOrders = store.orders.map(order => {
+      if (
+        targetIds.has(order.orderId) &&
+        order.orderStatus === 'Unfulfilled'
+      ) {
         return {
           ...order,
           meta: {
@@ -238,9 +278,8 @@ export async function addReceiptPrintedToAllUnfulfilledOrders(
             receiptPrinted: true,
           },
         };
-      } else {
-        return order;
       }
+      return order;
     });
 
     const result = await db

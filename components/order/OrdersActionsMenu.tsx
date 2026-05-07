@@ -84,26 +84,8 @@ export default function OrdersActionsMenu({
               Print unfulfilled orders
               <span className="subtitle">
                 {canPrintUnfulfilled
-                  ? 'Marks unfulfilled orders as printed'
+                  ? 'Whole store, ignores filters (marks as printed)'
                   : 'No unfulfilled orders to print'}
-              </span>
-            </span>
-          </button>
-
-          <button
-            type="button"
-            role="menuitem"
-            className="menu-item"
-            onClick={wrap(onPrintPersonalized)}
-            disabled={!canPrintPersonalized}
-          >
-            <PrinterIcon aria-hidden="true" />
-            <span>
-              Print personalized orders
-              <span className="subtitle">
-                {canPrintPersonalized
-                  ? 'Orders with at least one personalized item'
-                  : 'No personalized orders to print'}
               </span>
             </span>
           </button>
@@ -127,6 +109,24 @@ export default function OrdersActionsMenu({
               </span>
             </button>
           )}
+
+          <button
+            type="button"
+            role="menuitem"
+            className="menu-item"
+            onClick={wrap(onPrintPersonalized)}
+            disabled={!canPrintPersonalized}
+          >
+            <PrinterIcon aria-hidden="true" />
+            <span>
+              Print personalized orders
+              <span className="subtitle">
+                {canPrintPersonalized
+                  ? 'Whole store, ignores filters'
+                  : 'No personalized orders to print'}
+              </span>
+            </span>
+          </button>
 
           <button
             type="button"

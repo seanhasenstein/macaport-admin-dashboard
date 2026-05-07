@@ -194,6 +194,7 @@ export default function OrderSidebar({
                 <OrderSidebarMenu
                   {...{
                     stripeId,
+                    order: selectedOrder,
                     setPrintOption,
                     setShowCancelOrderModal,
                     store,

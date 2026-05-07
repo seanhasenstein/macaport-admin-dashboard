@@ -130,16 +130,7 @@ export default function Store() {
     return filterOrdersByView(storeQuery.data.orders, selectedView);
   }, [storeQuery.data?.orders, selectedView]);
 
-  const bulkScopedOrders = React.useMemo(() => {
-    if (!groupFilter && !shippingFilter) return viewScopedOrders;
-    return viewScopedOrders.filter(o => {
-      if (groupFilter && o.group !== groupFilter) return false;
-      if (shippingFilter && o.shippingMethod !== shippingFilter) return false;
-      return true;
-    });
-  }, [viewScopedOrders, groupFilter, shippingFilter]);
-
-  const { setReceiptPrintedForUnfulfilledOrders } = useOrderMutation({
+  const { markReceiptsPrinted } = useOrderMutation({
     store: storeQuery.data,
   });
 
@@ -177,13 +168,20 @@ export default function Store() {
   React.useEffect(() => {
     if (printOption) {
       if (printOption === 'unfulfilled') {
-        setReceiptPrintedForUnfulfilledOrders.mutate();
+        const ids = (storeQuery.data?.orders ?? [])
+          .filter(o => o.orderStatus === 'Unfulfilled')
+          .map(o => o.orderId);
+        if (ids.length > 0) markReceiptsPrinted.mutate({ orderIds: ids });
         handlePrintUnfulfilled();
       }
       if (printOption === 'personalization') {
         handlePrintPersonalized();
       }
       if (printOption === 'filtered') {
+        const ids = filteredOrdersForPrint
+          .filter(o => o.orderStatus === 'Unfulfilled')
+          .map(o => o.orderId);
+        if (ids.length > 0) markReceiptsPrinted.mutate({ orderIds: ids });
         handlePrintFiltered();
       }
       if (printOption === 'single') {
@@ -336,7 +334,7 @@ export default function Store() {
           aria-hidden="true"
           ref={printUnfulfilledRef}
         >
-          {bulkScopedOrders.map(order => {
+          {(storeQuery.data?.orders ?? []).map(order => {
             if (order.orderStatus === 'Unfulfilled') {
               return (
                 <PrintableOrder
@@ -356,7 +354,7 @@ export default function Store() {
           aria-hidden="true"
           ref={printPersonalizedRef}
         >
-          {bulkScopedOrders.map(order => {
+          {(storeQuery.data?.orders ?? []).map(order => {
             const orderHasAtLeastOnePersonalizationItem = order.items.some(
               item => item.personalizationAddons.length > 0
             );

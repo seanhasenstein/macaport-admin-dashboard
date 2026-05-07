@@ -107,31 +107,36 @@ export function useOrderMutation({ order, store }: Props) {
     }
   );
 
-  const setReceiptPrintedForUnfulfilledOrders = useMutation(
-    async () => {
+  const markReceiptsPrinted = useMutation(
+    async ({ orderIds }: { orderIds: string[] }) => {
       const response = await fetch(
-        `/api/orders/update/add-receipt-printed-to-all-unfulfilled?storeId=${store?._id}`,
+        `/api/orders/update/mark-receipts-printed?storeId=${store?._id}`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
+          body: JSON.stringify({ orderIds }),
         }
       );
 
       if (!response.ok) {
-        throw new Error('Failed to update unfulfilled orders to printed');
+        throw new Error('Failed to mark orders as printed');
       }
 
       const data: { store: Store } = await response.json();
       return data.store;
     },
     {
-      onMutate: async () => {
+      onMutate: async ({ orderIds }: { orderIds: string[] }) => {
         if (store) {
           await queryClient.cancelQueries(['stores', 'store', store._id]);
+          const targetIds = new Set(orderIds);
           const updatedOrders = store.orders.map(currOrder => {
-            if (currOrder.orderStatus === 'Unfulfilled') {
+            if (
+              targetIds.has(currOrder.orderId) &&
+              currOrder.orderStatus === 'Unfulfilled'
+            ) {
               return {
                 ...currOrder,
                 meta: {
@@ -139,9 +144,58 @@ export function useOrderMutation({ order, store }: Props) {
                   receiptPrinted: true,
                 },
               };
-            } else {
-              return currOrder;
             }
+            return currOrder;
+          });
+
+          const updatedStore: Store = { ...store, orders: updatedOrders };
+          queryClient.setQueryData(
+            ['stores', 'store', store._id],
+            updatedStore
+          );
+        }
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries('stores');
+      },
+    }
+  );
+
+  const unmarkReceiptPrinted = useMutation(
+    async ({ orderId }: { orderId: string }) => {
+      const response = await fetch(
+        `/api/orders/update/unmark-receipt-printed?storeId=${store?._id}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ orderId }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to unmark order as printed');
+      }
+
+      const data: { store: Store } = await response.json();
+      return data.store;
+    },
+    {
+      onMutate: async ({ orderId }: { orderId: string }) => {
+        if (store) {
+          await queryClient.cancelQueries(['stores', 'store', store._id]);
+          const updatedOrders = store.orders.map(currOrder => {
+            if (currOrder.orderId === orderId) {
+              return {
+                ...currOrder,
+                meta: {
+                  ...currOrder.meta,
+                  receiptPrinted: false,
+                },
+              };
+            }
+            return currOrder;
           });
 
           const updatedStore: Store = { ...store, orders: updatedOrders };
@@ -159,6 +213,7 @@ export function useOrderMutation({ order, store }: Props) {
 
   return {
     cancelOrder,
-    setReceiptPrintedForUnfulfilledOrders,
+    markReceiptsPrinted,
+    unmarkReceiptPrinted,
   };
 }

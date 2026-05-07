@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import {
+  ArrowUturnLeftIcon,
   PrinterIcon,
   XCircleIcon,
   CreditCardIcon,
@@ -9,10 +10,12 @@ import {
 
 import Menu from '../common/Menu';
 
-import { Store } from '../../interfaces';
+import { Order, Store } from '../../interfaces';
+import { useOrderMutation } from '../../hooks/useOrderMutations';
 
 type Props = {
   stripeId: string;
+  order: Order;
   setPrintOption: React.Dispatch<
     React.SetStateAction<
       'unfulfilled' | 'personalization' | 'filtered' | 'single' | undefined
@@ -25,10 +28,15 @@ type Props = {
 
 export default function OrderSidebarMenu({
   stripeId,
+  order,
   setPrintOption,
   setShowCancelOrderModal,
   openTriggerStoreShipmentModal,
+  store,
 }: Props) {
+  const { unmarkReceiptPrinted } = useOrderMutation({ store });
+  const canUnmarkPrinted =
+    order.orderStatus === 'Unfulfilled' && order.meta.receiptPrinted;
   const [isOpen, setIsOpen] = React.useState(false);
 
   const toggleSidebar = () => setIsOpen(!isOpen);
@@ -76,6 +84,25 @@ export default function OrderSidebarMenu({
           >
             <PrinterIcon className="icon" strokeWidth={2} /> Print order
           </button>
+          {canUnmarkPrinted && (
+            <button
+              type="button"
+              className="menu-button"
+              onClick={e => {
+                e.stopPropagation();
+                unmarkReceiptPrinted.mutate({ orderId: order.orderId });
+                setIsOpen(false);
+              }}
+            >
+              <ArrowUturnLeftIcon className="icon" strokeWidth={2} />
+              <span>
+                Unmark as printed
+                <span className="subtitle">
+                  Move back to unfulfilled
+                </span>
+              </span>
+            </button>
+          )}
           <a
             href={`https://dashboard.stripe.com/payments/${stripeId}`}
             target="_blank"

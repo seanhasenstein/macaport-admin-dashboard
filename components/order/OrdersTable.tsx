@@ -236,19 +236,26 @@ export default function OrdersTable({
     });
   }, [searchedOrders, groupFilter, shippingFilter]);
 
-  const bulkPrintCounts = React.useMemo(() => {
-    let total = 0;
+  const storeWidePrintCounts = React.useMemo(() => {
     let unfulfilled = 0;
     let personalized = 0;
-    for (const o of viewOrders) {
-      if (groupFilter && o.group !== groupFilter) continue;
-      if (shippingFilter && o.shippingMethod !== shippingFilter) continue;
-      total += 1;
+    for (const o of store.orders) {
       if (o.orderStatus === 'Unfulfilled') unfulfilled += 1;
       if (o.items.some(i => i.personalizationAddons.length > 0))
         personalized += 1;
     }
-    return { total, unfulfilled, personalized };
+    return { unfulfilled, personalized };
+  }, [store.orders]);
+
+  const csvScopedTotal = React.useMemo(() => {
+    if (!groupFilter && !shippingFilter) return viewOrders.length;
+    let count = 0;
+    for (const o of viewOrders) {
+      if (groupFilter && o.group !== groupFilter) continue;
+      if (shippingFilter && o.shippingMethod !== shippingFilter) continue;
+      count += 1;
+    }
+    return count;
   }, [viewOrders, groupFilter, shippingFilter]);
 
   const canTriggerShipment = React.useMemo(
@@ -478,10 +485,10 @@ export default function OrdersTable({
           {store.orders && (
             <OrdersActionsMenu
               hasActiveFilters={hasActiveNarrowing}
-              canPrintUnfulfilled={bulkPrintCounts.unfulfilled > 0}
-              canPrintPersonalized={bulkPrintCounts.personalized > 0}
+              canPrintUnfulfilled={storeWidePrintCounts.unfulfilled > 0}
+              canPrintPersonalized={storeWidePrintCounts.personalized > 0}
               canPrintFiltered={filteredOrders.length > 0}
-              canDownloadCsv={bulkPrintCounts.total > 0}
+              canDownloadCsv={csvScopedTotal > 0}
               canCopyEmails={filteredOrders.length > 0}
               canTriggerShipment={canTriggerShipment}
               onPrintUnfulfilled={() => setPrintOption('unfulfilled')}
