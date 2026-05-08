@@ -24,12 +24,12 @@ export default function Menu({
   closeSidebar,
   toggleSidebar,
 }: Props) {
-  const sidebarRef = React.useRef<HTMLDivElement>(null);
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
 
-  useOutsideClick(isOpen, closeSidebar, sidebarRef);
+  useOutsideClick(isOpen, closeSidebar, wrapperRef);
 
   return (
-    <MenuStyles className={classNames(customClass)}>
+    <MenuStyles ref={wrapperRef} className={classNames(customClass)}>
       <button
         type="button"
         onClick={toggleSidebar}
@@ -39,10 +39,7 @@ export default function Menu({
         <span className="sr-only">Toggle menu</span>
       </button>
       {isOpen ? (
-        <div
-          ref={sidebarRef}
-          className={classNames('menu-container', customMenuClass)}
-        >
+        <div className={classNames('menu-container', customMenuClass)}>
           {children}
         </div>
       ) : null}

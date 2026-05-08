@@ -17,17 +17,17 @@ export default function StoresTableMenu({
   openDate,
   closeDate,
 }: Props) {
-  const menuRef = React.useRef<HTMLDivElement>(null);
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
 
   const [showMenu, setShowMenu] = React.useState(false);
 
   const storeStatus = getStoreStatus(openDate, closeDate);
 
-  useOutsideClick(showMenu, setShowMenu, menuRef);
+  useOutsideClick(showMenu, setShowMenu, wrapperRef);
   useEscapeKeydownClose(showMenu, setShowMenu);
 
   return (
-    <StoresTableMenuStyles>
+    <StoresTableMenuStyles ref={wrapperRef}>
       <button
         type="button"
         className="menu-button"
@@ -35,7 +35,7 @@ export default function StoresTableMenu({
       >
         <EllipsisVerticalIcon />
       </button>
-      <div ref={menuRef} className={`menu ${showMenu ? 'show' : ''}`}>
+      <div className={`menu ${showMenu ? 'show' : ''}`}>
         <Link href={`/stores/${storeId}`}>
           <a className="link">
             <svg

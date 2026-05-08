@@ -7,6 +7,7 @@ import useCsvDownload from '../../hooks/useCsvDownload';
 import useOutsideClick from '../../hooks/useOutsideClick';
 import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
 import { getQueryParameter, slugify } from '../../utils';
+import { OrderView } from '../../utils/store';
 import LoadingSpinner from '../LoadingSpinner';
 
 type Props = {
@@ -14,6 +15,9 @@ type Props = {
   store: Store;
   showModal: boolean;
   setShowModal: React.Dispatch<React.SetStateAction<boolean>>;
+  selectedView: OrderView | undefined;
+  groupFilter: string;
+  shippingFilter: string;
 };
 
 export default function CSVDownloadModal({
@@ -21,6 +25,9 @@ export default function CSVDownloadModal({
   store,
   showModal,
   setShowModal,
+  selectedView,
+  groupFilter,
+  shippingFilter,
 }: Props) {
   const router = useRouter();
   const csvLinkRef = React.useRef<HTMLAnchorElement>(null);
@@ -63,6 +70,9 @@ export default function CSVDownloadModal({
   const [enableCsvQuery, csvQuery] = useCsvDownload(
     getQueryParameter(router.query.id),
     fields,
+    selectedView,
+    groupFilter,
+    shippingFilter,
     {
       onSuccess: (data: string) => {
         csvLinkRef.current?.setAttribute(
@@ -226,13 +236,14 @@ const CSVDownloadModalStyles = styled.div`
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  position: absolute;
+  position: fixed;
   top: 0;
   right: 0;
   bottom: 0;
   left: 0;
   width: 100%;
   height: 100%;
+  overflow-y: auto;
   background-color: rgba(0, 0, 0, 0.6);
   z-index: 9999;
 

@@ -21,13 +21,14 @@ type Props = {
   isOpen: boolean;
   selectedOrder: Order | undefined;
   selectedOrderIndex: number | undefined;
+  totalCount: number;
   prevOrderId: string | undefined;
   nextOrderId: string | undefined;
   updateSelectedOrder: (orderId: string) => void;
   store: Store;
   setPrintOption: React.Dispatch<
     React.SetStateAction<
-      'unfulfilled' | 'personalization' | 'single' | undefined
+      'unfulfilled' | 'personalization' | 'filtered' | 'single' | undefined
     >
   >;
   showCancelOrderModal: boolean;
@@ -40,6 +41,7 @@ export default function OrderSidebar({
   isOpen,
   selectedOrder,
   selectedOrderIndex = 0,
+  totalCount,
   prevOrderId,
   nextOrderId,
   updateSelectedOrder,
@@ -192,6 +194,7 @@ export default function OrderSidebar({
                 <OrderSidebarMenu
                   {...{
                     stripeId,
+                    order: selectedOrder,
                     setPrintOption,
                     setShowCancelOrderModal,
                     store,
@@ -203,7 +206,7 @@ export default function OrderSidebar({
                 <div className="order-number-header">
                   <p>
                     <span>
-                      Order {selectedOrderIndex + 1} of {store.orders.length}
+                      Order {selectedOrderIndex + 1} of {totalCount}
                     </span>
                   </p>
                 </div>
@@ -360,7 +363,7 @@ export default function OrderSidebar({
             </div>
             <div className="order-number">
               <p>
-                Order {selectedOrderIndex + 1} of {store.orders.length}
+                Order {selectedOrderIndex + 1} of {totalCount}
               </p>
             </div>
             <div className="next-prev-actions">

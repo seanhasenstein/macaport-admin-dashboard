@@ -4,6 +4,11 @@ import styled from 'styled-components';
 import { useReactToPrint } from 'react-to-print';
 
 import { getStoreStatus } from '../../../utils';
+import {
+  getOrderViewOptions,
+  isOrderOutstanding,
+  OrderView,
+} from '../../../utils/store';
 
 import { Order, StoreStatus } from '../../../interfaces';
 
@@ -34,6 +39,7 @@ export default function Store() {
 
   const printUnfulfilledRef = React.useRef<HTMLDivElement>(null);
   const printPersonalizedRef = React.useRef<HTMLDivElement>(null);
+  const printFilteredRef = React.useRef<HTMLDivElement>(null);
   const printSingleRef = React.useRef<HTMLDivElement>(null);
 
   const handlePrintUnfulfilled = useReactToPrint({
@@ -42,6 +48,10 @@ export default function Store() {
 
   const handlePrintPersonalized = useReactToPrint({
     content: () => printPersonalizedRef.current,
+  });
+
+  const handlePrintFiltered = useReactToPrint({
+    content: () => printFilteredRef.current,
   });
 
   const handlePrintSingle = useReactToPrint({
@@ -57,16 +67,62 @@ export default function Store() {
   const [showDeleteStoreModal, setShowDeleteStoreModal] = React.useState(false);
   const [showCSVModal, setShowCSVModal] = React.useState(false);
   const [printOption, setPrintOption] = React.useState<
-    'unfulfilled' | 'personalization' | 'single' | undefined
+    'unfulfilled' | 'personalization' | 'filtered' | 'single' | undefined
   >(undefined);
+  const [filteredOrdersForPrint, setFilteredOrdersForPrint] = React.useState<
+    Order[]
+  >([]);
   const [selectedOrder, setSelectedOrder] = React.useState<Order | undefined>(
     undefined
   );
   const [showCancelOrderModal, setShowCancelOrderModal] = React.useState(false);
   const [showTriggerShipmentModal, setShowTriggerShipmentModal] =
     React.useState(false);
+  const [selectedView, setSelectedView] = React.useState<OrderView | undefined>(
+    undefined
+  );
+  const [groupFilter, setGroupFilter] = React.useState('');
+  const [shippingFilter, setShippingFilter] = React.useState('');
 
-  const { setReceiptPrintedForUnfulfilledOrders } = useOrderMutation({
+  const viewOptions = React.useMemo(
+    () => getOrderViewOptions(storeQuery.data?.orders ?? []),
+    [storeQuery.data?.orders]
+  );
+
+  React.useEffect(() => {
+    if (selectedView !== undefined || viewOptions.length === 0) return;
+
+    if (router.query.orderId && storeQuery.data?.orders) {
+      const linkedOrder = storeQuery.data.orders.find(
+        o => o.orderId === router.query.orderId
+      );
+      if (linkedOrder) {
+        setSelectedView(
+          isOrderOutstanding(linkedOrder)
+            ? 'outstanding'
+            : new Date(linkedOrder.createdAt).getFullYear()
+        );
+        return;
+      }
+    }
+
+    const outstandingOption = viewOptions.find(o => o.view === 'outstanding');
+    if (outstandingOption) {
+      setSelectedView('outstanding');
+      return;
+    }
+    const firstYear = viewOptions.find(
+      o => o.view !== 'outstanding' && o.view !== 'all'
+    );
+    if (firstYear) setSelectedView(firstYear.view);
+  }, [
+    router.query.orderId,
+    selectedView,
+    storeQuery.data?.orders,
+    viewOptions,
+  ]);
+
+  const { markReceiptsPrinted } = useOrderMutation({
     store: storeQuery.data,
   });
 
@@ -104,18 +160,33 @@ export default function Store() {
   React.useEffect(() => {
     if (printOption) {
       if (printOption === 'unfulfilled') {
-        setReceiptPrintedForUnfulfilledOrders.mutate();
+        const ids = (storeQuery.data?.orders ?? [])
+          .filter(o => o.orderStatus === 'Unfulfilled')
+          .map(o => o.orderId);
+        if (ids.length > 0) markReceiptsPrinted.mutate({ orderIds: ids });
         handlePrintUnfulfilled();
       }
       if (printOption === 'personalization') {
         handlePrintPersonalized();
+      }
+      if (printOption === 'filtered') {
+        const ids = filteredOrdersForPrint
+          .filter(o => o.orderStatus === 'Unfulfilled')
+          .map(o => o.orderId);
+        if (ids.length > 0) markReceiptsPrinted.mutate({ orderIds: ids });
+        handlePrintFiltered();
       }
       if (printOption === 'single') {
         handlePrintSingle();
       }
       setPrintOption(undefined);
     }
-  }, [handlePrintPersonalized, handlePrintSingle, handlePrintUnfulfilled]);
+  }, [
+    handlePrintFiltered,
+    handlePrintPersonalized,
+    handlePrintSingle,
+    handlePrintUnfulfilled,
+  ]);
 
   return (
     <Layout
@@ -157,11 +228,6 @@ export default function Store() {
                       storeId={storeQuery.data._id}
                       storeStatus={storeStatus}
                       setShowDeleteModal={setShowDeleteStoreModal}
-                      setShowCSVModal={setShowCSVModal}
-                      setPrintOption={setPrintOption}
-                      showTriggerStoreShipmentModal={() =>
-                        setShowTriggerShipmentModal(true)
-                      }
                     />
                   </div>
                   <StoreDetails store={storeQuery.data} />
@@ -176,10 +242,19 @@ export default function Store() {
                     selectedOrder,
                     setSelectedOrder,
                     setPrintOption,
+                    setFilteredOrdersForPrint,
                     showCancelOrderModal,
                     setShowCancelOrderModal,
                     openTriggerStoreShipmentModal: () =>
                       setShowTriggerShipmentModal(true),
+                    openCSVModal: () => setShowCSVModal(true),
+                    viewOptions,
+                    selectedView,
+                    setSelectedView,
+                    groupFilter,
+                    setGroupFilter,
+                    shippingFilter,
+                    setShippingFilter,
                   }}
                 />
               </div>
@@ -239,6 +314,9 @@ export default function Store() {
           store={storeQuery.data}
           showModal={showCSVModal}
           setShowModal={setShowCSVModal}
+          selectedView={selectedView}
+          groupFilter={groupFilter}
+          shippingFilter={shippingFilter}
         />
       )}
 
@@ -248,7 +326,7 @@ export default function Store() {
           aria-hidden="true"
           ref={printUnfulfilledRef}
         >
-          {storeQuery?.data?.orders?.map(order => {
+          {(storeQuery.data?.orders ?? []).map(order => {
             if (order.orderStatus === 'Unfulfilled') {
               return (
                 <PrintableOrder
@@ -268,7 +346,7 @@ export default function Store() {
           aria-hidden="true"
           ref={printPersonalizedRef}
         >
-          {storeQuery?.data?.orders?.map(order => {
+          {(storeQuery.data?.orders ?? []).map(order => {
             const orderHasAtLeastOnePersonalizationItem = order.items.some(
               item => item.personalizationAddons.length > 0
             );
@@ -283,6 +361,22 @@ export default function Store() {
               );
             }
           })}
+        </div>
+      ) : null}
+
+      {printOption === 'filtered' ? (
+        <div
+          className="printable-orders"
+          aria-hidden="true"
+          ref={printFilteredRef}
+        >
+          {filteredOrdersForPrint.map(order => (
+            <PrintableOrder
+              key={order.orderId}
+              order={order}
+              store={storeQuery.data}
+            />
+          ))}
         </div>
       ) : null}
 

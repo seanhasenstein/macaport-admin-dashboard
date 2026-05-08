@@ -13,6 +13,7 @@ import {
   formatToMoney,
 } from '../../../../utils';
 import { hydrateOrderItemsWithArtworkId } from '../../../../utils/orderItem';
+import { filterOrdersByView, OrderView } from '../../../../utils/store';
 
 type Field = {
   id: number;
@@ -24,6 +25,28 @@ const handler = nc<Request, NextApiResponse>()
   .use(database)
   .post(async (req, res) => {
     const queriedStore: Store = await store.getStoreById(req.db, req.query.id);
+
+    const rawView = req.body.view;
+    const viewFilter: OrderView =
+      rawView === 'outstanding' || rawView === 'all' || rawView === undefined
+        ? rawView ?? 'all'
+        : Number(rawView);
+    const groupFilter: string | undefined = req.body.groupFilter || undefined;
+    const shippingFilter: string | undefined =
+      req.body.shippingFilter || undefined;
+
+    let scopedOrders = filterOrdersByView(
+      queriedStore.orders ?? [],
+      viewFilter
+    );
+    if (groupFilter || shippingFilter) {
+      scopedOrders = scopedOrders.filter(o => {
+        if (groupFilter && o.group !== groupFilter) return false;
+        if (shippingFilter && o.shippingMethod !== shippingFilter) return false;
+        return true;
+      });
+    }
+    queriedStore.orders = scopedOrders;
 
     const headerFields = [
       { id: 'orderId', title: 'ORDER ID' },

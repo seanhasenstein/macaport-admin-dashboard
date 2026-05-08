@@ -11,9 +11,9 @@ type Props = {
 
 export default function StoreProductMenu(props: Props) {
   const router = useRouter();
-  const menuRef = React.useRef<HTMLDivElement>(null);
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
   const [showMenu, setShowMenu] = React.useState(false);
-  useOutsideClick(showMenu, setShowMenu, menuRef);
+  useOutsideClick(showMenu, setShowMenu, wrapperRef);
   useEscapeKeydownClose(showMenu, setShowMenu);
 
   const handleDeleteProductMenuClick = () => {
@@ -22,7 +22,7 @@ export default function StoreProductMenu(props: Props) {
   };
 
   return (
-    <StoreProductMenuStyles>
+    <StoreProductMenuStyles ref={wrapperRef}>
       <button
         type="button"
         onClick={() => setShowMenu(!showMenu)}
@@ -44,7 +44,7 @@ export default function StoreProductMenu(props: Props) {
         </svg>
       </button>
 
-      <div ref={menuRef} className={`menu-container${showMenu ? ' show' : ''}`}>
+      <div className={`menu-container${showMenu ? ' show' : ''}`}>
         <Link
           href={`/stores/${router.query.id}/product/update?pid=${router.query.pid}`}
         >

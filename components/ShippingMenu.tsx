@@ -17,8 +17,8 @@ type Props = {
 };
 
 export default function ShippingMenu(props: Props) {
-  const menuRef = React.useRef<HTMLDivElement>(null);
-  useOutsideClick(props.showMenu, props.setShowMenu, menuRef);
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
+  useOutsideClick(props.showMenu, props.setShowMenu, wrapperRef);
   useEscapeKeydownClose(props.showMenu, props.setShowMenu);
 
   const handleShowShippngPriceModal = () => {
@@ -27,7 +27,7 @@ export default function ShippingMenu(props: Props) {
   };
 
   return (
-    <ShippingMenuStyles>
+    <ShippingMenuStyles ref={wrapperRef}>
       <button
         type="button"
         onClick={() => props.setShowMenu(!props.showMenu)}
@@ -37,7 +37,6 @@ export default function ShippingMenu(props: Props) {
         <span className="sr-only">Toggle nav menu</span>
       </button>
       <div
-        ref={menuRef}
         className={`menu-container${props.showMenu ? ' show' : ''}`}
       >
         {props.successfulMutation ? (

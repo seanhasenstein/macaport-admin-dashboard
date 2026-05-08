@@ -19,10 +19,17 @@ const handler = nc<ExtendedRequest, NextApiResponse>()
   .use(database)
   .post(async (req, res) => {
     const { storeId } = req.query;
+    const orderIds: unknown = req.body?.orderIds;
 
-    const result = await order.addReceiptPrintedToAllUnfulfilledOrders(
+    if (!Array.isArray(orderIds) || orderIds.some(id => typeof id !== 'string')) {
+      res.status(400).json({ error: 'orderIds must be an array of strings' });
+      return;
+    }
+
+    const result = await order.markReceiptsPrintedForOrders(
       req.db,
-      storeId
+      storeId,
+      orderIds as string[]
     );
 
     res.json({ store: result });
