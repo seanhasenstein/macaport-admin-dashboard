@@ -122,6 +122,21 @@ export default function Store() {
     viewOptions,
   ]);
 
+  React.useEffect(() => {
+    if (selectedView === undefined || viewOptions.length === 0) return;
+    if (viewOptions.some(o => o.view === selectedView)) return;
+
+    const outstandingOption = viewOptions.find(o => o.view === 'outstanding');
+    if (outstandingOption) {
+      setSelectedView('outstanding');
+      return;
+    }
+    const firstYear = viewOptions.find(
+      o => o.view !== 'outstanding' && o.view !== 'all'
+    );
+    if (firstYear) setSelectedView(firstYear.view);
+  }, [selectedView, viewOptions]);
+
   const { markReceiptsPrinted } = useOrderMutation({
     store: storeQuery.data,
   });
