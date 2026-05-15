@@ -1,5 +1,4 @@
-import { s3 } from '../utils/s3';
-import { createId, getBucketEnv } from '.';
+import { createId } from '.';
 
 import {
   PersonalizationItem,
@@ -105,25 +104,33 @@ export async function handleStoreProductImageUpload(
 
   if (!image) return;
 
-  const params = {
-    Bucket: `macaport-store-product-images/${getBucketEnv()}/store-${storeId}/${productId}/${colorId}`,
-    Key: key,
-    Body: image,
-  };
+  const contentType = image.type || 'application/octet-stream';
 
   try {
-    const upload = s3.upload(params, (err: any, data: any) => {
-      // todo: handle error
-      console.log('err', err);
-      console.log('data', data);
+    const presignRes = await fetch('/api/s3/presign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ storeId, productId, colorId, key, contentType }),
     });
 
-    const res = await upload.promise();
-
-    if (res.Location) {
-      return res.Location;
+    if (!presignRes.ok) {
+      throw new Error(`Failed to get upload URL (${presignRes.status})`);
     }
+
+    const { uploadUrl, publicUrl } = await presignRes.json();
+
+    const uploadRes = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': contentType },
+      body: image,
+    });
+
+    if (!uploadRes.ok) {
+      throw new Error(`S3 upload failed (${uploadRes.status})`);
+    }
+
+    return publicUrl;
   } catch (err: any) {
-    errorHandler(err);
+    errorHandler(err.message ?? String(err));
   }
 }
