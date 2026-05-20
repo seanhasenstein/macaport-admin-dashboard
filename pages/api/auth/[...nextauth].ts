@@ -37,7 +37,7 @@ export const authOptions: NextAuthOptions = {
         'seanhasenstein@gmail.com',
         'nick@macaport.com',
         'joe@macaport.com',
-        'ally@macaport.com',
+        // 'ally@macaport.com', // removed ally's email on 05/20/26 since she is no longer working at macaport
         'anne@macaport.com',
         'nschaefer@coveme.com',
         'aschaefer@macaport.com',
