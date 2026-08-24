@@ -36,4 +36,6 @@ const colors = {
   },
 };
 
-export { colors };
+const temp = {};
+
+export { colors, temp };
