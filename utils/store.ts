@@ -1,14 +1,5 @@
-import { getStoreStatus } from '.';
-import {
-  InventoryProduct,
-  Order,
-  OrderStatusKey,
-  Store,
-  StoresTableStore,
-  StoreStatusFilter,
-} from '../interfaces';
+import { InventoryProduct, Order, OrderStatusKey, Store } from '../interfaces';
 import { hydrateOrderItemsWithArtworkId } from './orderItem';
-import { convertStoreToStoresTableStore } from './storesTable';
 
 export type OrderView = number | 'all' | 'outstanding';
 
@@ -146,41 +137,4 @@ export function hydrateStoreProducts(
 
     return { ...storeProduct, productSkus: updatedProductSkus };
   });
-}
-
-export function storeStatusMatches(
-  storeStatusFilter: StoreStatusFilter,
-  store: Store
-) {
-  if (storeStatusFilter === 'all') {
-    return true;
-  } else {
-    return (
-      getStoreStatus(store.openDate, store.closeDate) === storeStatusFilter
-    );
-  }
-}
-
-export function paginatedStoresReducer(
-  stores: Store[],
-  selectedStatus: StoreStatusFilter,
-  onlyUnfulfilled: boolean
-) {
-  return stores.reduce((acc: StoresTableStore[], currStore) => {
-    if (storeStatusMatches(selectedStatus, currStore)) {
-      if (onlyUnfulfilled) {
-        if (
-          currStore.orders.some(order => order.orderStatus === 'Unfulfilled')
-        ) {
-          const storesTableStore = convertStoreToStoresTableStore(currStore);
-          return [...acc, storesTableStore];
-        }
-        return acc;
-      }
-      const storesTableStore = convertStoreToStoresTableStore(currStore);
-      return [...acc, storesTableStore];
-    } else {
-      return acc;
-    }
-  }, []);
 }
