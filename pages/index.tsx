@@ -18,8 +18,10 @@ export default function Index() {
       title="Dashboard home"
     >
       <IndexStyles>
-        {(query.isLoading || query.isFetching) && <TableLoadingSpinner />}
-        {query.data && !query.isFetching && (
+        {/* Only gate on isLoading (no data yet). Gating on isFetching too
+            blanked the table on every background refetch. */}
+        {query.isLoading && <TableLoadingSpinner />}
+        {query.data && (
           <div className="container">
             <TopPageNav />
             <StoresTable
