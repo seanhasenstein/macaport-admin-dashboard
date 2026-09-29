@@ -66,8 +66,10 @@ export default function Stores() {
       title="All stores | Macaport Dashboard"
     >
       <StoresStyles $unfulfilledChecked={unfulfilledChecked}>
-        {(query.isLoading || query.isFetching) && <TableLoadingSpinner />}
-        {query.data && !query.isFetching && (
+        {/* Only gate on isLoading (no data yet). keepPreviousData plus the
+            inline LoadingSpinner below cover page/filter changes. */}
+        {query.isLoading && <TableLoadingSpinner />}
+        {query.data && (
           <div className="container">
             <TopPageNav />
             <div className="header">
