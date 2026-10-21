@@ -11,8 +11,15 @@ import PrintableOrder from '../PrintableOrder';
 import OrderDetailItem from './OrderDetailItem';
 import OrderItem from './OrderItem';
 import OrderItemsBreakdown from './OrderItemsBreakdown';
+import RefundModal from './RefundModal';
 
 import { formatPhoneNumber, formatToMoney } from '../../utils';
+import {
+  formatBenefitAmount,
+  orderAdjustments,
+} from '../../utils/memberBenefit';
+import { restoredPhrase } from '../../utils/refund';
+import { useInvoicesQuery } from '../../hooks/useInvoicesQuery';
 
 import { Order, Store } from '../../interfaces';
 
@@ -52,9 +59,18 @@ export default function OrderSidebar({
   openTriggerStoreShipmentModal,
 }: Props) {
   const mainContentRef = React.useRef<HTMLDivElement>(null);
+  const [showRefundModal, setShowRefundModal] = React.useState(false);
 
   const session = useSession();
   const userId = session?.data?.user.id;
+
+  const invoicesQuery = useInvoicesQuery(
+    store._id,
+    Boolean(selectedOrder?.clientInvoiceId)
+  );
+  const clientInvoice = selectedOrder?.clientInvoiceId
+    ? invoicesQuery.data?.find(i => i._id === selectedOrder.clientInvoiceId)
+    : undefined;
 
   // TODO: move this to a custom hook
   React.useEffect(() => {
@@ -103,11 +119,22 @@ export default function OrderSidebar({
     stripeId,
     summary,
     orderStatus,
-    switchFitnessDiscount,
-    sheboyganLutheranStaffDiscount,
+    refund,
   } = selectedOrder;
   const { email, firstName, lastName, phone } = customer;
   const { subtotal, salesTax, shipping, total, stripeFee } = summary;
+
+  // Read through the helper so legacy orders render the same rows.
+  const adjustments = orderAdjustments(selectedOrder);
+  const benefitAdjustments = adjustments.filter(a => a.kind !== 'waived');
+  const benefitEmail =
+    selectedOrder.benefit?.email ??
+    selectedOrder.sheboyganLutheranStaffDiscount?.email ??
+    selectedOrder.switchFitnessDiscount?.email ??
+    selectedOrder.teacherAppreciation?.email;
+  const hasRefund = Boolean(
+    refund && ((refund.card ?? 0) > 0 || (refund.creditRestored ?? 0) > 0)
+  );
 
   const renderShippingAddressLabel = () => {
     if (shippingMethod === 'Direct') {
@@ -153,8 +180,8 @@ export default function OrderSidebar({
       <OrderSidebarStyles>
         <Sidebar
           {...{ isOpen, closeSidebar }}
-          disableOutsideClick={showCancelOrderModal}
-          disableEscapeKeydown={showCancelOrderModal}
+          disableOutsideClick={showCancelOrderModal || showRefundModal}
+          disableEscapeKeydown={showCancelOrderModal || showRefundModal}
           customHeader={
             <div className="custom-header">
               <div className="customer-details">
@@ -199,6 +226,7 @@ export default function OrderSidebar({
                     setShowCancelOrderModal,
                     store,
                     openTriggerStoreShipmentModal,
+                    openRefundModal: () => setShowRefundModal(true),
                   }}
                 />
               </div>
@@ -238,36 +266,85 @@ export default function OrderSidebar({
                     customValueClass="shipping-address-value"
                   />
                 )}
-                {switchFitnessDiscount && summary.discount ? (
+                {benefitAdjustments.length > 0 || benefitEmail ? (
                   <OrderDetailItem
-                    label="Switch discount:"
+                    label="Member benefit:"
                     value={
                       <>
-                        {formatToMoney(summary.discount, true)} discount applied
-                        for{' '}
-                        <span
-                          title={switchFitnessDiscount.email}
-                          className="switch-discount-email"
-                        >
-                          {switchFitnessDiscount.email}
-                        </span>
+                        {benefitAdjustments[0]?.label ?? 'Benefit'}
+                        {selectedOrder.benefit
+                          ? ` · ${formatBenefitAmount(
+                              selectedOrder.benefit.type,
+                              selectedOrder.benefit.used
+                            )} used`
+                          : ''}
+                        {benefitEmail ? (
+                          <>
+                            {' '}
+                            by{' '}
+                            <span
+                              title={benefitEmail}
+                              className="benefit-email"
+                            >
+                              {benefitEmail}
+                            </span>
+                          </>
+                        ) : null}
                       </>
                     }
                   />
                 ) : null}
-                {sheboyganLutheranStaffDiscount && summary.discount ? (
+                {selectedOrder.clientInvoiceId ? (
                   <OrderDetailItem
-                    label="Staff discount:"
+                    label="Client invoice:"
+                    value={
+                      clientInvoice
+                        ? `#${clientInvoice.number} · ${
+                            clientInvoice.status === 'paid'
+                              ? `paid${
+                                  clientInvoice.paidAt
+                                    ? ` ${format(
+                                        new Date(clientInvoice.paidAt),
+                                        'MMM d, yyyy'
+                                      )}`
+                                    : ''
+                                }${
+                                  clientInvoice.paymentReference
+                                    ? `, ${clientInvoice.paymentReference}`
+                                    : ''
+                                }`
+                              : 'open'
+                          }`
+                        : 'Invoiced'
+                    }
+                  />
+                ) : null}
+                {hasRefund ? (
+                  <OrderDetailItem
+                    label="Refunded:"
                     value={
                       <>
-                        {formatToMoney(summary.discount, true)} discount applied
-                        for{' '}
-                        <span
-                          title={sheboyganLutheranStaffDiscount.email}
-                          className="switch-discount-email"
-                        >
-                          {sheboyganLutheranStaffDiscount.email}
-                        </span>
+                        {formatToMoney(refund.card ?? 0, true)} to card
+                        {selectedOrder.benefit &&
+                        (refund.creditRestored ?? 0) > 0
+                          ? `, ${restoredPhrase(
+                              selectedOrder.benefit.type,
+                              refund.creditRestored ?? 0
+                            )} restored`
+                          : ''}
+                        {refund.returnedItems && refund.returnedItems.length > 0
+                          ? ` (${refund.returnedItems.reduce(
+                              (sum, r) => sum + r.quantity,
+                              0
+                            )} item${
+                              refund.returnedItems.reduce(
+                                (sum, r) => sum + r.quantity,
+                                0
+                              ) === 1
+                                ? ''
+                                : 's'
+                            } returned)`
+                          : ''}
                       </>
                     }
                   />
@@ -287,24 +364,18 @@ export default function OrderSidebar({
                   customLabelClass="summary-label"
                   customValueClass="summary-value"
                 />
-                {switchFitnessDiscount && summary.discount ? (
+                {adjustments.map((adjustment, i) => (
                   <OrderDetailItem
-                    label="Discount:"
-                    value={`-${formatToMoney(summary.discount, true)}`}
+                    key={i}
+                    label={`${adjustment.label}${
+                      adjustment.units ? ` (${adjustment.units} free)` : ''
+                    }:`}
+                    value={`-${formatToMoney(-adjustment.amount, true)}`}
                     customClass="summary-item"
                     customLabelClass="summary-label"
                     customValueClass="summary-value"
                   />
-                ) : null}
-                {sheboyganLutheranStaffDiscount && summary.discount ? (
-                  <OrderDetailItem
-                    label="Discount:"
-                    value={`-${formatToMoney(summary.discount, true)}`}
-                    customClass="summary-item"
-                    customLabelClass="summary-label"
-                    customValueClass="summary-value"
-                  />
-                ) : null}
+                ))}
                 <OrderDetailItem
                   label="Sales tax:"
                   value={formatToMoney(salesTax, true)}
@@ -408,6 +479,13 @@ export default function OrderSidebar({
           </div>
         </Sidebar>
       </OrderSidebarStyles>
+      {showRefundModal && (
+        <RefundModal
+          order={selectedOrder}
+          store={store}
+          closeModal={() => setShowRefundModal(false)}
+        />
+      )}
       <PrintableOrder
         key={selectedOrder.orderId}
         order={selectedOrder}
@@ -591,7 +669,7 @@ const OrderSidebarStyles = styled.div`
       gap: 1rem 0;
       border-right: 1px solid #d4d4d8;
     }
-    .switch-discount-email {
+    .benefit-email {
       display: inline-block;
       max-width: 14.75rem;
       overflow: hidden;

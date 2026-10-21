@@ -16,6 +16,7 @@ import { useOrderMutation } from '../../hooks/useOrderMutations';
 import { formatPhoneNumber, formatToMoney } from '../../utils';
 
 import { Order, Store } from '../../interfaces';
+import { restoredPhrase } from '../../utils/refund';
 
 type Props = {
   isOpen: boolean;
@@ -49,6 +50,10 @@ export default function CancelOrderModal({
         }
       });
     }
+  );
+
+  const [restoreCredit, setRestoreCredit] = React.useState(
+    Boolean(order.benefit)
   );
 
   const { cancelOrder } = useOrderMutation({
@@ -182,6 +187,25 @@ export default function CancelOrderModal({
                 </p>
               </div>
             </div>
+            {order.benefit && (
+              <label className="benefit-choice" htmlFor="cancel-restore-credit">
+                <input
+                  id="cancel-restore-credit"
+                  type="checkbox"
+                  checked={restoreCredit}
+                  onChange={e => setRestoreCredit(e.target.checked)}
+                />
+                <span>
+                  Give {order.benefit.email} back the{' '}
+                  {restoredPhrase(order.benefit.type, order.benefit.used)} this
+                  order used.
+                  <span className="sub">
+                    Untick if the member has left or the program has ended. It
+                    can still be restored later from the member benefit panel.
+                  </span>
+                </span>
+              </label>
+            )}
             <div className="instructions">
               <h3>Items to return to inventory</h3>
               <p>
@@ -379,9 +403,10 @@ export default function CancelOrderModal({
                 type="button"
                 className="submit-button"
                 onClick={() => {
-                  cancelOrder.mutate(undefined, {
-                    onSuccess: () => closeModal(),
-                  });
+                  cancelOrder.mutate(
+                    { restoreCredit },
+                    { onSuccess: () => closeModal() }
+                  );
                 }}
               >
                 Cancel this order
@@ -519,6 +544,32 @@ const CancelOrderModalStyles = styled.div`
         text-decoration: underline;
       }
     }
+  }
+
+  .benefit-choice {
+    margin: 0 0 1rem;
+    padding: 0.75rem 0.875rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: #1e3a8a;
+    background-color: #eef2ff;
+    border: 1px solid #c7d2fe;
+    border-radius: 0.375rem;
+    cursor: pointer;
+  }
+
+  .benefit-choice input {
+    margin: 0.25rem 0 0;
+    flex-shrink: 0;
+  }
+
+  .benefit-choice .sub {
+    display: block;
+    font-size: 0.75rem;
+    color: #4b5563;
   }
 
   .instructions {

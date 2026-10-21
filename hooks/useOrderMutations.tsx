@@ -25,13 +25,16 @@ export function useOrderMutation({ order, store }: Props) {
   const userId = session?.data?.user.id || '';
 
   const cancelOrder = useMutation(
-    async () => {
+    async (options?: { restoreCredit: boolean }) => {
       if (!order || !store) return;
       const response = await fetch(
         `/api/orders/cancel?sid=${store._id}&oid=${order.orderId}`,
         {
           method: 'post',
-          body: JSON.stringify({ order }),
+          body: JSON.stringify({
+            order,
+            restoreCredit: options?.restoreCredit ?? false,
+          }),
           headers: {
             'Content-Type': 'application/json',
           },

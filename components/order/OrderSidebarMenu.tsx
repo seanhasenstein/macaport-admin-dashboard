@@ -6,6 +6,7 @@ import {
   XCircleIcon,
   CreditCardIcon,
   CheckCircleIcon,
+  ReceiptRefundIcon,
 } from '@heroicons/react/24/outline';
 
 import Menu from '../common/Menu';
@@ -24,6 +25,7 @@ type Props = {
   setShowCancelOrderModal: React.Dispatch<React.SetStateAction<boolean>>;
   store: Store;
   openTriggerStoreShipmentModal: () => void;
+  openRefundModal: () => void;
 };
 
 export default function OrderSidebarMenu({
@@ -32,6 +34,7 @@ export default function OrderSidebarMenu({
   setPrintOption,
   setShowCancelOrderModal,
   openTriggerStoreShipmentModal,
+  openRefundModal,
   store,
 }: Props) {
   const { unmarkReceiptPrinted } = useOrderMutation({ store });
@@ -97,9 +100,7 @@ export default function OrderSidebarMenu({
               <ArrowUturnLeftIcon className="icon" strokeWidth={2} />
               <span>
                 Unmark as printed
-                <span className="subtitle">
-                  Move back to unfulfilled
-                </span>
+                <span className="subtitle">Move back to unfulfilled</span>
               </span>
             </button>
           )}
@@ -112,6 +113,25 @@ export default function OrderSidebarMenu({
             <CreditCardIcon className="icon" strokeWidth={2} />
             View in Stripe dashboard
           </a>
+          {order.orderStatus !== 'Canceled' && (
+            <button
+              type="button"
+              className="menu-button"
+              onClick={e => {
+                e.stopPropagation();
+                openRefundModal();
+                setIsOpen(false);
+              }}
+            >
+              <ReceiptRefundIcon className="icon" strokeWidth={2} />
+              <span>
+                Refund calculator
+                <span className="subtitle">
+                  Split a return between the card and credit
+                </span>
+              </span>
+            </button>
+          )}
           <button
             type="button"
             onClick={handleCancelClick}
