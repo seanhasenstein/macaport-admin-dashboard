@@ -50,6 +50,7 @@ export default function CSVDownloadModal({
     { id: 11, field: 'totalItems', checked: true },
     { id: 12, field: 'orderStatus', checked: true },
     { id: 13, field: 'summary.subtotal', checked: true },
+    { id: 26, field: 'summary.adjustments', checked: true },
     { id: 14, field: 'summary.shipping', checked: true },
     { id: 15, field: 'summary.salesTax', checked: true },
     { id: 16, field: 'summary.total', checked: true },

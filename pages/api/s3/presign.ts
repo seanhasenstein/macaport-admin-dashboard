@@ -3,6 +3,14 @@ import { S3 } from 'aws-sdk';
 import { withAuth } from '../../../utils/withAuth';
 import { getBucketEnv } from '../../../utils';
 
+const IMAGE_TYPES = [
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+  'image/gif',
+  'image/svg+xml',
+];
+
 const s3 = new S3({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
@@ -26,14 +34,32 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return;
   }
 
-  const { storeId, productId, colorId, key, contentType } = req.body ?? {};
+  const { storeId, productId, colorId, key, contentType, kind } =
+    req.body ?? {};
 
-  if (!storeId || !productId || !colorId || !key) {
+  if (!storeId || !key) {
     res.status(400).json({ error: 'Missing required field' });
     return;
   }
 
-  const Bucket = `macaport-store-product-images/${getBucketEnv()}/store-${storeId}/${productId}/${colorId}`;
+  let Bucket: string;
+  if (kind === 'benefitLogo') {
+    // The member benefit's card logo, one folder per store. Images only:
+    // the storefront renders this URL in an img tag.
+    if (!IMAGE_TYPES.includes(contentType)) {
+      res
+        .status(400)
+        .json({ error: 'Logo must be a PNG, JPEG, WebP, GIF or SVG.' });
+      return;
+    }
+    Bucket = `macaport-store-product-images/${getBucketEnv()}/store-${storeId}/benefit-logo`;
+  } else {
+    if (!productId || !colorId) {
+      res.status(400).json({ error: 'Missing required field' });
+      return;
+    }
+    Bucket = `macaport-store-product-images/${getBucketEnv()}/store-${storeId}/${productId}/${colorId}`;
+  }
   const ContentType = contentType || 'application/octet-stream';
 
   try {

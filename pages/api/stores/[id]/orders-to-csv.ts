@@ -14,6 +14,7 @@ import {
 } from '../../../../utils';
 import { hydrateOrderItemsWithArtworkId } from '../../../../utils/orderItem';
 import { filterOrdersByView, OrderView } from '../../../../utils/store';
+import { orderBenefitAmount } from '../../../../utils/memberBenefit';
 
 type Field = {
   id: number;
@@ -63,6 +64,7 @@ const handler = nc<Request, NextApiResponse>()
       { id: 'totalItems', title: 'TOTAL ITEMS' },
       { id: 'orderStatus', title: 'ORDER STATUS' },
       { id: 'summary.subtotal', title: 'SUBTOTAL' },
+      { id: 'summary.adjustments', title: 'DISCOUNTS & CREDITS' },
       { id: 'summary.shipping', title: 'SHIPPING' },
       { id: 'summary.salesTax', title: 'SALES TAX' },
       { id: 'summary.total', title: 'TOTAL' },
@@ -103,6 +105,13 @@ const handler = nc<Request, NextApiResponse>()
           timeZone: 'America/Chicago',
         });
 
+        // The fee the storefront recorded; only very old orders lack it.
+        const stripeFee =
+          typeof order.summary.stripeFee === 'number'
+            ? order.summary.stripeFee
+            : calculateStripeFee(order.summary.total);
+        const benefitAmount = orderBenefitAmount(order);
+
         return {
           orderId: order.orderId,
           date: createdAt,
@@ -115,15 +124,15 @@ const handler = nc<Request, NextApiResponse>()
           totalItems: calculateTotalItems(order.items),
           orderStatus: order.orderStatus,
           ['summary.subtotal']: formatToMoney(order.summary.subtotal, true),
+          ['summary.adjustments']: benefitAmount
+            ? `-${formatToMoney(benefitAmount, true)}`
+            : '',
           ['summary.shipping']: formatToMoney(order.summary.shipping, true),
           ['summary.salesTax']: formatToMoney(order.summary.salesTax, true),
           ['summary.total']: formatToMoney(order.summary.total, true),
-          ['summary.stripeFee']: formatToMoney(
-            calculateStripeFee(order.summary.total),
-            true
-          ),
+          ['summary.stripeFee']: formatToMoney(stripeFee, true),
           ['summary.netTotal']: formatToMoney(
-            order.summary.total - calculateStripeFee(order.summary.total),
+            order.summary.total - stripeFee,
             true
           ),
           shippingMethod: order.shippingMethod,

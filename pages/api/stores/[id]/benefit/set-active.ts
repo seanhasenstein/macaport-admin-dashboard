@@ -3,7 +3,8 @@ import nc from 'next-connect';
 import { withAuth } from '../../../../../utils/withAuth';
 import { Request } from '../../../../../interfaces';
 import database from '../../../../../middleware/db';
-import { teacherAppreciation } from '../../../../../db';
+import { memberBenefit } from '../../../../../db';
+import { benefitForStore } from '../../../../../utils/benefitApi';
 
 const handler = nc<Request, NextApiResponse>()
   .use(database)
@@ -12,13 +13,10 @@ const handler = nc<Request, NextApiResponse>()
     if (typeof active !== 'boolean') {
       return res.status(400).json({ error: 'active must be a boolean.' });
     }
-
-    const result = await teacherAppreciation.setActive(
-      req.db,
-      req.query.id,
-      active
-    );
-    res.json({ teacherAppreciation: result });
+    const benefit = await benefitForStore(req, res);
+    if (!benefit) return;
+    const updated = await memberBenefit.setActive(req.db, benefit._id, active);
+    res.json({ benefit: updated });
   });
 
 export default withAuth(handler);
