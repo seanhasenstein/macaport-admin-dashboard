@@ -7,6 +7,7 @@ import useEscapeKeydownClose from '../../hooks/useEscapeKeydownClose';
 import useOutsideClick from '../../hooks/useOutsideClick';
 import { ShippingData, ShippingDataForm } from '../../interfaces';
 import LoadingSpinner from '../LoadingSpinner';
+import { DEFAULT_INVOICE_GRACE_DAYS } from '../../utils/memberBenefit';
 
 const validationSchema = Yup.object().shape({
   price: Yup.string()
@@ -15,6 +16,9 @@ const validationSchema = Yup.object().shape({
   freeMinimum: Yup.string()
     .matches(new RegExp(/^\d*\d\.{1}\d{2}$/), 'Invalid price')
     .required('Minimum cart total amount is required'),
+  invoiceGraceDays: Yup.string()
+    .matches(/^\d+$/, 'Whole number of days')
+    .required('Required; 0 means no wait'),
 });
 
 type Props = {
@@ -53,14 +57,17 @@ export default function ShippingPriceModal(props: Props) {
             _id: props.initialValues._id,
             price: (props.initialValues.price / 100).toFixed(2),
             freeMinimum: (props.initialValues.freeMinimum / 100).toFixed(2),
+            invoiceGraceDays: String(
+              props.initialValues.invoiceGraceDays ?? DEFAULT_INVOICE_GRACE_DAYS
+            ),
           }}
           validationSchema={validationSchema}
           onSubmit={handleSubmit}
         >
           {() => (
             <>
-              <h3>Update shipping details</h3>
-              <p>This form will update shipping details for all stores.</p>
+              <h3>Update store settings</h3>
+              <p>These settings apply to all stores.</p>
               <Form>
                 <div className="form-item">
                   <label htmlFor="price">Shipping Price</label>
@@ -81,6 +88,23 @@ export default function ShippingPriceModal(props: Props) {
                     name="freeMinimum"
                     className="validation-error"
                   />
+                </div>
+                <div className="form-item">
+                  <label htmlFor="invoiceGraceDays">
+                    Days after shipping before a member benefit order can be
+                    invoiced to the client
+                  </label>
+                  <Field name="invoiceGraceDays" id="invoiceGraceDays" />
+                  <ErrorMessage
+                    component="div"
+                    name="invoiceGraceDays"
+                    className="validation-error"
+                  />
+                  <p className="form-note">
+                    The return window. Applies from now on: orders already
+                    invoiced stay invoiced, and a shorter window makes waiting
+                    orders eligible sooner.
+                  </p>
                 </div>
                 <div className="actions">
                   <button
@@ -220,6 +244,13 @@ const ShippingPriceModalStyles = styled.div`
         text-decoration: underline;
       }
     }
+  }
+
+  .form-note {
+    margin: 0.375rem 0 0;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: #6b7280;
   }
 
   .validation-error,
