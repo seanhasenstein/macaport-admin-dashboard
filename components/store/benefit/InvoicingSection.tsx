@@ -70,8 +70,10 @@ export default function InvoicingSection({ benefit, store }: Props) {
   const mutations = useInvoiceMutations({ storeId: store._id });
 
   const [month, setMonth] = React.useState('all');
-  const [selected, setSelected] = React.useState<Set<string>>(new Set());
-  const [touchedSelection, setTouchedSelection] = React.useState(false);
+  // Everything visible is selected unless the admin unticked it. Keeping
+  // the exceptions rather than the selection means a new month or a fresh
+  // order list starts fully selected without any effect ordering.
+  const [deselected, setDeselected] = React.useState<Set<string>>(new Set());
   const [showCreate, setShowCreate] = React.useState(false);
   const [paying, setPaying] = React.useState<ClientInvoice | null>(null);
   const [voiding, setVoiding] = React.useState<ClientInvoice | null>(null);
@@ -118,28 +120,18 @@ export default function InvoicingSection({ benefit, store }: Props) {
     [split.eligible, month]
   );
 
-  // Everything visible is selected until the admin says otherwise; a
-  // changed filter or a fresh order list resets to that.
   React.useEffect(() => {
-    if (!touchedSelection) {
-      setSelected(new Set(visible.map(o => o.orderId)));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible]);
+    setDeselected(new Set());
+  }, [month]);
 
-  React.useEffect(() => {
-    setTouchedSelection(false);
-  }, [month, store.orders]);
-
-  const chosen = visible.filter(o => selected.has(o.orderId));
+  const chosen = visible.filter(o => !deselected.has(o.orderId));
   const totals = invoiceTotals([
     ...chosen.map(orderNetBenefitAmount),
     ...adjustments.map(a => a.amount),
   ]);
 
   const toggle = (orderId: string) => {
-    setTouchedSelection(true);
-    setSelected(prev => {
+    setDeselected(prev => {
       const next = new Set(prev);
       if (next.has(orderId)) next.delete(orderId);
       else next.add(orderId);
@@ -147,8 +139,7 @@ export default function InvoicingSection({ benefit, store }: Props) {
     });
   };
   const selectAll = (on: boolean) => {
-    setTouchedSelection(true);
-    setSelected(on ? new Set(visible.map(o => o.orderId)) : new Set());
+    setDeselected(on ? new Set() : new Set(visible.map(o => o.orderId)));
   };
 
   const handleCreate = (values: Omit<CreateInvoiceValues, 'orderIds'>) => {
@@ -157,7 +148,7 @@ export default function InvoicingSection({ benefit, store }: Props) {
       {
         onSuccess: () => {
           setShowCreate(false);
-          setTouchedSelection(false);
+          setDeselected(new Set());
         },
       }
     );
@@ -227,12 +218,12 @@ export default function InvoicingSection({ benefit, store }: Props) {
               {visible.map(order => (
                 <tr
                   key={order.orderId}
-                  className={selected.has(order.orderId) ? 'selected' : ''}
+                  className={deselected.has(order.orderId) ? '' : 'selected'}
                 >
                   <td className="check">
                     <input
                       type="checkbox"
-                      checked={selected.has(order.orderId)}
+                      checked={!deselected.has(order.orderId)}
                       onChange={() => toggle(order.orderId)}
                       aria-label={`Include order ${order.orderId}`}
                     />

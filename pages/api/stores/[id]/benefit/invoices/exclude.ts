@@ -1,7 +1,8 @@
 import { NextApiResponse } from 'next';
 import nc from 'next-connect';
 import { ObjectId } from 'mongodb';
-import { getSession } from 'next-auth/react';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../../../../auth/[...nextauth]';
 import { withAuth } from '../../../../../../utils/withAuth';
 import { Order, Request } from '../../../../../../interfaces';
 import database from '../../../../../../middleware/db';
@@ -46,7 +47,7 @@ const handler = nc<Request, NextApiResponse>()
         .json({ error: 'That order is already on an invoice.' });
     }
 
-    const session = await getSession({ req });
+    const session = await getServerSession(req, res, authOptions);
     await clientInvoice.setOrderExclusion(
       req.db,
       req.query.id,

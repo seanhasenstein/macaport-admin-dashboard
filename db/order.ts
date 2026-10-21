@@ -69,7 +69,9 @@ export async function cancelOrder(
       total: 0,
     },
     // todo: should we handle this differently?
+    // Keep what an earlier partial refund recorded; only the status moves.
     refund: {
+      ...order.refund,
       status: 'Full',
       amount: order.summary.total,
     },
@@ -267,10 +269,7 @@ export async function markReceiptsPrintedForOrders(
   if (store) {
     const targetIds = new Set(orderIds);
     const updatedOrders = store.orders.map(order => {
-      if (
-        targetIds.has(order.orderId) &&
-        order.orderStatus === 'Unfulfilled'
-      ) {
+      if (targetIds.has(order.orderId) && order.orderStatus === 'Unfulfilled') {
         return {
           ...order,
           meta: {

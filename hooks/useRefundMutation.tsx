@@ -26,7 +26,6 @@ export function useRefundMutation({ order, store }: Props) {
         throw new Error(data.error || 'Failed to record the refund.');
       }
       return data as {
-        store: Store;
         split: RefundSplit;
         emailed: boolean;
         redirectedTo: string | null;

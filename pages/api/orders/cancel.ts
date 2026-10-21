@@ -23,6 +23,21 @@ const handler = nc<Request, NextApiResponse>()
     const userId = session?.user.id || '';
     const canceledOrder: OrderWithExtendedOrderItems = req.body.order;
 
+    // The benefit link and any earlier refund come from the database, not
+    // the body, so a stale tab cannot restore more than the member spent.
+    const current = await req.db
+      .collection('stores')
+      .findOne(
+        { _id: new ObjectId(req.query.sid), 'orders.orderId': req.query.oid },
+        { projection: { 'orders.$': 1 } }
+      );
+    const stored = (current?.orders as Order[] | undefined)?.[0];
+    if (!stored) {
+      return res.status(404).json({ error: 'Order not found.' });
+    }
+    // Carry the stored refund into the cancel write so it is not wiped.
+    canceledOrder.refund = stored.refund;
+
     const result = await order.cancelOrder(
       req.db,
       req.query.sid,
@@ -34,14 +49,14 @@ const handler = nc<Request, NextApiResponse>()
     // The member's credit comes back only when the admin asked for it, and
     // only what this order drew down and has not already been restored.
     let creditRestored = 0;
-    if (req.body.restoreCredit === true && canceledOrder.benefit) {
-      const already = canceledOrder.refund?.creditRestored ?? 0;
-      const amount = Math.max(0, (canceledOrder.benefit.used ?? 0) - already);
+    if (req.body.restoreCredit === true && stored.benefit) {
+      const already = stored.refund?.creditRestored ?? 0;
+      const amount = Math.max(0, (stored.benefit.used ?? 0) - already);
       if (amount > 0) {
         const restored = await memberBenefit.restoreUsed(
           req.db,
-          canceledOrder.benefit.benefitId,
-          canceledOrder.benefit.email,
+          stored.benefit.benefitId,
+          stored.benefit.email,
           amount
         );
         if (restored === 'restored') {
@@ -60,7 +75,7 @@ const handler = nc<Request, NextApiResponse>()
           );
         } else {
           console.warn(
-            `Cancel of ${req.query.oid}: could not restore ${amount} to ${canceledOrder.benefit.email} (${restored}).`
+            `Cancel of ${req.query.oid}: could not restore ${amount} to ${stored.benefit.email} (${restored}).`
           );
         }
       }

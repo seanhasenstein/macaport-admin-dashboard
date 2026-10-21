@@ -86,14 +86,52 @@ export async function create(db: Db, input: CreateInvoiceInput) {
     .insertOne(doc);
   const id = String(inserted.insertedId);
 
-  // Link every order on the invoice in one write.
-  await db.collection('stores').updateOne(
+  // Link the billed orders in one write. Adjustment lines refer to orders
+  // on earlier invoices and must not be re-pointed. The filter also insists
+  // the order is not already linked, so two creates racing for the same
+  // orders cannot both win: the loser is rolled back.
+  const orderIds = input.lines
+    .filter(l => l.kind !== 'adjustment')
+    .map(l => l.orderId);
+  const linked = await db.collection('stores').updateOne(
     { _id: new ObjectId(input.storeId) },
     { $set: { 'orders.$[o].clientInvoiceId': id } },
     {
-      arrayFilters: [{ 'o.orderId': { $in: input.lines.map(l => l.orderId) } }],
+      arrayFilters: [
+        {
+          'o.orderId': { $in: orderIds },
+          'o.clientInvoiceId': { $in: [null, undefined] },
+        },
+      ],
     }
   );
+  const after = await db
+    .collection('stores')
+    .aggregate([
+      { $match: { _id: new ObjectId(input.storeId) } },
+      { $unwind: '$orders' },
+      {
+        $match: {
+          'orders.orderId': { $in: orderIds },
+          'orders.clientInvoiceId': id,
+        },
+      },
+      { $count: 'n' },
+    ])
+    .toArray();
+  const linkedCount = after[0]?.n ?? 0;
+  if (linked.matchedCount !== 1 || linkedCount !== orderIds.length) {
+    // Release whatever this call did link, then drop the invoice.
+    await db
+      .collection('stores')
+      .updateOne(
+        { _id: new ObjectId(input.storeId) },
+        { $set: { 'orders.$[o].clientInvoiceId': null } },
+        { arrayFilters: [{ 'o.clientInvoiceId': id }] }
+      );
+    await collection(db).deleteOne({ _id: inserted.insertedId });
+    return null;
+  }
 
   return withStringId({ ...doc, _id: inserted.insertedId });
 }
@@ -178,5 +216,16 @@ export async function voidInvoice(db: Db, id: string, voidedBy: string) {
       { $set: { 'orders.$[o].clientInvoiceId': null } },
       { arrayFilters: [{ 'o.clientInvoiceId': id }] }
     );
+  // Credits this invoice carried for earlier invoices are owed again.
+  const byInvoice = new Map<string, { orderId: string; amount: number }[]>();
+  for (const line of result.value.lines) {
+    if (line.kind !== 'adjustment' || !line.adjustsInvoiceId) continue;
+    const list = byInvoice.get(line.adjustsInvoiceId) ?? [];
+    list.push({ orderId: line.orderId, amount: -line.amount });
+    byInvoice.set(line.adjustsInvoiceId, list);
+  }
+  for (const invoiceId of Array.from(byInvoice.keys())) {
+    await settleDrift(db, invoiceId, byInvoice.get(invoiceId) ?? []);
+  }
   return withStringId(result.value);
 }

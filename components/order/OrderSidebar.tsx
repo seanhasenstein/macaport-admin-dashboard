@@ -15,6 +15,7 @@ import RefundModal from './RefundModal';
 
 import { formatPhoneNumber, formatToMoney } from '../../utils';
 import {
+  adjustmentKindLabel,
   formatBenefitAmount,
   orderAdjustments,
 } from '../../utils/memberBenefit';
@@ -367,7 +368,7 @@ export default function OrderSidebar({
                 {adjustments.map((adjustment, i) => (
                   <OrderDetailItem
                     key={i}
-                    label={`${adjustment.label}${
+                    label={`${adjustmentKindLabel(adjustment.kind)}${
                       adjustment.units ? ` (${adjustment.units} free)` : ''
                     }:`}
                     value={`-${formatToMoney(-adjustment.amount, true)}`}

@@ -1,7 +1,8 @@
 import { NextApiResponse } from 'next';
 import nc from 'next-connect';
 import { ObjectId } from 'mongodb';
-import { getSession } from 'next-auth/react';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../../../../auth/[...nextauth]';
 import { withAuth } from '../../../../../../utils/withAuth';
 import { Request, Store } from '../../../../../../interfaces';
 import database from '../../../../../../middleware/db';
@@ -143,7 +144,7 @@ const handler = nc<Request, NextApiResponse>()
       });
     }
 
-    const session = await getSession({ req });
+    const session = await getServerSession(req, res, authOptions);
     const invoice = await clientInvoice.create(req.db, {
       storeId: String(store._id),
       storeName: store.name,
@@ -158,6 +159,13 @@ const handler = nc<Request, NextApiResponse>()
       createdBy: session?.user?.email ?? '',
       paid,
     });
+
+    if (!invoice) {
+      return res.status(409).json({
+        error:
+          'One of these orders was invoiced a moment ago by someone else. Reload and try again.',
+      });
+    }
 
     for (const settlement of settlements) {
       await clientInvoice.settleDrift(

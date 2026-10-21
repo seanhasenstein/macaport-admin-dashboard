@@ -44,10 +44,16 @@ const handler = nc<Request, NextApiResponse>()
         : [],
     };
 
+    // Only this order and the store name; store documents are large.
     const store = await req.db
       .collection<Store>('stores')
-      .findOne({ _id: new ObjectId(storeId) } as any);
-    const order = store?.orders.find(o => o.orderId === orderId);
+      .findOne(
+        { _id: new ObjectId(storeId), 'orders.orderId': orderId } as any,
+        {
+          projection: { name: 1, 'orders.$': 1 },
+        }
+      );
+    const order = store?.orders?.[0];
     if (!store || !order) {
       return res.status(404).json({ error: 'Order not found.' });
     }
@@ -62,10 +68,17 @@ const handler = nc<Request, NextApiResponse>()
 
     const computed = computeRefund({ order, benefit, shipping }, input);
     const split = applyChoices(computed, choices);
-    const restocking =
-      input.mode === 'items'
-        ? input.returnedItems.filter(r => choices.restock.includes(r.id))
-        : [];
+    // Restock only what this call newly accepted as returned, so a repeat
+    // submission cannot add the same garments to inventory twice.
+    const previouslyReturned = new Map(
+      (order.refund?.returnedItems ?? []).map(r => [r.id, r.quantity])
+    );
+    const restocking = split.cumulativeReturned
+      .map(r => ({
+        id: r.id,
+        quantity: r.quantity - (previouslyReturned.get(r.id) ?? 0),
+      }))
+      .filter(r => r.quantity > 0 && choices.restock.includes(r.id));
     if (
       split.card === 0 &&
       split.creditRestored === 0 &&
@@ -109,12 +122,11 @@ const handler = nc<Request, NextApiResponse>()
     };
     const updated = await req.db
       .collection('stores')
-      .findOneAndUpdate(
+      .updateOne(
         { _id: new ObjectId(storeId), 'orders.orderId': orderId },
-        { $set: { 'orders.$.refund': refund } },
-        { returnDocument: 'after' }
+        { $set: { 'orders.$.refund': refund } }
       );
-    if (!updated.value) {
+    if (updated.matchedCount !== 1) {
       console.error(
         `Refund for order ${orderId} restored ${split.creditRestored} but could not be recorded.`
       );
@@ -143,11 +155,12 @@ const handler = nc<Request, NextApiResponse>()
       }
     }
 
-    // 4. tell the customer
+    // 4. tell the customer, unless nothing changed for them (restock only)
     const sentence = customerRefundSentence(split);
-    let emailed = true;
+    let emailed = sentence !== '';
     let redirectedTo: string | null = null;
     try {
+      if (!sentence) throw new Error('skip');
       const message = refundEmail({
         firstName: order.customer.firstName,
         orderId: order.orderId,
@@ -157,11 +170,13 @@ const handler = nc<Request, NextApiResponse>()
       const result = await sendEmail({ to: order.customer.email, ...message });
       if (result.redirected) redirectedTo = result.deliveredTo;
     } catch (error) {
-      console.error('Refund email failed', error);
-      emailed = false;
+      if (!(error instanceof Error && error.message === 'skip')) {
+        console.error('Refund email failed', error);
+        emailed = false;
+      }
     }
 
-    res.json({ store: updated.value, split, emailed, redirectedTo });
+    res.json({ split, emailed, redirectedTo });
   });
 
 function readInput(body: any): RefundInput | null {

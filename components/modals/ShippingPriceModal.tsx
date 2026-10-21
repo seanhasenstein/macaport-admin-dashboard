@@ -121,7 +121,7 @@ export default function ShippingPriceModal(props: Props) {
                         isLoading={props.updateShippingDetails.isLoading}
                       />
                     ) : (
-                      'Update shipping'
+                      'Save settings'
                     )}
                   </button>
                 </div>

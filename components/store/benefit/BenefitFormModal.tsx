@@ -104,18 +104,25 @@ const FIELD_ORDER: (keyof BenefitFormValues)[] = [
 ];
 
 function FocusFirstError() {
-  const { submitCount, isValid, errors } =
+  const { submitCount, isValidating, errors } =
     useFormikContext<BenefitFormValues>();
+  const handled = React.useRef(0);
+  // Validation finishes after submitCount changes, so wait for it to settle
+  // and act once per submit.
   React.useEffect(() => {
-    if (submitCount === 0 || isValid) return;
+    if (submitCount === handled.current || isValidating) return;
     const first = FIELD_ORDER.find(key => errors[key]);
     if (!first) return;
+    handled.current = submitCount;
     const el = document.querySelector<HTMLElement>(
-      first === 'productIds' ? '.check-list input' : `[name="${first}"]`
+      first === 'productIds'
+        ? '.check-list input'
+        : first === 'funding'
+        ? '[name="funding"]'
+        : `[name="${first}"]`
     );
     el?.focus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [submitCount]);
+  }, [submitCount, isValidating, errors]);
   return null;
 }
 

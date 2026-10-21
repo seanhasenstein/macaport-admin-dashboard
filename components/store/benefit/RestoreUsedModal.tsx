@@ -61,7 +61,7 @@ export default function RestoreUsedModal(props: Props) {
         </div>
         <div className="field" style={{ marginTop: '1rem' }}>
           <label htmlFor="restore-amount">
-            Amount to restore, in whole {benefitUnitLabel(benefit.type)}
+            Amount to restore, in {benefitUnitLabel(benefit.type)}
           </label>
           <input
             ref={inputRef}

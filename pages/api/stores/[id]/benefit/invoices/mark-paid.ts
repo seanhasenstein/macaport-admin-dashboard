@@ -1,6 +1,7 @@
 import { NextApiResponse } from 'next';
 import nc from 'next-connect';
-import { getSession } from 'next-auth/react';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../../../../auth/[...nextauth]';
 import { withAuth } from '../../../../../../utils/withAuth';
 import { Request } from '../../../../../../interfaces';
 import database from '../../../../../../middleware/db';
@@ -23,7 +24,7 @@ const handler = nc<Request, NextApiResponse>()
     if (!existing || existing.storeId !== req.query.id) {
       return res.status(404).json({ error: 'Invoice not found.' });
     }
-    const session = await getSession({ req });
+    const session = await getServerSession(req, res, authOptions);
     const invoice = await clientInvoice.markPaid(
       req.db,
       id,
