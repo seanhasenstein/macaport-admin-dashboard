@@ -15,6 +15,12 @@ const handler = nc<Request, NextApiResponse>()
     if (!existing || existing.storeId !== req.query.id) {
       return res.status(404).json({ error: 'Invoice not found.' });
     }
+    if (await clientInvoice.hasLaterCredits(req.db, id)) {
+      return res.status(409).json({
+        error:
+          'A later invoice already credits the client for changes to this one. Void that invoice first, or leave this one as it is.',
+      });
+    }
     const session = await getServerSession(req, res, authOptions);
     const invoice = await clientInvoice.voidInvoice(
       req.db,

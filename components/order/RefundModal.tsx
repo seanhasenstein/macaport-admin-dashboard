@@ -47,6 +47,7 @@ export default function RefundModal({ order, store, closeModal }: Props) {
     split: RefundSplit;
     emailed: boolean;
     redirectedTo: string | null;
+    restocked: number;
   } | null>(null);
 
   const refund = useRefundMutation({ order, store });
@@ -117,7 +118,20 @@ export default function RefundModal({ order, store, closeModal }: Props) {
     ? memberDisplayName(member)
     : `${order.customer.firstName} ${order.customer.lastName}`.trim();
 
-  const sentence = split ? adminRefundSentence(split, memberName) : null;
+  const moneyMoves = Boolean(
+    split && (split.card > 0 || split.creditRestored > 0)
+  );
+  const sentence = split
+    ? moneyMoves
+      ? adminRefundSentence(split, memberName)
+      : restockIds.length > 0
+      ? `Nothing goes back to the card or to ${memberName}. ${
+          restockIds.length
+        } returned item${restockIds.length === 1 ? '' : 's'} go${
+          restockIds.length === 1 ? 'es' : ''
+        } back into inventory.`
+      : 'Nothing to refund.'
+    : null;
   const nothing =
     split &&
     split.card === 0 &&
@@ -134,6 +148,7 @@ export default function RefundModal({ order, store, closeModal }: Props) {
             split: data.split,
             emailed: data.emailed,
             redirectedTo: data.redirectedTo,
+            restocked: data.restocked,
           }),
       }
     );
@@ -163,9 +178,16 @@ export default function RefundModal({ order, store, closeModal }: Props) {
                 <h4>Recorded</h4>
                 <p>
                   On order <strong>#{order.orderId}</strong>.
-                  {done.emailed
-                    ? ' The customer has been emailed.'
-                    : ' The customer email failed to send; tell them by hand.'}
+                  {done.split.card > 0 || done.split.creditRestored > 0
+                    ? done.emailed
+                      ? ' The customer has been emailed.'
+                      : ' The customer email failed to send; tell them by hand.'
+                    : ' Nothing changed for the customer, so no email was sent.'}
+                  {done.restocked > 0
+                    ? ` ${done.restocked} item${
+                        done.restocked === 1 ? '' : 's'
+                      } went back into inventory.`
+                    : ''}
                 </p>
               </div>
               {done.redirectedTo && (
@@ -175,13 +197,17 @@ export default function RefundModal({ order, store, closeModal }: Props) {
                   the setup, not a fault.
                 </p>
               )}
-              <div className="sentence">
-                {adminRefundSentence(done.split, memberName)}
-              </div>
+              {(done.split.card > 0 || done.split.creditRestored > 0) && (
+                <div className="sentence">
+                  {adminRefundSentence(done.split, memberName)}
+                </div>
+              )}
             </section>
             <div className="form-footer">
               <p className="footer-note">
-                The card refund still needs to be made in Stripe.
+                {done.split.card > 0
+                  ? 'The card refund still needs to be made in Stripe.'
+                  : 'No card refund is needed.'}
               </p>
               <div className="buttons">
                 <button

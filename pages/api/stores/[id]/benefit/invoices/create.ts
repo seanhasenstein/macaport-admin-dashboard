@@ -112,7 +112,7 @@ const handler = nc<Request, NextApiResponse>()
     ).filter(i => i.status !== 'void');
     const settlements: {
       invoiceId: string;
-      perOrder: { orderId: string; amount: number }[];
+      perOrder: { orderId: string; amount: number; expectedSettled: number }[];
     }[] = [];
     for (const inv of earlier) {
       const drift = invoiceUnsettledDrift(inv, store.orders).filter(
@@ -132,7 +132,11 @@ const handler = nc<Request, NextApiResponse>()
       }
       settlements.push({
         invoiceId: inv._id,
-        perOrder: drift.map(d => ({ orderId: d.orderId, amount: d.amount })),
+        perOrder: drift.map(d => ({
+          orderId: d.orderId,
+          amount: d.amount,
+          expectedSettled: inv.settledDrift?.[d.orderId] ?? 0,
+        })),
       });
     }
 
@@ -167,12 +171,22 @@ const handler = nc<Request, NextApiResponse>()
       });
     }
 
+    // Settle the credits this invoice carries. If another invoice took one
+    // of them a moment ago, this invoice is withdrawn rather than crediting
+    // the client twice.
     for (const settlement of settlements) {
-      await clientInvoice.settleDrift(
+      const ok = await clientInvoice.settleDrift(
         req.db,
         settlement.invoiceId,
         settlement.perOrder
       );
+      if (!ok) {
+        await clientInvoice.deleteInvoiceAndRelease(req.db, invoice);
+        return res.status(409).json({
+          error:
+            'A credit on this invoice was just applied by another invoice. Reload and try again.',
+        });
+      }
     }
 
     res.json({ invoice });

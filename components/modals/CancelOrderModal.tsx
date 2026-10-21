@@ -55,6 +55,11 @@ export default function CancelOrderModal({
   const [restoreCredit, setRestoreCredit] = React.useState(
     Boolean(order.benefit)
   );
+  // Set when the order canceled but the credit could not come back, so the
+  // admin hears it here rather than finding out from the member.
+  const [restoreProblem, setRestoreProblem] = React.useState<string | null>(
+    null
+  );
 
   const { cancelOrder } = useOrderMutation({
     order: { ...order, items: itemsWithShouldReturn },
@@ -197,8 +202,18 @@ export default function CancelOrderModal({
                 />
                 <span>
                   Give {order.benefit.email} back the{' '}
-                  {restoredPhrase(order.benefit.type, order.benefit.used)} this
-                  order used.
+                  {restoredPhrase(
+                    order.benefit.type,
+                    Math.max(
+                      0,
+                      order.benefit.used - (order.refund?.creditRestored ?? 0)
+                    )
+                  )}{' '}
+                  this order used
+                  {(order.refund?.creditRestored ?? 0) > 0
+                    ? ' and has not already had restored'
+                    : ''}
+                  .
                   <span className="sub">
                     Untick if the member has left or the program has ended. It
                     can still be restored later from the member benefit panel.
@@ -380,7 +395,19 @@ export default function CancelOrderModal({
                 allItemsAlreadyShippedOrCanceled,
             })}
           >
-            {allItemsAlreadyShippedOrCanceled ? (
+            {restoreProblem ? (
+              <p className="restore-problem">
+                <ExclamationCircleIcon className="exclamation-icon" />
+                {restoreProblem}
+                <button
+                  type="button"
+                  className="submit-button"
+                  onClick={closeModal}
+                >
+                  Close
+                </button>
+              </p>
+            ) : allItemsAlreadyShippedOrCanceled ? (
               <p>
                 <ExclamationCircleIcon className="exclamation-icon" />
                 {orderStatus === 'Canceled' ? (
@@ -405,7 +432,15 @@ export default function CancelOrderModal({
                 onClick={() => {
                   cancelOrder.mutate(
                     { restoreCredit },
-                    { onSuccess: () => closeModal() }
+                    {
+                      onSuccess: data => {
+                        if (data?.restoreProblem) {
+                          setRestoreProblem(data.restoreProblem);
+                        } else {
+                          closeModal();
+                        }
+                      },
+                    }
                   );
                 }}
               >
@@ -544,6 +579,20 @@ const CancelOrderModalStyles = styled.div`
         text-decoration: underline;
       }
     }
+  }
+
+  .restore-problem {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: #92400e;
+  }
+
+  .restore-problem .submit-button {
+    margin-left: auto;
+    flex-shrink: 0;
   }
 
   .benefit-choice {

@@ -181,17 +181,48 @@ export async function setOrderExclusion(
 export async function settleDrift(
   db: Db,
   invoiceId: string,
-  perOrder: { orderId: string; amount: number }[]
+  perOrder: { orderId: string; amount: number; expectedSettled?: number }[]
 ) {
-  if (perOrder.length === 0) return;
+  if (perOrder.length === 0) return true;
+  // Each order's settled figure must still be what the caller read, so two
+  // invoices created at once cannot both credit the same drift.
+  const filter: Record<string, unknown> = { _id: new ObjectId(invoiceId) };
   const inc: Record<string, number> = {};
-  for (const { orderId, amount } of perOrder) {
+  for (const { orderId, amount, expectedSettled } of perOrder) {
     inc[`settledDrift.${orderId}`] = amount;
+    if (expectedSettled !== undefined) {
+      filter[`settledDrift.${orderId}`] =
+        expectedSettled === 0 ? { $in: [0, null] } : expectedSettled;
+    }
   }
-  await collection(db).updateOne(
-    { _id: new ObjectId(invoiceId) },
-    { $inc: inc, $set: { updatedAt: new Date().toISOString() } }
+  const result = await collection(db).updateOne(filter, {
+    $inc: inc,
+    $set: { updatedAt: new Date().toISOString() },
+  });
+  return result.matchedCount === 1;
+}
+
+// Whether a live later invoice carries a credit against this one. Voiding
+// such an invoice would release its orders to be billed again while the
+// client keeps a credit for a bill they never paid.
+export async function hasLaterCredits(db: Db, invoiceId: string) {
+  const n = await collection(db).countDocuments(
+    { status: { $ne: 'void' }, 'lines.adjustsInvoiceId': invoiceId },
+    { limit: 1 }
   );
+  return n > 0;
+}
+
+// Withdraws an invoice that was just created and cannot stand.
+export async function deleteInvoiceAndRelease(db: Db, invoice: ClientInvoice) {
+  await db
+    .collection('stores')
+    .updateOne(
+      { _id: new ObjectId(invoice.storeId) },
+      { $set: { 'orders.$[o].clientInvoiceId': null } },
+      { arrayFilters: [{ 'o.clientInvoiceId': invoice._id }] }
+    );
+  await collection(db).deleteOne({ _id: new ObjectId(invoice._id) });
 }
 
 // Keeps the record, releases the orders.

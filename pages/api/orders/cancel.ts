@@ -1,8 +1,9 @@
 import { NextApiResponse } from 'next';
 import nc from 'next-connect';
 import { withAuth } from '../../../utils/withAuth';
-import { getSession } from 'next-auth/react';
 import { ObjectId } from 'mongodb';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../auth/[...nextauth]';
 import { Order, OrderItem, Request } from '../../../interfaces';
 import database from '../../../middleware/db';
 import { inventoryProduct, memberBenefit, order } from '../../../db';
@@ -18,25 +19,31 @@ interface OrderWithExtendedOrderItems extends Omit<Order, 'items'> {
 const handler = nc<Request, NextApiResponse>()
   .use(database)
   .post(async (req, res) => {
-    const session = await getSession({ req });
-
+    const session = await getServerSession(req, res, authOptions);
     const userId = session?.user.id || '';
-    const canceledOrder: OrderWithExtendedOrderItems = req.body.order;
 
-    // The benefit link and any earlier refund come from the database, not
-    // the body, so a stale tab cannot restore more than the member spent.
-    const current = await req.db
-      .collection('stores')
-      .findOne(
-        { _id: new ObjectId(req.query.sid), 'orders.orderId': req.query.oid },
-        { projection: { 'orders.$': 1 } }
-      );
-    const stored = (current?.orders as Order[] | undefined)?.[0];
-    if (!stored) {
+    // Everything about the order comes from the database. The body only
+    // says which items go back into inventory, so a stale tab cannot wipe
+    // a refund, an invoice link, or a benefit recorded since it loaded.
+    const fromBody: OrderWithExtendedOrderItems | undefined = req.body.order;
+    const found = await order.getOrderById(
+      req.db,
+      req.query.sid,
+      req.query.oid
+    );
+    if (!found) {
       return res.status(404).json({ error: 'Order not found.' });
     }
-    // Carry the stored refund into the cancel write so it is not wiped.
-    canceledOrder.refund = stored.refund;
+    const stored = found.order;
+    const canceledOrder: OrderWithExtendedOrderItems = {
+      ...stored,
+      items: stored.items.map(item => ({
+        ...item,
+        shouldReturnToInventory:
+          fromBody?.items?.find(i => i.id === item.id)
+            ?.shouldReturnToInventory === true,
+      })),
+    };
 
     const result = await order.cancelOrder(
       req.db,
@@ -49,6 +56,7 @@ const handler = nc<Request, NextApiResponse>()
     // The member's credit comes back only when the admin asked for it, and
     // only what this order drew down and has not already been restored.
     let creditRestored = 0;
+    let restoreProblem: string | null = null;
     if (req.body.restoreCredit === true && stored.benefit) {
       const already = stored.refund?.creditRestored ?? 0;
       const amount = Math.max(0, (stored.benefit.used ?? 0) - already);
@@ -74,6 +82,10 @@ const handler = nc<Request, NextApiResponse>()
             }
           );
         } else {
+          restoreProblem =
+            restored === 'notFound'
+              ? `The order is canceled, but ${stored.benefit.email} is no longer on the benefit, so nothing was restored.`
+              : `The order is canceled, but ${stored.benefit.email} has less used than this order recorded, so nothing was restored. Use Restore used on the member benefit panel if some of it should come back.`;
           console.warn(
             `Cancel of ${req.query.oid}: could not restore ${amount} to ${stored.benefit.email} (${restored}).`
           );
@@ -104,7 +116,7 @@ const handler = nc<Request, NextApiResponse>()
       }
     }
 
-    res.json({ store: result, creditRestored });
+    res.json({ store: result, creditRestored, restoreProblem });
   });
 
 export default withAuth(handler);

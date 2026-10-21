@@ -2,11 +2,12 @@ import { NextApiResponse } from 'next';
 import nc from 'next-connect';
 import { ObjectId } from 'mongodb';
 import { withAuth } from '../../../utils/withAuth';
-import { Order, Request, ReturnedItem, Store } from '../../../interfaces';
+import { Order, Request, ReturnedItem } from '../../../interfaces';
 import database from '../../../middleware/db';
 import {
   inventoryProduct,
   memberBenefit,
+  order as orderModel,
   shipping as shippingModel,
 } from '../../../db';
 import {
@@ -44,19 +45,11 @@ const handler = nc<Request, NextApiResponse>()
         : [],
     };
 
-    // Only this order and the store name; store documents are large.
-    const store = await req.db
-      .collection<Store>('stores')
-      .findOne(
-        { _id: new ObjectId(storeId), 'orders.orderId': orderId } as any,
-        {
-          projection: { name: 1, 'orders.$': 1 },
-        }
-      );
-    const order = store?.orders?.[0];
-    if (!store || !order) {
+    const found = await orderModel.getOrderById(req.db, storeId, orderId);
+    if (!found) {
       return res.status(404).json({ error: 'Order not found.' });
     }
+    const { order, storeName } = found;
     if (order.orderStatus === 'Canceled') {
       return res.status(400).json({ error: 'This order is canceled.' });
     }
@@ -157,26 +150,33 @@ const handler = nc<Request, NextApiResponse>()
 
     // 4. tell the customer, unless nothing changed for them (restock only)
     const sentence = customerRefundSentence(split);
-    let emailed = sentence !== '';
+    let emailed = false;
     let redirectedTo: string | null = null;
-    try {
-      if (!sentence) throw new Error('skip');
-      const message = refundEmail({
-        firstName: order.customer.firstName,
-        orderId: order.orderId,
-        storeName: store.name,
-        sentence,
-      });
-      const result = await sendEmail({ to: order.customer.email, ...message });
-      if (result.redirected) redirectedTo = result.deliveredTo;
-    } catch (error) {
-      if (!(error instanceof Error && error.message === 'skip')) {
+    if (sentence) {
+      try {
+        const message = refundEmail({
+          firstName: order.customer.firstName,
+          orderId: order.orderId,
+          storeName,
+          sentence,
+        });
+        const result = await sendEmail({
+          to: order.customer.email,
+          ...message,
+        });
+        if (result.redirected) redirectedTo = result.deliveredTo;
+        emailed = true;
+      } catch (error) {
         console.error('Refund email failed', error);
-        emailed = false;
       }
     }
 
-    res.json({ split, emailed, redirectedTo });
+    res.json({
+      split,
+      emailed,
+      redirectedTo,
+      restocked: restocking.reduce((sum, r) => sum + r.quantity, 0),
+    });
   });
 
 function readInput(body: any): RefundInput | null {

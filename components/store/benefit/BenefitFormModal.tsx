@@ -111,15 +111,11 @@ function FocusFirstError() {
   // and act once per submit.
   React.useEffect(() => {
     if (submitCount === handled.current || isValidating) return;
+    handled.current = submitCount;
     const first = FIELD_ORDER.find(key => errors[key]);
     if (!first) return;
-    handled.current = submitCount;
     const el = document.querySelector<HTMLElement>(
-      first === 'productIds'
-        ? '.check-list input'
-        : first === 'funding'
-        ? '[name="funding"]'
-        : `[name="${first}"]`
+      first === 'productIds' ? '.check-list input' : `[name="${first}"]`
     );
     el?.focus();
   }, [submitCount, isValidating, errors]);

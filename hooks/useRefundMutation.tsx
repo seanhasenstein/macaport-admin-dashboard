@@ -29,6 +29,7 @@ export function useRefundMutation({ order, store }: Props) {
         split: RefundSplit;
         emailed: boolean;
         redirectedTo: string | null;
+        restocked: number;
       };
     },
     {

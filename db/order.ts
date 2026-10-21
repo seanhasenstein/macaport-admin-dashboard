@@ -10,10 +10,19 @@ import {
 import { getNextOrderItemStatus } from '../utils/orderItem';
 import { handleUpdateOrderStatus } from '../utils/order';
 
+// One order and the store's name, without loading the rest of the store
+// document, which can run to many megabytes.
 export async function getOrderById(db: Db, storeId: string, orderId: string) {
-  const result = await db.collection<Store>('stores').findOne({ _id: storeId });
-  const order = result?.orders.find(r => r.orderId === orderId);
-  return order;
+  if (!ObjectId.isValid(storeId)) return undefined;
+  const result = await db
+    .collection<StoreWithId>('stores')
+    .findOne(
+      { _id: new ObjectId(storeId), 'orders.orderId': orderId },
+      { projection: { name: 1, 'orders.$': 1 } }
+    );
+  const order = result?.orders?.[0];
+  if (!order) return undefined;
+  return { order, storeName: result?.name ?? '' };
 }
 
 export async function updateOrderStatus(

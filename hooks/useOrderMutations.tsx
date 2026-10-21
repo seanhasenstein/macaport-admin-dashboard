@@ -45,8 +45,12 @@ export function useOrderMutation({ order, store }: Props) {
         throw new Error('Failed to cancel the order');
       }
 
-      const data: { store: Store } = await response.json();
-      return data.store;
+      const data: {
+        store: Store;
+        creditRestored: number;
+        restoreProblem: string | null;
+      } = await response.json();
+      return data;
     },
     {
       onMutate: async () => {
@@ -106,6 +110,8 @@ export function useOrderMutation({ order, store }: Props) {
       onSettled: () => {
         queryClient.invalidateQueries('stores');
         queryClient.invalidateQueries('inventory-products');
+        // The member's usage may have changed.
+        queryClient.invalidateQueries('benefit');
       },
     }
   );

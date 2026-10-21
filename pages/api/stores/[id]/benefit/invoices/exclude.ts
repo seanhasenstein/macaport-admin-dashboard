@@ -1,12 +1,11 @@
 import { NextApiResponse } from 'next';
 import nc from 'next-connect';
-import { ObjectId } from 'mongodb';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../auth/[...nextauth]';
 import { withAuth } from '../../../../../../utils/withAuth';
-import { Order, Request } from '../../../../../../interfaces';
+import { Request } from '../../../../../../interfaces';
 import database from '../../../../../../middleware/db';
-import { clientInvoice } from '../../../../../../db';
+import { clientInvoice, order as orderModel } from '../../../../../../db';
 import { benefitForStore } from '../../../../../../utils/benefitApi';
 
 // Takes an order off the invoiceable list, with a reason, or puts it back.
@@ -29,13 +28,8 @@ const handler = nc<Request, NextApiResponse>()
         .json({ error: 'Say why this order is not being billed.' });
     }
 
-    const store = await req.db
-      .collection('stores')
-      .findOne(
-        { _id: new ObjectId(req.query.id), 'orders.orderId': orderId },
-        { projection: { 'orders.$': 1 } }
-      );
-    const order = (store?.orders as Order[] | undefined)?.[0];
+    const found = await orderModel.getOrderById(req.db, req.query.id, orderId);
+    const order = found?.order;
     if (!order || order.benefit?.benefitId !== benefit._id) {
       return res
         .status(404)

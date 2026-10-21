@@ -1,6 +1,7 @@
 import { NextApiResponse } from 'next';
 import nc from 'next-connect';
-import { getSession } from 'next-auth/react';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../auth/[...nextauth]';
 
 import database from '../../../middleware/db';
 import { store } from '../../../db';
@@ -15,7 +16,7 @@ const handler = nc<Request, NextApiResponse>()
   .post(async (req, res) => {
     const storeId = req.query.sid as string;
 
-    const session = await getSession({ req });
+    const session = await getServerSession(req, res, authOptions);
     const userId = session?.user.id || '';
 
     const queriedStore: Store = await store.getStoreById(req.db, storeId);
