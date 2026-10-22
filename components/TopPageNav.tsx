@@ -16,13 +16,17 @@ export default function TopPageNav() {
   const [showSearchModal, setShowSearchModal] = React.useState(false);
   const [showShippingModal, setShowShippingModal] = React.useState(false);
 
-  const {
-    data: shippingData,
-    // isLoading, todo: handle loading
-    // isError, todo: handle error
-  } = useQuery(['shipping'], fetchShippingData);
+  const { data: shippingData, isSuccess } = useQuery(
+    ['shipping'],
+    fetchShippingData
+  );
+  // A fresh database has no settings yet; offer to create them.
+  const settingsMissing = isSuccess && !shippingData;
+  const blankSettings = { _id: '', price: 0, freeMinimum: 0 };
 
-  const { updateShippingDetails } = useShippingDetailsMutation(shippingData);
+  const { updateShippingDetails } = useShippingDetailsMutation(
+    shippingData ?? undefined
+  );
 
   const openSearchModal = () => setShowSearchModal(true);
   const closeSearchModal = () => setShowSearchModal(false);
@@ -57,11 +61,19 @@ export default function TopPageNav() {
             setShowShippingModal={setShowShippingModal}
             successfulMutation={updateShippingDetails.isSuccess}
           />
+        ) : settingsMissing ? (
+          <button
+            type="button"
+            className="setup-settings-button"
+            onClick={() => setShowShippingModal(true)}
+          >
+            Set up store settings
+          </button>
         ) : null}
       </TopPageNavStyles>
-      {showShippingModal && shippingData ? (
+      {showShippingModal && (shippingData || settingsMissing) ? (
         <ShippingPriceModal
-          initialValues={shippingData}
+          initialValues={shippingData ?? blankSettings}
           showModal={showShippingModal}
           setShowModal={setShowShippingModal}
           updateShippingDetails={updateShippingDetails}
@@ -76,6 +88,18 @@ export default function TopPageNav() {
 }
 
 const TopPageNavStyles = styled.div`
+  .setup-settings-button {
+    padding: 0.5rem 0.875rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #92400e;
+    background-color: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
   margin: 0 0 3.5rem;
   display: flex;
   justify-content: space-between;

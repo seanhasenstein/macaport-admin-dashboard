@@ -57,7 +57,13 @@ const handler = nc<Request, NextApiResponse>()
     const benefit = order.benefit
       ? await memberBenefit.getById(req.db, order.benefit.benefitId)
       : null;
-    const shipping = await shippingModel.getShippingData(req.db);
+    const shipping = await shippingModel.findShippingData(req.db);
+    if (!shipping) {
+      return res.status(409).json({
+        error:
+          'Store settings have not been set up yet. Open the settings menu next to Search and save them first.',
+      });
+    }
 
     const computed = computeRefund({ order, benefit, shipping }, input);
     const split = applyChoices(computed, choices);

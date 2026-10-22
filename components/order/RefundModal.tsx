@@ -400,6 +400,12 @@ export default function RefundModal({ order, store, closeModal }: Props) {
                   </p>
                 </div>
 
+                {shippingQuery.isSuccess && !shippingQuery.data && (
+                  <p className="hint error-hint">
+                    Store settings have not been set up yet. Save them from the
+                    settings menu next to Search, then reopen this calculator.
+                  </p>
+                )}
                 {!ready &&
                   (shippingQuery.isLoading || benefitQuery.isLoading) && (
                     <p className="hint">Loading pricing details...</p>
