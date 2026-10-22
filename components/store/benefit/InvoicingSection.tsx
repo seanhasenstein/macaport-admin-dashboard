@@ -346,7 +346,7 @@ export default function InvoicingSection({ benefit, store }: Props) {
           </p>
         )}
 
-        {(visible.length > 0 || adjustments.length > 0) && (
+        {visible.length > 0 && (
           <div className="totals-row">
             <div className="totals">
               <span>
@@ -355,7 +355,10 @@ export default function InvoicingSection({ benefit, store }: Props) {
               {adjustmentTotal !== 0 && (
                 <span>Credits -{formatToMoney(-adjustmentTotal, true)}</span>
               )}
-              <strong>Total {formatToMoney(totals.total, true)}</strong>
+              <strong>
+                Total {totals.total < 0 ? '-' : ''}
+                {formatToMoney(Math.abs(totals.total), true)}
+              </strong>
             </div>
             <button
               type="button"
@@ -370,6 +373,18 @@ export default function InvoicingSection({ benefit, store }: Props) {
               {chosen.length > 0 ? ` for ${chosen.length}` : ''}
             </button>
           </div>
+        )}
+        {chosen.length > 0 && totals.total < 0 && (
+          <p className="awaiting">
+            The credits owed back are more than the selected orders. Select more
+            orders, or issue a credit memo in QuickBooks.
+          </p>
+        )}
+        {visible.length === 0 && adjustments.length > 0 && (
+          <p className="awaiting">
+            These credits go on the next invoice for this benefit. If there will
+            not be one, issue a credit memo in QuickBooks.
+          </p>
         )}
       </div>
 
