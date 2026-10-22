@@ -19,48 +19,46 @@ const handler = nc<Request, NextApiResponse>()
       update
     );
 
-    const allStores = await dbStore.getStores(req.db);
+    // Only the stores that carry this inventory product, and only their
+    // products array — not every store with all of its orders.
+    const affectedStores = await dbStore.getStoresWithInventoryProduct(
+      req.db,
+      update.inventoryProductId
+    );
 
-    for (const store of allStores) {
-      if (
-        store.products?.some(
-          p => p.inventoryProductId === update.inventoryProductId
-        )
-      ) {
-        const updatedStoreProducts = store.products.map(p => {
-          if (p.inventoryProductId === update.inventoryProductId) {
-            const updatedProductSkus = updateStoreProductSkus(p, update);
-            const sizes = update.sizes.map(s => {
-              const prevSize = p.sizes.find(ps => ps.id === s.id);
-              return { ...prevSize, ...s, price: prevSize?.price || 0 };
-            });
-            const colors = update.colors.map(c => {
-              const prevColor = p.colors.find(pc => pc.id === c.id);
-              return {
-                ...prevColor,
-                ...c,
-                primaryImage: prevColor?.primaryImage || '',
-                secondaryImages: prevColor?.secondaryImages || [],
-              };
-            });
-
+    for (const store of affectedStores) {
+      const updatedStoreProducts = store.products.map(p => {
+        if (p.inventoryProductId === update.inventoryProductId) {
+          const updatedProductSkus = updateStoreProductSkus(p, update);
+          const sizes = update.sizes.map(s => {
+            const prevSize = p.sizes.find(ps => ps.id === s.id);
+            return { ...prevSize, ...s, price: prevSize?.price || 0 };
+          });
+          const colors = update.colors.map(c => {
+            const prevColor = p.colors.find(pc => pc.id === c.id);
             return {
-              ...p,
-              merchandiseCode: update.merchandiseCode,
-              sizes,
-              colors,
-              productSkus: updatedProductSkus,
+              ...prevColor,
+              ...c,
+              primaryImage: prevColor?.primaryImage || '',
+              secondaryImages: prevColor?.secondaryImages || [],
             };
-          }
+          });
 
-          return p;
-        });
+          return {
+            ...p,
+            merchandiseCode: update.merchandiseCode,
+            sizes,
+            colors,
+            productSkus: updatedProductSkus,
+          };
+        }
 
-        // invoke a db storeUpdate
-        await dbStore.updateStore(req.db, store._id, {
-          products: updatedStoreProducts,
-        });
-      }
+        return p;
+      });
+
+      await dbStore.updateStore(req.db, store._id, {
+        products: updatedStoreProducts,
+      });
     }
 
     res.json({ inventoryProduct: result });

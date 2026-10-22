@@ -216,8 +216,19 @@ export interface StoresTableOrders {
   total: number;
 }
 
-export interface StoresTableStore extends Omit<Store, 'products'> {
+/**
+ * One row of the homepage / "All stores" table. Deliberately NOT derived from
+ * `Store`: the table renders a handful of scalars, and extending `Store` used
+ * to drag the full `orders[]` (customer PII, ~1 MB) into every table payload.
+ * Produced by the aggregation in db/store.ts, never from a full Store doc.
+ */
+export interface StoresTableStore {
+  _id: string;
+  name: string;
+  openDate: string;
+  closeDate: string | null;
   products: number;
+  ordersCount: number;
   ordersStatusTotals: StoresTableOrders;
 }
 

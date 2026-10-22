@@ -9,12 +9,12 @@ import Modal from '../Modal';
 
 import { useStoreMutations } from '../../hooks/useStoreMutations';
 
-import { Store, StoresTableStore } from '../../interfaces';
+import { Store } from '../../interfaces';
 
 type Props = {
   closeModal: () => void;
   isOpen: boolean;
-  store: Store | StoresTableStore;
+  store: Store;
 };
 
 export default function TriggerShipmentModal({
