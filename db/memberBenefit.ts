@@ -1,4 +1,9 @@
-import { Db, ObjectId } from 'mongodb';
+import {
+  CreateIndexesOptions,
+  Db,
+  IndexSpecification,
+  ObjectId,
+} from 'mongodb';
 import {
   BenefitAccess,
   BenefitFunding,
@@ -100,7 +105,48 @@ export async function create(
     .collection('stores')
     .updateOne({ _id: store._id }, { $set: { benefitId, updatedAt: now } });
 
+  await ensureCodeIndexes(db);
+
   return withStringId({ ...doc, _id: inserted.insertedId });
+}
+
+// The storefront's one-time sign-in codes need two indexes on its
+// memberBenefitCodes collection: a TTL index so expired codes are swept,
+// and a unique index so two requests racing for the same email cannot
+// leave two codes. They used to be created only by the storefront's
+// scripts, so a database whose benefits came from the dashboard never got
+// them. This is the one place the dashboard touches that collection, and
+// it only provisions indexes; it never reads or writes a code.
+//
+// createIndex is a no-op when the index already exists. If one exists with
+// the wrong options Mongo refuses, and this logs it rather than dropping an
+// index from a web request; the storefront's
+// scripts/check-member-benefit-indexes.js --apply repairs it.
+const CODE_INDEXES: {
+  spec: IndexSpecification;
+  options: CreateIndexesOptions & { name: string };
+}[] = [
+  {
+    spec: { expires: 1 },
+    options: { name: 'expires_1', expireAfterSeconds: 0 },
+  },
+  {
+    spec: { benefitId: 1, email: 1 },
+    options: { name: 'benefitId_1_email_1', unique: true },
+  },
+];
+
+export async function ensureCodeIndexes(db: Db) {
+  for (const { spec, options } of CODE_INDEXES) {
+    try {
+      await db.collection('memberBenefitCodes').createIndex(spec, options);
+    } catch (error) {
+      console.warn(
+        `memberBenefitCodes index ${options.name} could not be ensured; run the storefront's scripts/check-member-benefit-indexes.js --apply.`,
+        error instanceof Error ? error.message : error
+      );
+    }
+  }
 }
 
 export interface UpdateBenefitInput {
