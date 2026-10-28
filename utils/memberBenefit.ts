@@ -41,11 +41,10 @@ export function orderAdjustments(order: Order): Adjustment[] {
     adjustments.push({
       kind: 'credit',
       label: 'Sheboygan Lutheran Staff Credit',
-      amount: -(
-        order.sheboyganLutheranStaffDiscount.discount ||
-        order.summary.discount ||
-        0
-      ),
+      // Same rule as the storefront and the migration script: the order's
+      // own figure only. summary.discount also carries Switch Fitness
+      // amounts, so it is not a safe fallback.
+      amount: -(order.sheboyganLutheranStaffDiscount.discount || 0),
     });
   }
 
