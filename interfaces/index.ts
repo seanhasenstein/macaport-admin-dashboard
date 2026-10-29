@@ -486,6 +486,8 @@ export type OrderSearchResult = {
   totalItems: number;
   uniqueItems: number;
   orderTotal: number;
+  // "Credit $63.30" and the like, when the order used a member benefit.
+  benefitTag?: string | null;
   status: string;
   createdAt: string;
 };

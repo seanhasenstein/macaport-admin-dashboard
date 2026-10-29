@@ -48,6 +48,9 @@ export default function OrderSearchResult(props: Props) {
                 </p>
                 <p className="order-total">
                   Total: {formatToMoney(props.orderTotal, true)}
+                  {props.benefitTag && (
+                    <span className="benefit-tag">{props.benefitTag}</span>
+                  )}
                 </p>
               </div>
               <div className={`order-status ${props.status}`}>
@@ -151,6 +154,17 @@ const OrderSearchResultStyles = styled.li`
         font-size: 0.6875rem;
         font-weight: 400;
         color: #4b5563;
+      }
+      .benefit-tag {
+        margin-left: 0.375rem;
+        padding: 0.0625rem 0.375rem;
+        font-size: 0.625rem;
+        font-weight: 600;
+        color: #1e40af;
+        background-color: #dbeafe;
+        border: 1px solid #bfdbfe;
+        border-radius: 0.25rem;
+        white-space: nowrap;
       }
       .order-status {
         margin: 0.3125rem 0 0;

@@ -81,6 +81,24 @@ export function orderBenefitAmount(order: Order) {
   );
 }
 
+// A short tag for an order that used a member benefit, for lists where only
+// the total shows: "Credit $63.30", "Discount $25.00", "Free item". Null when
+// no benefit applied. Reads through orderAdjustments, so legacy orders tag too.
+export function orderBenefitTag(order: Order): string | null {
+  const used = orderAdjustments(order).filter(a => a.kind !== 'waived');
+  if (used.length === 0) return null;
+  const kind = used[0].kind;
+  if (kind === 'freeItem') {
+    const units = used.reduce((sum, a) => sum + (a.units ?? 1), 0);
+    return units === 1 ? 'Free item' : `${units} free items`;
+  }
+  const amount = used.reduce((sum, a) => sum - a.amount, 0);
+  return `${kind === 'credit' ? 'Credit' : 'Discount'} ${formatToMoney(
+    amount,
+    true
+  )}`;
+}
+
 export function adjustmentKindLabel(kind: Adjustment['kind']) {
   switch (kind) {
     case 'freeItem':
