@@ -84,7 +84,13 @@ export async function cancelOrder(
         'orders.$[order].refund.card': order.summary.total,
       },
     },
-    { arrayFilters: [{ 'order.orderId': orderId }], returnDocument: 'after' }
+    // Only an uncanceled order: two cancels racing cannot both write.
+    {
+      arrayFilters: [
+        { 'order.orderId': orderId, 'order.orderStatus': { $ne: 'Canceled' } },
+      ],
+      returnDocument: 'after',
+    }
   );
 
   return result.value;

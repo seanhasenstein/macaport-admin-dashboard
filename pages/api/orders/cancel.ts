@@ -36,6 +36,11 @@ const handler = nc<Request, NextApiResponse>()
       return res.status(404).json({ error: 'Order not found.' });
     }
     const stored = found.order;
+    // A second cancel would write the zeroed total over the card refund
+    // still owed, and the reminder to make it in Stripe would vanish.
+    if (stored.orderStatus === 'Canceled') {
+      return res.status(409).json({ error: 'This order is already canceled.' });
+    }
     const canceledOrder: OrderWithExtendedOrderItems = {
       ...stored,
       items: stored.items.map(item => ({
