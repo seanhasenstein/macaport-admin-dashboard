@@ -145,15 +145,49 @@ const MemberRowStyles = styled.li`
     z-index: 1;
   }
 
+  /* The ring is drawn on a layer above the row's contents, so the
+     expanded panel's backgrounds cannot cover it, and the row clips its
+     contents to its own rounded corners at the bottom of the list. */
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 0 solid #1c44b9;
+    pointer-events: none;
+  }
+
   &.open {
     border-color: #1c44b9;
-    box-shadow: inset 0 0 0 1px #1c44b9;
     z-index: 2;
   }
 
+  &.open::after {
+    border-width: 1px;
+  }
+
+  /* Two open rows in a row share one edge, so the lower one drops its
+     inner top line and the shared edge stays two pixels. */
+  &.open + &.open::after {
+    border-top-width: 0;
+  }
+
   &:has(.row:focus-visible) {
-    box-shadow: inset 0 0 0 2px #1c44b9;
     z-index: 3;
+  }
+
+  &:has(.row:focus-visible)::after {
+    border-width: 2px;
+  }
+
+  &:last-child {
+    border-radius: 0 0 0.375rem 0.375rem;
+  }
+
+  /* The ring sits inside the 1px border, so its curve is 1px tighter. */
+  &:last-child::after {
+    border-radius: 0 0 calc(0.375rem - 1px) calc(0.375rem - 1px);
   }
 
   .row {
