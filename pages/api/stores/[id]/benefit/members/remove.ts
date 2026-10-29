@@ -20,6 +20,15 @@ const handler = nc<Request, NextApiResponse>()
       benefit._id,
       email
     );
+    if (updated === 'notFound') {
+      return res.status(404).json({ error: 'No member with that email.' });
+    }
+    if (updated === 'hasUsage') {
+      return res.status(409).json({
+        error:
+          'This member has used their benefit, so they cannot be removed. End their benefit instead; it keeps their history.',
+      });
+    }
     res.json({ benefit: updated });
   });
 

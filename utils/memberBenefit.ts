@@ -81,6 +81,27 @@ export function orderBenefitAmount(order: Order) {
   );
 }
 
+// Whether the member an order drew on has had their benefit ended. Credit
+// is not restored to them: they could not spend it.
+export function memberEnded(
+  benefit: Pick<MemberBenefit, 'members'> | null | undefined,
+  email: string | undefined
+) {
+  if (!benefit || !email) return false;
+  const member = benefit.members.find(
+    m => normalizeEmail(m.email) === normalizeEmail(email)
+  );
+  return Boolean(member && (member as { endedAt?: string }).endedAt);
+}
+
+// Cents recorded as owed back to the card that nobody has yet confirmed
+// refunding in Stripe. Only refunds recorded since this was tracked count:
+// older canceled orders carry an amount but no `card` figure.
+export function stripeRefundDue(order: Order) {
+  const card = order.refund?.card ?? 0;
+  return Math.max(0, card - (order.refund?.stripeRefunded ?? 0));
+}
+
 // A short tag for an order that used a member benefit, for lists where only
 // the total shows: "Credit $63.30", "Discount $25.00", "Free item". Null when
 // no benefit applied. Reads through orderAdjustments, so legacy orders tag too.

@@ -18,6 +18,7 @@ type Props = {
   onRestore: () => void;
   onAllowance: () => void;
   onRemove: () => void;
+  onEnd: () => void;
 };
 
 export default function MemberRow({
@@ -28,9 +29,12 @@ export default function MemberRow({
   onRestore,
   onAllowance,
   onRemove,
+  onEnd,
 }: Props) {
   const [open, setOpen] = React.useState(false);
   const usage = memberUsage(benefit, member);
+  // Set by End benefit; a dashboard-only field on the member.
+  const ended = Boolean((member as { endedAt?: string }).endedAt);
   const name = [member.firstName, member.lastName].filter(Boolean).join(' ');
 
   const linked = (member.orderIds ?? []).map(orderId => ({
@@ -53,11 +57,15 @@ export default function MemberRow({
         <span className="usage">
           {formatBenefitAmount(benefit.type, usage.used)} of{' '}
           {formatBenefitAmount(benefit.type, usage.allowance)}
-          {member.allowance !== undefined && (
+          {ended ? (
+            <span className="override ended" title="Benefit ended">
+              ended
+            </span>
+          ) : member.allowance !== undefined ? (
             <span className="override" title="Allowance override">
               override
             </span>
-          )}
+          ) : null}
         </span>
         <span className="orders-count">
           {linked.length} order{linked.length === 1 ? '' : 's'}
@@ -120,13 +128,23 @@ export default function MemberRow({
             <button type="button" className="row-button" onClick={onAllowance}>
               Set allowance
             </button>
-            <button
-              type="button"
-              className="row-button danger"
-              onClick={onRemove}
-            >
-              Remove
-            </button>
+            {usage.used === 0 ? (
+              <button
+                type="button"
+                className="row-button danger"
+                onClick={onRemove}
+              >
+                Remove
+              </button>
+            ) : !ended ? (
+              <button
+                type="button"
+                className="row-button danger"
+                onClick={onEnd}
+              >
+                End benefit
+              </button>
+            ) : null}
           </div>
         </div>
       )}
@@ -237,6 +255,11 @@ const MemberRowStyles = styled.li`
   .usage {
     color: #374151;
     white-space: nowrap;
+  }
+
+  .override.ended {
+    color: #4b5563;
+    background-color: #f3f4f6;
   }
 
   .override {

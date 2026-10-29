@@ -17,6 +17,8 @@ import { formatPhoneNumber, formatToMoney } from '../../utils';
 
 import { Order, Store } from '../../interfaces';
 import { restoredPhrase } from '../../utils/refund';
+import { memberEnded } from '../../utils/memberBenefit';
+import { useBenefitQuery } from '../../hooks/useBenefitQuery';
 
 type Props = {
   isOpen: boolean;
@@ -55,6 +57,8 @@ export default function CancelOrderModal({
   const [restoreCredit, setRestoreCredit] = React.useState(
     Boolean(order.benefit)
   );
+  const benefitQuery = useBenefitQuery(store._id, Boolean(order.benefit));
+  const ended = memberEnded(benefitQuery.data, order.benefit?.email);
   // Set when the order canceled but the credit could not come back, so the
   // admin hears it here rather than finding out from the member.
   const [restoreProblem, setRestoreProblem] = React.useState<string | null>(
@@ -192,7 +196,15 @@ export default function CancelOrderModal({
                 </p>
               </div>
             </div>
-            {order.benefit && (
+            {order.benefit && ended && (
+              <div className="benefit-choice">
+                <span>
+                  {order.benefit.email}&apos;s benefit was ended, so nothing
+                  this order used will be restored to it.
+                </span>
+              </div>
+            )}
+            {order.benefit && !ended && (
               <label className="benefit-choice" htmlFor="cancel-restore-credit">
                 <input
                   id="cancel-restore-credit"
@@ -431,7 +443,7 @@ export default function CancelOrderModal({
                 className="submit-button"
                 onClick={() => {
                   cancelOrder.mutate(
-                    { restoreCredit },
+                    { restoreCredit: restoreCredit && !ended },
                     {
                       onSuccess: data => {
                         if (data?.restoreProblem) {

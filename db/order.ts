@@ -65,34 +65,27 @@ export async function cancelOrder(
     // quantity: 0,
     // itemTotal: 0,
   }));
-  const updatedOrder: Order = {
-    ...order,
-    orderStatus: 'Canceled',
-    items: updatedItems,
-    summary: {
-      ...order.summary,
-      // todo: handle this based on refund status?
-      subtotal: 0,
-      salesTax: 0,
-      shipping: 0,
-      total: 0,
+  // Only what cancelling changes is written, so anything saved on the
+  // order since it was read (a Stripe confirmation, an invoice link) stays.
+  // The card refund is the whole charge; it is made in Stripe by hand and
+  // confirmed on the order like any other.
+  const result = await db.collection<StoreWithId>('stores').findOneAndUpdate(
+    { _id: new ObjectId(storeId) },
+    {
+      $set: {
+        'orders.$[order].orderStatus': 'Canceled',
+        'orders.$[order].items': updatedItems,
+        'orders.$[order].summary.subtotal': 0,
+        'orders.$[order].summary.salesTax': 0,
+        'orders.$[order].summary.shipping': 0,
+        'orders.$[order].summary.total': 0,
+        'orders.$[order].refund.status': 'Full',
+        'orders.$[order].refund.amount': order.summary.total,
+        'orders.$[order].refund.card': order.summary.total,
+      },
     },
-    // todo: should we handle this differently?
-    // Keep what an earlier partial refund recorded; only the status moves.
-    refund: {
-      ...order.refund,
-      status: 'Full',
-      amount: order.summary.total,
-    },
-  };
-
-  const result = await db
-    .collection<StoreWithId>('stores')
-    .findOneAndUpdate(
-      { _id: new ObjectId(storeId) },
-      { $set: { 'orders.$[order]': updatedOrder } },
-      { arrayFilters: [{ 'order.orderId': orderId }], returnDocument: 'after' }
-    );
+    { arrayFilters: [{ 'order.orderId': orderId }], returnDocument: 'after' }
+  );
 
   return result.value;
 }

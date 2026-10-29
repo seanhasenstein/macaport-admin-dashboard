@@ -110,6 +110,12 @@ export function useBenefitMutations({ storeId }: Props) {
     { onSuccess: setCache, onSettled: settled }
   );
 
+  const endMember = useMutation(
+    (email: string) =>
+      postJson<{ benefit: MemberBenefit }>(`${base}/members/end`, { email }),
+    { onSuccess: setCache, onSettled: settled }
+  );
+
   const restoreUsed = useMutation(
     ({ email, amount }: { email: string; amount: number }) =>
       postJson<{ benefit: MemberBenefit }>(`${base}/members/restore`, {
@@ -135,6 +141,7 @@ export function useBenefitMutations({ storeId }: Props) {
     deleteBenefit,
     addMembers,
     removeMember,
+    endMember,
     restoreUsed,
     setAllowance,
   };

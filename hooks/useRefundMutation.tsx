@@ -7,6 +7,25 @@ type Props = {
   store: Store | undefined;
 };
 
+export function useMarkStripeRefunded({ order, store }: Props) {
+  const queryClient = useQueryClient();
+  return useMutation(
+    async () => {
+      if (!order || !store) throw new Error('No order selected.');
+      const response = await fetch(
+        `/api/orders/mark-stripe-refunded?sid=${store._id}&oid=${order.orderId}`,
+        { method: 'POST' }
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || 'Could not record the Stripe refund.');
+      }
+      return data;
+    },
+    { onSettled: () => queryClient.invalidateQueries('stores') }
+  );
+}
+
 export function useRefundMutation({ order, store }: Props) {
   const queryClient = useQueryClient();
 

@@ -308,6 +308,12 @@ export interface OrderRefund {
   // Everything sent back so far, by order item id.
   returnedItems?: ReturnedItem[];
   updatedAt?: string;
+  // Cents of `card` someone has confirmed they refunded in Stripe. The
+  // dashboard never calls Stripe, so this is how a recorded card refund is
+  // closed off. Anything in `card` beyond it is still owed to the customer.
+  stripeRefunded?: number;
+  stripeRefundedAt?: string;
+  stripeRefundedBy?: string;
 }
 
 export interface Order {

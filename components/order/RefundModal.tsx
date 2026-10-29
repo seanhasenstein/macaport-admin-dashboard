@@ -18,6 +18,7 @@ import {
 } from '../../utils/refund';
 import {
   memberDisplayName,
+  memberEnded,
   normalizeEmail,
   parseDollars,
 } from '../../utils/memberBenefit';
@@ -89,6 +90,7 @@ export default function RefundModal({ order, store, closeModal }: Props) {
   const ready =
     shippingQuery.data && (!order.benefit || benefitQuery.data !== undefined);
 
+  const ended = memberEnded(benefitQuery.data, order.benefit?.email);
   const computed =
     ready && input && shippingQuery.data
       ? computeRefund(
@@ -101,7 +103,10 @@ export default function RefundModal({ order, store, closeModal }: Props) {
         )
       : null;
   const split = computed
-    ? applyChoices(computed, { restoreCredit, restock: [] })
+    ? applyChoices(computed, {
+        restoreCredit: restoreCredit && !ended,
+        restock: [],
+      })
     : null;
   const restockIds =
     input?.mode === 'items'
@@ -141,7 +146,7 @@ export default function RefundModal({ order, store, closeModal }: Props) {
   const handleConfirm = () => {
     if (!input) return;
     refund.mutate(
-      { ...input, restoreCredit, restock: restockIds },
+      { ...input, restoreCredit: restoreCredit && !ended, restock: restockIds },
       {
         onSuccess: data =>
           setDone({
@@ -206,7 +211,7 @@ export default function RefundModal({ order, store, closeModal }: Props) {
             <div className="form-footer">
               <p className="footer-note">
                 {done.split.card > 0
-                  ? 'The card refund still needs to be made in Stripe.'
+                  ? 'Make the card refund in Stripe, then mark it refunded on the order.'
                   : 'No card refund is needed.'}
               </p>
               <div className="buttons">
@@ -419,7 +424,13 @@ export default function RefundModal({ order, store, closeModal }: Props) {
                   </p>
                 )}
 
-                {computed && computed.creditRestored > 0 && (
+                {computed && computed.creditRestored > 0 && ended && (
+                  <p className="hint warn-hint">
+                    {memberName}&apos;s benefit was ended, so no credit is
+                    restored. The card refund is unaffected.
+                  </p>
+                )}
+                {computed && computed.creditRestored > 0 && !ended && (
                   <div className="field">
                     <div className="checkbox-row">
                       <label htmlFor="refund-restore-credit">

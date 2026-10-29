@@ -2,7 +2,7 @@ import { NextApiResponse } from 'next';
 import nc from 'next-connect';
 import { ObjectId } from 'mongodb';
 import { withAuth } from '../../../utils/withAuth';
-import { Order, Request, ReturnedItem } from '../../../interfaces';
+import { Request, ReturnedItem } from '../../../interfaces';
 import database from '../../../middleware/db';
 import {
   inventoryProduct,
@@ -10,6 +10,7 @@ import {
   order as orderModel,
   shipping as shippingModel,
 } from '../../../db';
+import { memberEnded } from '../../../utils/memberBenefit';
 import {
   applyChoices,
   computeRefund,
@@ -57,6 +58,11 @@ const handler = nc<Request, NextApiResponse>()
     const benefit = order.benefit
       ? await memberBenefit.getById(req.db, order.benefit.benefitId)
       : null;
+    // A member whose benefit was ended could not spend restored credit, so
+    // none is restored and the customer is not told it was.
+    if (memberEnded(benefit, order.benefit?.email)) {
+      choices.restoreCredit = false;
+    }
     const shipping = await shippingModel.findShippingData(req.db);
     if (!shipping) {
       return res.status(409).json({
@@ -111,20 +117,21 @@ const handler = nc<Request, NextApiResponse>()
     }
 
     // 2. record it on the order
-    const refund: Order['refund'] = {
-      status: split.full ? 'Full' : 'Partial',
-      amount: split.cumulativeCard,
-      card: split.cumulativeCard,
-      creditRestored: split.cumulativeRestored,
-      returnedItems: split.cumulativeReturned,
-      updatedAt: new Date().toISOString(),
-    };
-    const updated = await req.db
-      .collection('stores')
-      .updateOne(
-        { _id: new ObjectId(storeId), 'orders.orderId': orderId },
-        { $set: { 'orders.$.refund': refund } }
-      );
+    // Only the refund's own fields are written, so a Stripe confirmation
+    // saved by someone else in the meantime is left alone.
+    const updated = await req.db.collection('stores').updateOne(
+      { _id: new ObjectId(storeId), 'orders.orderId': orderId },
+      {
+        $set: {
+          'orders.$.refund.status': split.full ? 'Full' : 'Partial',
+          'orders.$.refund.amount': split.cumulativeCard,
+          'orders.$.refund.card': split.cumulativeCard,
+          'orders.$.refund.creditRestored': split.cumulativeRestored,
+          'orders.$.refund.returnedItems': split.cumulativeReturned,
+          'orders.$.refund.updatedAt': new Date().toISOString(),
+        },
+      }
+    );
     if (updated.matchedCount !== 1) {
       console.error(
         `Refund for order ${orderId} restored ${split.creditRestored} but could not be recorded.`

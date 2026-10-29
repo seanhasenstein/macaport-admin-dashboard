@@ -7,6 +7,7 @@ import { authOptions } from '../auth/[...nextauth]';
 import { Order, OrderItem, Request } from '../../../interfaces';
 import database from '../../../middleware/db';
 import { inventoryProduct, memberBenefit, order } from '../../../db';
+import { memberEnded } from '../../../utils/memberBenefit';
 
 interface OrderItemWithShouldReturnToInventory extends OrderItem {
   shouldReturnToInventory: boolean;
@@ -57,7 +58,15 @@ const handler = nc<Request, NextApiResponse>()
     // only what this order drew down and has not already been restored.
     let creditRestored = 0;
     let restoreProblem: string | null = null;
-    if (req.body.restoreCredit === true && stored.benefit) {
+    const endedMember =
+      stored.benefit &&
+      memberEnded(
+        await memberBenefit.getById(req.db, stored.benefit.benefitId),
+        stored.benefit.email
+      );
+    if (req.body.restoreCredit === true && stored.benefit && endedMember) {
+      restoreProblem = `The order is canceled. ${stored.benefit.email}'s benefit was ended, so nothing was restored to it.`;
+    } else if (req.body.restoreCredit === true && stored.benefit) {
       const already = stored.refund?.creditRestored ?? 0;
       const amount = Math.max(0, (stored.benefit.used ?? 0) - already);
       if (amount > 0) {

@@ -218,17 +218,85 @@ export async function addMembers(db: Db, id: string, inputs: MemberInput[]) {
   return { benefit: withStringId(result.value), added: members.length };
 }
 
-export async function removeMember(db: Db, id: string, email: string) {
+// Only a member who has used nothing can be removed. Removing one with
+// usage would throw away what they spent, and adding the same email back
+// would hand them a fresh allowance; endMember is the way out for them.
+export async function removeMember(
+  db: Db,
+  id: string,
+  email: string
+): Promise<MemberBenefit | 'hasUsage' | 'notFound'> {
+  const normalized = normalizeEmail(email);
   const result = await collection(db).findOneAndUpdate(
-    { _id: new ObjectId(id) },
     {
-      $pull: { members: { email: normalizeEmail(email) } },
+      _id: new ObjectId(id),
+      members: {
+        $elemMatch: {
+          email: normalized,
+          $or: [{ used: 0 }, { used: { $exists: false } }],
+        },
+      },
+    },
+    {
+      $pull: { members: { email: normalized } },
       $set: { updatedAt: new Date().toISOString() },
     },
     { returnDocument: 'after' }
   );
-  if (!result.value) throw new Error('No member benefit found.');
-  return withStringId(result.value);
+  if (result.value) return withStringId(result.value);
+  const exists = await collection(db).countDocuments(
+    { _id: new ObjectId(id), 'members.email': normalized },
+    { limit: 1 }
+  );
+  return exists ? 'hasUsage' : 'notFound';
+}
+
+// Ends a member's benefit without losing their history: their allowance
+// becomes exactly what they have used, so nothing is left, the storefront
+// says it is used up, and their orders stay linked. Conditional on `used`
+// not moving underneath us.
+export async function endMember(
+  db: Db,
+  id: string,
+  email: string
+): Promise<MemberBenefit | 'notFound'> {
+  const normalized = normalizeEmail(email);
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const benefit = await getById(db, id);
+    const member = benefit?.members.find(
+      m => normalizeEmail(m.email) === normalized
+    );
+    if (!benefit || !member) return 'notFound';
+    const used = member.used ?? 0;
+    const now = new Date().toISOString();
+    const result = await collection(db).findOneAndUpdate(
+      {
+        _id: new ObjectId(id),
+        members: {
+          $elemMatch: {
+            email: normalized,
+            ...(member.used === undefined
+              ? { used: { $exists: false } }
+              : { used }),
+          },
+        },
+      },
+      {
+        // endedAt is dashboard-only; the storefront never reads it. It is
+        // what lets a later restore keep the member at nothing left.
+        $set: {
+          'members.$.allowance': used,
+          'members.$.endedAt': now,
+          updatedAt: now,
+        },
+      },
+      { returnDocument: 'after' }
+    );
+    if (result.value) return withStringId(result.value);
+  }
+  throw new Error(
+    'The member was using their benefit at that moment; try again.'
+  );
 }
 
 // Lowers `used` by `amount`, and only when the member has at least that
@@ -245,14 +313,40 @@ export async function restoreUsed(
     throw new Error('Amount must be a positive whole number.');
   }
   const normalized = normalizeEmail(email);
+  const now = new Date().toISOString();
+  // An ended member's allowance falls with `used`, so restoring credit for
+  // a return keeps them at nothing left rather than reopening the benefit.
+  const ended = await collection(db).updateOne(
+    {
+      _id: new ObjectId(id),
+      members: {
+        $elemMatch: {
+          email: normalized,
+          used: { $gte: amount },
+          endedAt: { $exists: true },
+        },
+      },
+    },
+    {
+      $inc: { 'members.$.used': -amount, 'members.$.allowance': -amount },
+      $set: { updatedAt: now },
+    }
+  );
+  if (ended.matchedCount === 1) return 'restored';
   const result = await collection(db).updateOne(
     {
       _id: new ObjectId(id),
-      members: { $elemMatch: { email: normalized, used: { $gte: amount } } },
+      members: {
+        $elemMatch: {
+          email: normalized,
+          used: { $gte: amount },
+          endedAt: { $exists: false },
+        },
+      },
     },
     {
       $inc: { 'members.$.used': -amount },
-      $set: { updatedAt: new Date().toISOString() },
+      $set: { updatedAt: now },
     }
   );
   if (result.matchedCount === 1) return 'restored';
@@ -273,9 +367,17 @@ export async function setAllowance(
   const now = new Date().toISOString();
   const result = await collection(db).findOneAndUpdate(
     { _id: new ObjectId(id), 'members.email': normalizeEmail(email) },
+    // Setting or clearing an allowance is an admin giving the member more,
+    // so it also lifts an ended benefit.
     allowance === null
-      ? { $unset: { 'members.$.allowance': '' }, $set: { updatedAt: now } }
-      : { $set: { 'members.$.allowance': allowance, updatedAt: now } },
+      ? {
+          $unset: { 'members.$.allowance': '', 'members.$.endedAt': '' },
+          $set: { updatedAt: now },
+        }
+      : {
+          $set: { 'members.$.allowance': allowance, updatedAt: now },
+          $unset: { 'members.$.endedAt': '' },
+        },
     { returnDocument: 'after' }
   );
   if (!result.value) throw new Error('No member found with that email.');

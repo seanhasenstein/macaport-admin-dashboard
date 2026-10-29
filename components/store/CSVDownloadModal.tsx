@@ -1,4 +1,5 @@
 import React from 'react';
+import { orderAdjustments } from '../../utils/memberBenefit';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import { format } from 'date-fns';
@@ -67,6 +68,17 @@ export default function CSVDownloadModal({
         ]
       : []),
     { id: 25, field: 'stripeId', checked: true },
+    { id: 33, field: 'refund.card', checked: true },
+    ...(store.benefitId ||
+    (store.orders ?? []).some(o => orderAdjustments(o).length > 0)
+      ? [
+          { id: 27, field: 'benefit.name', checked: true },
+          { id: 28, field: 'benefit.email', checked: true },
+          { id: 29, field: 'benefit.funding', checked: true },
+          { id: 30, field: 'benefit.invoice', checked: true },
+          { id: 31, field: 'refund.creditRestored', checked: true },
+        ]
+      : []),
   ]);
   const [enableCsvQuery, csvQuery] = useCsvDownload(
     getQueryParameter(router.query.id),

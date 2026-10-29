@@ -3,7 +3,8 @@ import nc from 'next-connect';
 import { createObjectCsvStringifier } from 'csv-writer';
 import { format, utcToZonedTime } from 'date-fns-tz';
 import { withAuth } from '../../../../utils/withAuth';
-import { Request, Store } from '../../../../interfaces';
+import { ClientInvoice, Order, Request, Store } from '../../../../interfaces';
+import { MemberBenefit } from '../../../../core/memberBenefits/types';
 import database from '../../../../middleware/db';
 import { store } from '../../../../db';
 import {
@@ -14,7 +15,14 @@ import {
 } from '../../../../utils';
 import { hydrateOrderItemsWithArtworkId } from '../../../../utils/orderItem';
 import { filterOrdersByView, OrderView } from '../../../../utils/store';
-import { orderBenefitAmount } from '../../../../utils/memberBenefit';
+import {
+  DEFAULT_INVOICE_GRACE_DAYS,
+  formatBenefitAmount,
+  orderAdjustments,
+  orderBenefitAmount,
+  orderInvoiceState,
+} from '../../../../utils/memberBenefit';
+import { clientInvoice, memberBenefit } from '../../../../db';
 
 type Field = {
   id: number;
@@ -77,6 +85,12 @@ const handler = nc<Request, NextApiResponse>()
       { id: 'shippingAddress.state', title: 'STATE' },
       { id: 'shippingAddress.zipcode', title: 'ZIPCODE' },
       { id: 'stripeId', title: 'STRIPE ID' },
+      { id: 'refund.card', title: 'REFUNDED TO CARD' },
+      { id: 'benefit.name', title: 'MEMBER BENEFIT' },
+      { id: 'benefit.email', title: 'MEMBER EMAIL' },
+      { id: 'benefit.funding', title: 'FUNDED BY' },
+      { id: 'benefit.invoice', title: 'CLIENT INVOICE' },
+      { id: 'refund.creditRestored', title: 'CREDIT RESTORED' },
     ];
 
     const header = headerFields.filter(hf => {
@@ -91,6 +105,57 @@ const handler = nc<Request, NextApiResponse>()
     const csvStringifier = createObjectCsvStringifier({
       header,
     });
+
+    // Benefit columns: each order's own benefit (a store's benefit can be
+    // replaced), the invoices of those benefits, and the return window,
+    // loaded once for the whole export.
+    const benefitIds = Array.from(
+      new Set(
+        (queriedStore.orders ?? [])
+          .map(o => o.benefit?.benefitId)
+          .filter((id): id is string => Boolean(id))
+      )
+    );
+    const benefitsById = new Map<string, MemberBenefit>();
+    const invoicesById = new Map<string, ClientInvoice>();
+    for (const benefitId of benefitIds) {
+      const found = await memberBenefit.getById(req.db, benefitId);
+      if (found) benefitsById.set(benefitId, found);
+      for (const inv of await clientInvoice.listByBenefit(req.db, benefitId)) {
+        invoicesById.set(inv._id, inv);
+      }
+    }
+    const settings = await req.db.collection('shipping').findOne({});
+    const graceDays =
+      typeof settings?.invoiceGraceDays === 'number'
+        ? settings.invoiceGraceDays
+        : DEFAULT_INVOICE_GRACE_DAYS;
+    const legacyEmail = (o: Order) =>
+      o.sheboyganLutheranStaffDiscount?.email ??
+      o.switchFitnessDiscount?.email ??
+      o.teacherAppreciation?.email ??
+      '';
+    const invoiceColumn = (o: Order) => {
+      if (o.clientInvoiceId) {
+        const inv = invoicesById.get(o.clientInvoiceId);
+        return inv
+          ? `#${inv.number} (${inv.status === 'paid' ? 'Paid' : 'Open'})`
+          : 'Invoiced';
+      }
+      if (o.clientInvoiceExcluded) {
+        return `Excluded: ${o.clientInvoiceExcluded.reason}`;
+      }
+      if (!o.benefit) return '';
+      if (benefitsById.get(o.benefit.benefitId)?.funding !== 'client') {
+        return '';
+      }
+      const state = orderInvoiceState(o, graceDays);
+      return state === 'eligible'
+        ? 'Not invoiced'
+        : state === 'grace' || state === 'awaiting'
+        ? 'Not yet invoiceable'
+        : '';
+    };
 
     let records: any[];
     if (!queriedStore.orders || queriedStore.orders.length === 0) {
@@ -142,6 +207,33 @@ const handler = nc<Request, NextApiResponse>()
           ['shippingAddress.state']: order.shippingAddress.state,
           ['shippingAddress.zipcode']: order.shippingAddress.zipcode,
           stripeId: order.stripeId,
+          // Orders canceled before card refunds were tracked recorded only
+          // `amount`, which is what went back to the card.
+          ['refund.card']:
+            (order.refund?.card ?? order.refund?.amount ?? 0) > 0
+              ? formatToMoney(
+                  order.refund?.card ?? order.refund?.amount ?? 0,
+                  true
+                )
+              : '',
+          ['benefit.name']:
+            orderAdjustments(order).find(a => a.kind !== 'waived')?.label ?? '',
+          ['benefit.email']: order.benefit?.email ?? legacyEmail(order),
+          ['benefit.funding']: (() => {
+            const used = order.benefit
+              ? benefitsById.get(order.benefit.benefitId)
+              : undefined;
+            if (!used) return '';
+            return used.funding === 'client' ? 'Client' : 'Macaport';
+          })(),
+          ['benefit.invoice']: invoiceColumn(order),
+          ['refund.creditRestored']:
+            order.refund?.creditRestored && order.benefit
+              ? formatBenefitAmount(
+                  order.benefit.type,
+                  order.refund.creditRestored
+                )
+              : '',
         };
       });
     }

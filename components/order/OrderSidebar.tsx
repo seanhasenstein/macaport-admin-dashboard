@@ -18,9 +18,11 @@ import {
   adjustmentKindLabel,
   formatBenefitAmount,
   orderAdjustments,
+  stripeRefundDue,
 } from '../../utils/memberBenefit';
 import { restoredPhrase } from '../../utils/refund';
 import { useInvoicesQuery } from '../../hooks/useInvoicesQuery';
+import { useMarkStripeRefunded } from '../../hooks/useRefundMutation';
 
 import { Order, Store } from '../../interfaces';
 
@@ -64,6 +66,15 @@ export default function OrderSidebar({
 
   const session = useSession();
   const userId = session?.data?.user.id;
+
+  const markStripeRefunded = useMarkStripeRefunded({
+    order: selectedOrder,
+    store,
+  });
+  const resetMarkStripe = markStripeRefunded.reset;
+  React.useEffect(() => {
+    resetMarkStripe();
+  }, [selectedOrder?.orderId, resetMarkStripe]);
 
   const invoicesQuery = useInvoicesQuery(
     store._id,
@@ -326,6 +337,39 @@ export default function OrderSidebar({
                     value={
                       <>
                         {formatToMoney(refund.card ?? 0, true)} to card
+                        {(refund.card ?? 0) > 0 &&
+                          (stripeRefundDue(selectedOrder) > 0 ? (
+                            <span className="stripe-due">
+                              {' '}
+                              ·{' '}
+                              {formatToMoney(
+                                stripeRefundDue(selectedOrder),
+                                true
+                              )}{' '}
+                              not yet refunded in Stripe{' '}
+                              <button
+                                type="button"
+                                className="stripe-done"
+                                onClick={() => markStripeRefunded.mutate()}
+                                disabled={markStripeRefunded.isLoading}
+                              >
+                                {markStripeRefunded.isLoading
+                                  ? 'Saving...'
+                                  : 'Mark refunded in Stripe'}
+                              </button>
+                              {markStripeRefunded.isError && (
+                                <span className="stripe-error">
+                                  {' '}
+                                  {(markStripeRefunded.error as Error)?.message}
+                                </span>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="stripe-ok">
+                              {' '}
+                              · refunded in Stripe
+                            </span>
+                          ))}
                         {selectedOrder.benefit &&
                         (refund.creditRestored ?? 0) > 0
                           ? `, ${restoredPhrase(
@@ -670,6 +714,34 @@ const OrderSidebarStyles = styled.div`
       gap: 1rem 0;
       border-right: 1px solid #d4d4d8;
     }
+    .stripe-due {
+      color: #92400e;
+    }
+
+    .stripe-ok {
+      color: #065f46;
+    }
+
+    .stripe-error {
+      color: #b91c1c;
+    }
+
+    .stripe-done {
+      margin-left: 0.25rem;
+      padding: 0.0625rem 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #1f2937;
+      background-color: #fff;
+      border: 1px solid #d1d5db;
+      border-radius: 0.25rem;
+      cursor: pointer;
+    }
+
+    .stripe-done:hover:not(:disabled) {
+      background-color: #e5e7eb;
+    }
+
     .benefit-email {
       display: inline-block;
       max-width: 14.75rem;

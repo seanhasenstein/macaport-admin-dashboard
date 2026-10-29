@@ -14,7 +14,7 @@ import OrdersActionsMenu from './OrdersActionsMenu';
 import OrderViewSelector from '../store/OrderViewSelector';
 
 import { calculateTotalItems, formatToMoney } from '../../utils';
-import { orderBenefitTag } from '../../utils/memberBenefit';
+import { orderBenefitTag, stripeRefundDue } from '../../utils/memberBenefit';
 import useThrottle from '../../hooks/useThrottle';
 
 import {
@@ -697,6 +697,14 @@ export default function OrdersTable({
                                       {orderBenefitTag(o)}
                                     </span>
                                   )}
+                                  {stripeRefundDue(o) > 0 && (
+                                    <span
+                                      className="benefit-tag refund-due"
+                                      title="Recorded as owed back to the card; not yet marked refunded in Stripe"
+                                    >
+                                      Stripe refund due
+                                    </span>
+                                  )}
                                 </div>
                               </ButtonWrapper>
                             </td>
@@ -1188,6 +1196,12 @@ const OrdersTableStyles = styled.div`
     font-size: 0.75rem;
     font-weight: 500;
     color: #71717a;
+  }
+
+  .benefit-tag.refund-due {
+    color: #92400e;
+    background-color: #fffbeb;
+    border-color: #fde68a;
   }
 
   .benefit-tag {

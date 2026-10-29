@@ -32,6 +32,7 @@ import AddMembersModal from './AddMembersModal';
 import BenefitActiveModal from './BenefitActiveModal';
 import DeleteBenefitModal from './DeleteBenefitModal';
 import RemoveMemberModal from './RemoveMemberModal';
+import EndBenefitModal from './EndBenefitModal';
 import RestoreUsedModal from './RestoreUsedModal';
 import AllowanceModal from './AllowanceModal';
 import MemberRow from './MemberRow';
@@ -50,6 +51,7 @@ type MemberModal =
   | { kind: 'restore'; member: MemberBenefitMember }
   | { kind: 'allowance'; member: MemberBenefitMember }
   | { kind: 'remove'; member: MemberBenefitMember }
+  | { kind: 'end'; member: MemberBenefitMember }
   | null;
 
 function errorOf(mutation: { isError: boolean; error: unknown }) {
@@ -88,6 +90,7 @@ export default function BenefitPanel({ store }: Props) {
     mutations.restoreUsed.reset();
     mutations.setAllowance.reset();
     mutations.removeMember.reset();
+    mutations.endMember.reset();
     setMemberModal(null);
   };
 
@@ -441,6 +444,7 @@ export default function BenefitPanel({ store }: Props) {
                   setMemberModal({ kind: 'allowance', member })
                 }
                 onRemove={() => setMemberModal({ kind: 'remove', member })}
+                onEnd={() => setMemberModal({ kind: 'end', member })}
               />
             ))}
           </ul>
@@ -678,15 +682,34 @@ export default function BenefitPanel({ store }: Props) {
       {memberModal?.kind === 'remove' && (
         <RemoveMemberModal
           email={memberModal.member.email}
-          usedLabel={
-            (memberModal.member.used ?? 0) > 0
-              ? formatBenefitAmount(benefit.type, memberModal.member.used)
-              : null
-          }
+          usedLabel={null}
           isLoading={mutations.removeMember.isLoading}
           errorMessage={errorOf(mutations.removeMember)}
           onConfirm={() =>
             mutations.removeMember.mutate(memberModal.member.email, {
+              onSuccess: closeMemberModal,
+            })
+          }
+          onCancel={closeMemberModal}
+        />
+      )}
+
+      {memberModal?.kind === 'end' && (
+        <EndBenefitModal
+          email={memberModal.member.email}
+          benefitName={benefit.copy.benefitName}
+          usedLabel={formatBenefitAmount(
+            benefit.type,
+            memberUsage(benefit, memberModal.member).used
+          )}
+          remainingLabel={formatBenefitAmount(
+            benefit.type,
+            memberUsage(benefit, memberModal.member).remaining
+          )}
+          isLoading={mutations.endMember.isLoading}
+          errorMessage={errorOf(mutations.endMember)}
+          onConfirm={() =>
+            mutations.endMember.mutate(memberModal.member.email, {
               onSuccess: closeMemberModal,
             })
           }
