@@ -25,6 +25,7 @@ import {
 } from '../../interfaces';
 import {
   getStoresOrderStatusNumbers,
+  isOrderOutstanding,
   OrderView,
   OrderViewOption,
 } from '../../utils/store';
@@ -362,7 +363,19 @@ export default function OrdersTable({
   const session = useSession();
   const userId = session?.data?.user.id;
 
-  const closeSidebar = () => setShowSidebar(false);
+  // An order opened from a link (?orderId=) keeps its id in the URL only
+  // while the sidebar is open, so a refresh after closing doesn't reopen it
+  // and the same link opens it again next time.
+  const closeSidebar = () => {
+    setShowSidebar(false);
+    if (router.query.orderId) {
+      const { orderId: _orderId, ...query } = router.query;
+      router.replace({ pathname: router.pathname, query }, undefined, {
+        shallow: true,
+        scroll: false,
+      });
+    }
+  };
 
   const handleCopyEmails = async () => {
     const emails = Array.from(
@@ -425,15 +438,33 @@ export default function OrdersTable({
     setShowSidebar(true);
   };
 
+  // Open the order named in the URL. If the current view or filters hide
+  // it, show the view it belongs to and clear the filters first, or the
+  // sidebar would close again straight away.
+  const linkedOrderId =
+    typeof router.query.orderId === 'string' ? router.query.orderId : '';
+  const filteredOrdersRef = React.useRef(filteredOrders);
+  filteredOrdersRef.current = filteredOrders;
   React.useEffect(() => {
-    if (router.query.orderId) {
-      const order = store.orders.find(o => o.orderId === router.query.orderId);
-      if (order) {
-        setSelectedOrder(order);
-        setShowSidebar(true);
-      }
+    if (!linkedOrderId) return;
+    const order = store.orders.find(o => o.orderId === linkedOrderId);
+    if (!order) return;
+    if (!filteredOrdersRef.current.some(o => o.orderId === linkedOrderId)) {
+      const ownView: OrderView = isOrderOutstanding(order)
+        ? 'outstanding'
+        : new Date(order.createdAt).getFullYear();
+      const hasOwnView = viewOptions.some(o => o.view === ownView);
+      if (viewOptions.length > 1) setSelectedView(hasOwnView ? ownView : 'all');
+      setSearchTerm('');
+      setGroupFilter('');
+      setShippingFilter('');
+      setOrderViewOption('All');
     }
-  }, [router.query.orderId, setSelectedOrder, store.orders]);
+    setSelectedOrder(order);
+    setShowSidebar(true);
+    // Runs when the linked id changes, not on every store refetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkedOrderId, store.orders.length > 0]);
 
   React.useEffect(() => {
     if (!showSidebar || !selectedOrder) return;

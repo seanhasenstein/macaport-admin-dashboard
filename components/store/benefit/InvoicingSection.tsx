@@ -230,6 +230,9 @@ export default function InvoicingSection({ benefit, store }: Props) {
                   </td>
                   <td>
                     <Link
+                      shallow
+                      replace
+                      scroll={false}
                       href={`/stores/${store._id}?orderId=${order.orderId}`}
                     >
                       <a className="link">#{order.orderId}</a>
@@ -273,6 +276,9 @@ export default function InvoicingSection({ benefit, store }: Props) {
                 return (
                   <li key={order.orderId}>
                     <Link
+                      shallow
+                      replace
+                      scroll={false}
                       href={`/stores/${store._id}?orderId=${order.orderId}`}
                     >
                       <a className="link">#{order.orderId}</a>
@@ -296,7 +302,12 @@ export default function InvoicingSection({ benefit, store }: Props) {
             <ul className="plain-list">
               {split.excluded.map(order => (
                 <li key={order.orderId}>
-                  <Link href={`/stores/${store._id}?orderId=${order.orderId}`}>
+                  <Link
+                    shallow
+                    replace
+                    scroll={false}
+                    href={`/stores/${store._id}?orderId=${order.orderId}`}
+                  >
                     <a className="link">#{order.orderId}</a>
                   </Link>{' '}
                   {order.customer.firstName} {order.customer.lastName} ·{' '}

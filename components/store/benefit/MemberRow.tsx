@@ -97,7 +97,12 @@ export default function MemberRow({
               <ul>
                 {linked.map(({ orderId, order }) => (
                   <li key={orderId}>
-                    <Link href={`/stores/${storeId}?orderId=${orderId}`}>
+                    <Link
+                      shallow
+                      replace
+                      scroll={false}
+                      href={`/stores/${storeId}?orderId=${orderId}`}
+                    >
                       <a className="link">#{orderId}</a>
                     </Link>
                     {order ? (
