@@ -430,7 +430,17 @@ export default function OrdersTable({
 
   const updateSelectedOrder = (orderId: string) => {
     const order = filteredOrders.find(o => o.orderId === orderId);
-    if (order) setSelectedOrder(order);
+    if (!order) return;
+    setSelectedOrder(order);
+    // Opened from a link: keep the URL on the order being shown, so a
+    // refresh reopens this one rather than the one first linked to.
+    if (router.query.orderId && router.query.orderId !== orderId) {
+      router.replace(
+        { pathname: router.pathname, query: { ...router.query, orderId } },
+        undefined,
+        { shallow: true, scroll: false }
+      );
+    }
   };
 
   const buttonOnClick = (orderId: string) => {
