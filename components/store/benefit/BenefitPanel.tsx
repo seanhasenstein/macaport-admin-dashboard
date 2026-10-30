@@ -1011,6 +1011,24 @@ const PanelStyles = styled.div`
     margin-top: -1px;
   }
 
+  /* The sticky header sits above the rows while the list scrolls, so the
+     first row must not tuck under it, or the header hides that row's top
+     edge. The header's own bottom border is the shared edge, and it takes
+     the row's colour when the row is hovered, open or focused. */
+  .member-list > .list-head + li {
+    margin-top: 0;
+    border-top-width: 0;
+  }
+
+  .list-head:has(+ li:hover) {
+    border-bottom-color: #9ca3af;
+  }
+
+  .list-head:has(+ li.open),
+  .list-head:has(+ li .row:focus-visible) {
+    border-bottom-color: #1c44b9;
+  }
+
   .member-list > li:last-child {
     border-radius: 0 0 0.375rem 0.375rem;
   }
