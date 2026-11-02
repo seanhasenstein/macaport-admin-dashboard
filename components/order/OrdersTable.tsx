@@ -366,7 +366,7 @@ export default function OrdersTable({
   // An order opened from a link (?orderId=) keeps its id in the URL only
   // while the sidebar is open, so a refresh after closing doesn't reopen it
   // and the same link opens it again next time.
-  const closeSidebar = () => {
+  const closeSidebar = React.useCallback(() => {
     setShowSidebar(false);
     if (router.query.orderId) {
       const { orderId: _orderId, ...query } = router.query;
@@ -375,7 +375,7 @@ export default function OrdersTable({
         scroll: false,
       });
     }
-  };
+  }, [router]);
 
   const handleCopyEmails = async () => {
     const emails = Array.from(
@@ -479,9 +479,9 @@ export default function OrdersTable({
   React.useEffect(() => {
     if (!showSidebar || !selectedOrder) return;
     if (!filteredOrders.some(o => o.orderId === selectedOrder.orderId)) {
-      setShowSidebar(false);
+      closeSidebar();
     }
-  }, [filteredOrders, selectedOrder, showSidebar]);
+  }, [closeSidebar, filteredOrders, selectedOrder, showSidebar]);
 
   // NOTE: this is needed to update the order status in the sidebar
   // TODO: find see if there is a better way to do this
