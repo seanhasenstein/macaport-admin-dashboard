@@ -276,21 +276,3 @@ export function adminRefundSentence(split: RefundSplit, memberName: string) {
   if (parts.length === 0) return 'Nothing to refund.';
   return parts.join(' ');
 }
-
-// The same numbers, addressed to the customer.
-export function customerRefundSentence(split: RefundSplit) {
-  const parts: string[] = [];
-  if (split.card > 0) {
-    parts.push(`We have refunded ${money(split.card)} to your card.`);
-  }
-  if (split.creditRestored > 0) {
-    parts.push(
-      `${restoredPhrase(split.benefitType, split.creditRestored)} ${
-        split.benefitType === 'freeItem' && split.creditRestored !== 1
-          ? 'have'
-          : 'has'
-      } been restored to your ${split.benefitLabel}.`
-    );
-  }
-  return parts.join(' ');
-}

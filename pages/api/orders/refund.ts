@@ -14,11 +14,10 @@ import { memberEnded } from '../../../utils/memberBenefit';
 import {
   applyChoices,
   computeRefund,
-  customerRefundSentence,
   RefundChoices,
   RefundInput,
 } from '../../../utils/refund';
-import { refundEmail, sendEmail } from '../../../utils/email';
+import { refundEmail, sendEmail, SUPPORT_EMAIL } from '../../../utils/email';
 
 // The credit side of a refund. Recomputes the split from the same input the
 // admin previewed, restores the member's allowance with a conditional
@@ -162,20 +161,43 @@ const handler = nc<Request, NextApiResponse>()
     }
 
     // 4. tell the customer, unless nothing changed for them (restock only)
-    const sentence = customerRefundSentence(split);
     let emailed = false;
     let redirectedTo: string | null = null;
-    if (sentence) {
+    if (split.card > 0 || split.creditRestored > 0) {
       try {
+        // What came back with this refund, not with earlier ones.
+        const items = split.cumulativeReturned
+          .map(r => ({
+            item: order.items.find(i => i.id === r.id),
+            quantity: r.quantity - (previouslyReturned.get(r.id) ?? 0),
+          }))
+          .filter(
+            (
+              r
+            ): r is { item: (typeof order.items)[number]; quantity: number } =>
+              !!r.item && r.quantity > 0
+          )
+          .map(({ item, quantity }) => ({
+            name: item.name,
+            detail: [item.sku.color?.label, item.sku.size?.label]
+              .filter(Boolean)
+              .join(' · '),
+            quantity,
+          }));
         const message = refundEmail({
-          firstName: order.customer.firstName,
           orderId: order.orderId,
           storeName,
-          sentence,
+          card: split.card,
+          creditRestored: split.creditRestored,
+          benefitType: split.benefitType,
+          benefitLabel: split.benefitLabel,
+          items,
         });
         const result = await sendEmail({
           to: order.customer.email,
           ...message,
+          fromName: 'Macaport',
+          replyTo: SUPPORT_EMAIL,
         });
         if (result.redirected) redirectedTo = result.deliveredTo;
         emailed = true;
