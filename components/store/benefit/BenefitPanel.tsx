@@ -341,7 +341,10 @@ export default function BenefitPanel({ store }: Props) {
           >
             <div className="stat-value">{formatToMoney(uninvoiced, true)}</div>
             <div className="stat-label">
-              Uninvoiced · {invoicing?.eligible.length ?? 0} shipped
+              Ready to invoice
+              {invoicing && invoicing.grace.length > 0
+                ? ` · ${invoicing.grace.length} in return window`
+                : ''}
             </div>
           </button>
         ) : (
