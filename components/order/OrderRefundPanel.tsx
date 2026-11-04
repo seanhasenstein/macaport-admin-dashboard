@@ -8,8 +8,10 @@ import {
 } from '@heroicons/react/20/solid';
 
 import { formatToMoney } from '../../utils';
-import { stripeRefundDue } from '../../utils/memberBenefit';
-import { restoredPhrase } from '../../utils/refund';
+import {
+  formatBenefitAmount,
+  stripeRefundDue,
+} from '../../utils/memberBenefit';
 import { useMarkStripeRefunded } from '../../hooks/useRefundMutation';
 
 import { Order, Store } from '../../interfaces';
@@ -66,7 +68,7 @@ export default function OrderRefundPanel({ order, store }: Props) {
         {restored > 0 && order.benefit && (
           <div className="row">
             <dt>Credit restored</dt>
-            <dd>{restoredPhrase(order.benefit.type, restored)}</dd>
+            <dd>{formatBenefitAmount(order.benefit.type, restored)}</dd>
           </div>
         )}
         {itemsReturned > 0 && (

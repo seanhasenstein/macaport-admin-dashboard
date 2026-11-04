@@ -60,14 +60,17 @@ export default function OrderBenefitPanel({ order, store }: Props) {
   const email = use?.email ?? legacyEmail;
   const member =
     benefit && email ? benefit.members.find(m => m.email === email) : undefined;
-  const listedName = member ? memberDisplayName(member) : null;
-  const memberName = member
-    ? listedName !== member.email
-      ? listedName
-      : null
-    : email && email === order.customer.email.trim().toLowerCase()
-    ? `${order.customer.firstName} ${order.customer.lastName}`
-    : null;
+  const listedName =
+    member && memberDisplayName(member) !== member.email
+      ? memberDisplayName(member)
+      : null;
+  // The checkout name stands in when the client's list had none, but only
+  // when the order was placed with the member's own email.
+  const memberName =
+    listedName ??
+    (email && email === order.customer.email.trim().toLowerCase()
+      ? `${order.customer.firstName} ${order.customer.lastName}`.trim() || null
+      : null);
   const ended = Boolean((member as { endedAt?: string } | undefined)?.endedAt);
 
   const type = use?.type ?? benefit?.type;
