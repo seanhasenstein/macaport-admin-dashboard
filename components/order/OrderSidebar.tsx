@@ -13,14 +13,13 @@ import OrderItem from './OrderItem';
 import OrderItemsBreakdown from './OrderItemsBreakdown';
 import RefundModal from './RefundModal';
 import OrderRefundPanel from './OrderRefundPanel';
+import OrderBenefitPanel from './OrderBenefitPanel';
 
 import { formatPhoneNumber, formatToMoney } from '../../utils';
 import {
   adjustmentKindLabel,
-  formatBenefitAmount,
   orderAdjustments,
 } from '../../utils/memberBenefit';
-import { useInvoicesQuery } from '../../hooks/useInvoicesQuery';
 
 import { Order, Store } from '../../interfaces';
 
@@ -64,14 +63,6 @@ export default function OrderSidebar({
 
   const session = useSession();
   const userId = session?.data?.user.id;
-
-  const invoicesQuery = useInvoicesQuery(
-    store._id,
-    Boolean(selectedOrder?.clientInvoiceId)
-  );
-  const clientInvoice = selectedOrder?.clientInvoiceId
-    ? invoicesQuery.data?.find(i => i._id === selectedOrder.clientInvoiceId)
-    : undefined;
 
   // TODO: move this to a custom hook
   React.useEffect(() => {
@@ -126,12 +117,6 @@ export default function OrderSidebar({
 
   // Read through the helper so legacy orders render the same rows.
   const adjustments = orderAdjustments(selectedOrder);
-  const benefitAdjustments = adjustments.filter(a => a.kind !== 'waived');
-  const benefitEmail =
-    selectedOrder.benefit?.email ??
-    selectedOrder.sheboyganLutheranStaffDiscount?.email ??
-    selectedOrder.switchFitnessDiscount?.email ??
-    selectedOrder.teacherAppreciation?.email;
 
   const renderShippingAddressLabel = () => {
     if (shippingMethod === 'Direct') {
@@ -263,59 +248,6 @@ export default function OrderSidebar({
                     customValueClass="shipping-address-value"
                   />
                 )}
-                {benefitAdjustments.length > 0 || benefitEmail ? (
-                  <OrderDetailItem
-                    label="Member benefit:"
-                    value={
-                      <>
-                        {benefitAdjustments[0]?.label ?? 'Benefit'}
-                        {selectedOrder.benefit
-                          ? ` · ${formatBenefitAmount(
-                              selectedOrder.benefit.type,
-                              selectedOrder.benefit.used
-                            )} used`
-                          : ''}
-                        {benefitEmail ? (
-                          <>
-                            {' '}
-                            by{' '}
-                            <span
-                              title={benefitEmail}
-                              className="benefit-email"
-                            >
-                              {benefitEmail}
-                            </span>
-                          </>
-                        ) : null}
-                      </>
-                    }
-                  />
-                ) : null}
-                {selectedOrder.clientInvoiceId ? (
-                  <OrderDetailItem
-                    label="Client invoice:"
-                    value={
-                      clientInvoice
-                        ? `#${clientInvoice.number} · ${
-                            clientInvoice.status === 'paid'
-                              ? `paid${
-                                  clientInvoice.paidAt
-                                    ? ` ${format(
-                                        new Date(clientInvoice.paidAt),
-                                        'MMM d, yyyy'
-                                      )}`
-                                    : ''
-                                }${
-                                  clientInvoice.paymentReference
-                                    ? `, ${clientInvoice.paymentReference}`
-                                    : ''
-                                }`
-                              : 'open'
-                          }`
-                        : 'Invoiced'
-                    }
-                  />
-                ) : null}
                 <OrderDetailItem
                   label="Order note:"
                   value={note ? note : 'None provided'}
@@ -380,6 +312,7 @@ export default function OrderSidebar({
                 />
               </div>
             </div>
+            <OrderBenefitPanel order={selectedOrder} store={store} />
             <OrderRefundPanel order={selectedOrder} store={store} />
             <div className="order-items">
               <p className="order-items-label">
@@ -636,13 +569,6 @@ const OrderSidebarStyles = styled.div`
       flex-direction: column;
       gap: 1rem 0;
       border-right: 1px solid #d4d4d8;
-    }
-    .benefit-email {
-      display: inline-block;
-      max-width: 14.75rem;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
     }
     .note-item {
       flex-direction: column;

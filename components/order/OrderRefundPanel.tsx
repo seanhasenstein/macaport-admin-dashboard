@@ -136,16 +136,43 @@ export default function OrderRefundPanel({ order, store }: Props) {
   );
 }
 
+// Coloured by status: amber while the card refund is still owed in Stripe,
+// green once it has been marked done, and a quiet grey when nothing went
+// to the card. Each status sets the same few variables.
 const OrderRefundPanelStyles = styled.section`
-  margin: 1.75rem 2.5rem 0;
-  background-color: #fff;
-  border: 1px solid #d4d4d8;
-  border-radius: 0.5rem;
-  overflow: hidden;
+  --panel-bg: #fafafa;
+  --panel-border: #e4e4e7;
+  --panel-rule: #ececef;
+  --panel-title: #3f3f46;
+  --foot-bg: #f4f4f5;
+  --foot-text: #3f3f46;
+  --accent: #52525b;
 
   &.due {
-    border-color: #f5c98b;
+    --panel-bg: #fffbeb;
+    --panel-border: #f3c77f;
+    --panel-rule: #fbe3b4;
+    --panel-title: #92400e;
+    --foot-bg: #fef0c7;
+    --foot-text: #78350f;
+    --accent: #b45309;
   }
+
+  &.done {
+    --panel-bg: #f0fdf4;
+    --panel-border: #a7e3bd;
+    --panel-rule: #cdeedb;
+    --panel-title: #065f46;
+    --foot-bg: #dcfce7;
+    --foot-text: #065f46;
+    --accent: #059669;
+  }
+
+  margin: 1rem 2.5rem 0;
+  background-color: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 0.5rem;
+  overflow: hidden;
 
   .panel-head {
     padding: 0.75rem 1rem;
@@ -153,11 +180,11 @@ const OrderRefundPanelStyles = styled.section`
     justify-content: space-between;
     align-items: center;
     gap: 0.75rem;
-    border-bottom: 1px solid #e4e4e7;
+    border-bottom: 1px solid var(--panel-rule);
   }
 
   .panel-title {
-    color: #09090b;
+    color: var(--panel-title);
     font-size: 0.6875rem;
     font-weight: 700;
     line-height: 1;
@@ -167,24 +194,14 @@ const OrderRefundPanelStyles = styled.section`
 
   .pill {
     padding: 0.25rem 0.625rem;
+    color: var(--panel-title);
     font-size: 0.75rem;
     font-weight: 600;
     line-height: 1.2;
+    background-color: #fff;
+    border: 1px solid var(--panel-border);
     border-radius: 9999px;
-    border: 1px solid transparent;
     white-space: nowrap;
-  }
-
-  .pill.due {
-    color: #92400e;
-    background-color: #fffbeb;
-    border-color: #f5c98b;
-  }
-
-  .pill.done {
-    color: #065f46;
-    background-color: #ecfdf5;
-    border-color: #a7f3d0;
   }
 
   .rows {
@@ -203,7 +220,7 @@ const OrderRefundPanelStyles = styled.section`
   }
 
   .row + .row {
-    border-top: 1px solid #f4f4f5;
+    border-top: 1px solid var(--panel-rule);
   }
 
   dt {
@@ -212,14 +229,14 @@ const OrderRefundPanelStyles = styled.section`
 
   dd {
     margin: 0;
-    color: #52525b;
+    color: #3f3f46;
     text-align: right;
   }
 
   .panel-foot {
     padding: 0.75rem 1rem;
-    background-color: #fafafa;
-    border-top: 1px solid #e4e4e7;
+    background-color: var(--foot-bg);
+    border-top: 1px solid var(--panel-border);
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -227,22 +244,14 @@ const OrderRefundPanelStyles = styled.section`
     gap: 0.75rem 1rem;
   }
 
-  &.due .panel-foot {
-    background-color: #fffbeb;
-    border-top-color: #f5c98b;
-  }
-
   .foot-text {
     display: flex;
     align-items: flex-start;
     gap: 0.5rem;
-    color: #52525b;
+    color: var(--foot-text);
     font-size: 0.875rem;
+    font-weight: 500;
     line-height: 1.4;
-  }
-
-  &.due .foot-text {
-    color: #78350f;
   }
 
   .foot-icon {
@@ -250,11 +259,7 @@ const OrderRefundPanelStyles = styled.section`
     margin-top: 0.0625rem;
     width: 1rem;
     height: 1rem;
-    color: #10b981;
-  }
-
-  &.due .foot-icon {
-    color: #d97706;
+    color: var(--accent);
   }
 
   .foot-actions {
@@ -269,7 +274,7 @@ const OrderRefundPanelStyles = styled.section`
     align-items: center;
     gap: 0.375rem;
     font-size: 0.8125rem;
-    font-weight: 500;
+    font-weight: 600;
     line-height: 1.2;
     border-radius: 0.375rem;
     border: 1px solid transparent;
@@ -279,27 +284,27 @@ const OrderRefundPanelStyles = styled.section`
   }
 
   .button:focus-visible {
-    outline: 2px solid #1c44b9;
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
 
   .button.secondary {
-    color: #1f2937;
+    color: var(--foot-text);
     background-color: #fff;
-    border-color: #d1d5db;
+    border-color: var(--panel-border);
   }
 
   .button.secondary:hover {
-    background-color: #f3f4f6;
+    background-color: var(--panel-bg);
   }
 
   .button.primary {
     color: #fff;
-    background-color: #1f2937;
+    background-color: var(--accent);
   }
 
   .button.primary:hover:not(:disabled) {
-    background-color: #111827;
+    background-color: var(--panel-title);
   }
 
   .button:disabled {
