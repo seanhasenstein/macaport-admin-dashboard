@@ -26,6 +26,26 @@ export function useMarkStripeRefunded({ order, store }: Props) {
   );
 }
 
+// Clears a "Mark refunded in Stripe" made by mistake.
+export function useUndoStripeRefunded({ order, store }: Props) {
+  const queryClient = useQueryClient();
+  return useMutation(
+    async () => {
+      if (!order || !store) throw new Error('No order selected.');
+      const response = await fetch(
+        `/api/orders/unmark-stripe-refunded?sid=${store._id}&oid=${order.orderId}`,
+        { method: 'POST' }
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || 'Could not undo the Stripe refund mark.');
+      }
+      return data;
+    },
+    { onSettled: () => queryClient.invalidateQueries('stores') }
+  );
+}
+
 export function useRefundMutation({ order, store }: Props) {
   const queryClient = useQueryClient();
 

@@ -138,6 +138,21 @@ type Props = {
   setShippingFilter: React.Dispatch<React.SetStateAction<string>>;
 };
 
+// A settled refund, once nothing is left to do in Stripe. Canceled orders
+// already say so in their status.
+function refundTag(order: Order) {
+  if (order.orderStatus === 'Canceled' || stripeRefundDue(order) > 0) {
+    return null;
+  }
+  const refund = order.refund;
+  if (
+    !refund ||
+    ((refund.card ?? 0) === 0 && (refund.creditRestored ?? 0) === 0)
+  )
+    return null;
+  return refund.status === 'Full' ? 'Refunded' : 'Partly refunded';
+}
+
 export default function OrdersTable({
   store,
   selectedOrder,
@@ -443,9 +458,18 @@ export default function OrdersTable({
     }
   };
 
+  // Every way of opening an order puts its id in the URL, so a refresh
+  // reopens it; closing the sidebar takes it out again.
   const buttonOnClick = (orderId: string) => {
     updateSelectedOrder(orderId);
     setShowSidebar(true);
+    if (router.query.orderId !== orderId) {
+      router.replace(
+        { pathname: router.pathname, query: { ...router.query, orderId } },
+        undefined,
+        { shallow: true, scroll: false }
+      );
+    }
   };
 
   // Open the order named in the URL. If the current view or filters hide
@@ -744,6 +768,11 @@ export default function OrdersTable({
                                       title="Recorded as owed back to the card; not yet marked refunded in Stripe"
                                     >
                                       Stripe refund due
+                                    </span>
+                                  )}
+                                  {refundTag(o) && (
+                                    <span className="benefit-tag refunded">
+                                      {refundTag(o)}
                                     </span>
                                   )}
                                 </div>
@@ -1237,6 +1266,12 @@ const OrdersTableStyles = styled.div`
     font-size: 0.75rem;
     font-weight: 500;
     color: #71717a;
+  }
+
+  .benefit-tag.refunded {
+    color: #3f3f46;
+    background-color: #f4f4f5;
+    border-color: #d4d4d8;
   }
 
   .benefit-tag.refund-due {

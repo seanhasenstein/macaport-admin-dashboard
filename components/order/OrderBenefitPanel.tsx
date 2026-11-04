@@ -217,7 +217,7 @@ const OrderBenefitPanelStyles = styled.section`
     font-weight: 600;
     line-height: 1.2;
     background-color: #fff;
-    border: 1px solid #c7d4f5;
+    border: 1px solid #8fa6e6;
     border-radius: 9999px;
     white-space: nowrap;
   }

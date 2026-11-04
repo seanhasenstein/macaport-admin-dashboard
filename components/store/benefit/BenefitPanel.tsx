@@ -925,14 +925,16 @@ const PanelStyles = styled.div`
     padding: 0.0625rem 0.4375rem;
     font-size: 0.6875rem;
     font-weight: 600;
-    color: #4b5563;
-    background-color: #f3f4f6;
+    color: #374151;
+    background-color: #e5e7eb;
+    border: 1px solid #d1d5db;
     border-radius: 9999px;
   }
 
   .tabs .count.attention {
     color: #1e40af;
     background-color: #dbeafe;
+    border-color: #93c5fd;
   }
 
   .tab-panel {

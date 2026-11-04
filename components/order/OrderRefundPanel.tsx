@@ -12,7 +12,11 @@ import {
   formatBenefitAmount,
   stripeRefundDue,
 } from '../../utils/memberBenefit';
-import { useMarkStripeRefunded } from '../../hooks/useRefundMutation';
+import {
+  useMarkStripeRefunded,
+  useUndoStripeRefunded,
+} from '../../hooks/useRefundMutation';
+import { adminName } from '../../utils/admins';
 
 import { Order, Store } from '../../interfaces';
 
@@ -26,10 +30,13 @@ type Props = {
 // stays "due" until someone does it there and marks it here.
 export default function OrderRefundPanel({ order, store }: Props) {
   const markStripeRefunded = useMarkStripeRefunded({ order, store });
+  const undoStripeRefunded = useUndoStripeRefunded({ order, store });
   const resetMarkStripe = markStripeRefunded.reset;
+  const resetUndo = undoStripeRefunded.reset;
   React.useEffect(() => {
     resetMarkStripe();
-  }, [order.orderId, resetMarkStripe]);
+    resetUndo();
+  }, [order.orderId, resetMarkStripe, resetUndo]);
 
   const refund = order.refund;
   const card = refund?.card ?? 0;
@@ -126,12 +133,28 @@ export default function OrderRefundPanel({ order, store }: Props) {
               {refund.stripeRefundedAt
                 ? ` on ${format(
                     new Date(refund.stripeRefundedAt),
-                    'MMM d, yyyy'
+                    "MMM d, yyyy 'at' h:mm a"
                   )}`
                 : ''}
-              {refund.stripeRefundedBy ? ` by ${refund.stripeRefundedBy}` : ''}.
+              {refund.stripeRefundedBy
+                ? ` by ${adminName(refund.stripeRefundedBy)}`
+                : ''}
+              .
             </span>
           </p>
+          <button
+            type="button"
+            className="undo"
+            onClick={() => undoStripeRefunded.mutate()}
+            disabled={undoStripeRefunded.isLoading}
+          >
+            {undoStripeRefunded.isLoading ? 'Undoing...' : 'Undo'}
+          </button>
+          {undoStripeRefunded.isError && (
+            <p className="foot-error" role="alert">
+              {(undoStripeRefunded.error as Error)?.message}
+            </p>
+          )}
         </div>
       )}
     </OrderRefundPanelStyles>
@@ -149,6 +172,7 @@ const OrderRefundPanelStyles = styled.section`
   --foot-bg: #f4f4f5;
   --foot-text: #3f3f46;
   --accent: #52525b;
+  --pill-border: #a1a1aa;
 
   &.due {
     --panel-bg: #fffbeb;
@@ -158,6 +182,7 @@ const OrderRefundPanelStyles = styled.section`
     --foot-bg: #fef0c7;
     --foot-text: #78350f;
     --accent: #b45309;
+    --pill-border: #e0a24a;
   }
 
   &.done {
@@ -168,6 +193,7 @@ const OrderRefundPanelStyles = styled.section`
     --foot-bg: #dcfce7;
     --foot-text: #065f46;
     --accent: #059669;
+    --pill-border: #5fbf8a;
   }
 
   margin: 1rem 2.5rem 0;
@@ -201,7 +227,7 @@ const OrderRefundPanelStyles = styled.section`
     font-weight: 600;
     line-height: 1.2;
     background-color: #fff;
-    border: 1px solid var(--panel-border);
+    border: 1px solid var(--pill-border);
     border-radius: 9999px;
     white-space: nowrap;
   }
@@ -317,6 +343,34 @@ const OrderRefundPanelStyles = styled.section`
   .button-icon {
     width: 0.875rem;
     height: 0.875rem;
+  }
+
+  .undo {
+    margin-left: auto;
+    padding: 0.25rem 0.5rem;
+    color: var(--foot-text);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    background: none;
+    border: none;
+    border-radius: 0.25rem;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+
+  .undo:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.6);
+  }
+
+  .undo:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  .undo:disabled {
+    opacity: 0.6;
+    cursor: default;
   }
 
   .foot-error {
