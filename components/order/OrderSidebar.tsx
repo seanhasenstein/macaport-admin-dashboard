@@ -12,17 +12,15 @@ import OrderDetailItem from './OrderDetailItem';
 import OrderItem from './OrderItem';
 import OrderItemsBreakdown from './OrderItemsBreakdown';
 import RefundModal from './RefundModal';
+import OrderRefundPanel from './OrderRefundPanel';
 
 import { formatPhoneNumber, formatToMoney } from '../../utils';
 import {
   adjustmentKindLabel,
   formatBenefitAmount,
   orderAdjustments,
-  stripeRefundDue,
 } from '../../utils/memberBenefit';
-import { restoredPhrase } from '../../utils/refund';
 import { useInvoicesQuery } from '../../hooks/useInvoicesQuery';
-import { useMarkStripeRefunded } from '../../hooks/useRefundMutation';
 
 import { Order, Store } from '../../interfaces';
 
@@ -66,15 +64,6 @@ export default function OrderSidebar({
 
   const session = useSession();
   const userId = session?.data?.user.id;
-
-  const markStripeRefunded = useMarkStripeRefunded({
-    order: selectedOrder,
-    store,
-  });
-  const resetMarkStripe = markStripeRefunded.reset;
-  React.useEffect(() => {
-    resetMarkStripe();
-  }, [selectedOrder?.orderId, resetMarkStripe]);
 
   const invoicesQuery = useInvoicesQuery(
     store._id,
@@ -131,7 +120,6 @@ export default function OrderSidebar({
     stripeId,
     summary,
     orderStatus,
-    refund,
   } = selectedOrder;
   const { email, firstName, lastName, phone } = customer;
   const { subtotal, salesTax, shipping, total, stripeFee } = summary;
@@ -144,9 +132,6 @@ export default function OrderSidebar({
     selectedOrder.sheboyganLutheranStaffDiscount?.email ??
     selectedOrder.switchFitnessDiscount?.email ??
     selectedOrder.teacherAppreciation?.email;
-  const hasRefund = Boolean(
-    refund && ((refund.card ?? 0) > 0 || (refund.creditRestored ?? 0) > 0)
-  );
 
   const renderShippingAddressLabel = () => {
     if (shippingMethod === 'Direct') {
@@ -331,69 +316,6 @@ export default function OrderSidebar({
                     }
                   />
                 ) : null}
-                {hasRefund ? (
-                  <OrderDetailItem
-                    label="Refunded:"
-                    value={
-                      <>
-                        {formatToMoney(refund.card ?? 0, true)} to card
-                        {(refund.card ?? 0) > 0 &&
-                          (stripeRefundDue(selectedOrder) > 0 ? (
-                            <span className="stripe-due">
-                              {' '}
-                              ·{' '}
-                              {formatToMoney(
-                                stripeRefundDue(selectedOrder),
-                                true
-                              )}{' '}
-                              not yet refunded in Stripe{' '}
-                              <button
-                                type="button"
-                                className="stripe-done"
-                                onClick={() => markStripeRefunded.mutate()}
-                                disabled={markStripeRefunded.isLoading}
-                              >
-                                {markStripeRefunded.isLoading
-                                  ? 'Saving...'
-                                  : 'Mark refunded in Stripe'}
-                              </button>
-                              {markStripeRefunded.isError && (
-                                <span className="stripe-error">
-                                  {' '}
-                                  {(markStripeRefunded.error as Error)?.message}
-                                </span>
-                              )}
-                            </span>
-                          ) : (
-                            <span className="stripe-ok">
-                              {' '}
-                              · refunded in Stripe
-                            </span>
-                          ))}
-                        {selectedOrder.benefit &&
-                        (refund.creditRestored ?? 0) > 0
-                          ? `, ${restoredPhrase(
-                              selectedOrder.benefit.type,
-                              refund.creditRestored ?? 0
-                            )} restored`
-                          : ''}
-                        {refund.returnedItems && refund.returnedItems.length > 0
-                          ? ` (${refund.returnedItems.reduce(
-                              (sum, r) => sum + r.quantity,
-                              0
-                            )} item${
-                              refund.returnedItems.reduce(
-                                (sum, r) => sum + r.quantity,
-                                0
-                              ) === 1
-                                ? ''
-                                : 's'
-                            } returned)`
-                          : ''}
-                      </>
-                    }
-                  />
-                ) : null}
                 <OrderDetailItem
                   label="Order note:"
                   value={note ? note : 'None provided'}
@@ -458,6 +380,7 @@ export default function OrderSidebar({
                 />
               </div>
             </div>
+            <OrderRefundPanel order={selectedOrder} store={store} />
             <div className="order-items">
               <p className="order-items-label">
                 <span>Order items</span>
@@ -714,34 +637,6 @@ const OrderSidebarStyles = styled.div`
       gap: 1rem 0;
       border-right: 1px solid #d4d4d8;
     }
-    .stripe-due {
-      color: #92400e;
-    }
-
-    .stripe-ok {
-      color: #065f46;
-    }
-
-    .stripe-error {
-      color: #b91c1c;
-    }
-
-    .stripe-done {
-      margin-left: 0.25rem;
-      padding: 0.0625rem 0.5rem;
-      font-size: 0.75rem;
-      font-weight: 500;
-      color: #1f2937;
-      background-color: #fff;
-      border: 1px solid #d1d5db;
-      border-radius: 0.25rem;
-      cursor: pointer;
-    }
-
-    .stripe-done:hover:not(:disabled) {
-      background-color: #e5e7eb;
-    }
-
     .benefit-email {
       display: inline-block;
       max-width: 14.75rem;
