@@ -64,6 +64,10 @@ export function exportInvoiceCsv(invoice: ClientInvoice) {
 // Billing the client for a client-funded benefit: pick the shipped orders
 // that are not yet on an invoice, freeze them onto one with the QuickBooks
 // number, then mark it paid when the money arrives.
+// Past the first handful, the excluded list folds away: a migrated store
+// can carry hundreds of orders billed before the dashboard tracked them.
+const EXCLUDED_OPEN_MAX = 5;
+
 export default function InvoicingSection({ benefit, store }: Props) {
   const orders = store.orders ?? [];
   const invoicesQuery = useInvoicesQuery(store._id);
@@ -297,37 +301,73 @@ export default function InvoicingSection({ benefit, store }: Props) {
           <div className="sublist">
             <p className="awaiting">
               {split.excluded.length} order
-              {split.excluded.length === 1 ? '' : 's'} excluded from invoicing:
+              {split.excluded.length === 1 ? '' : 's'} excluded from invoicing
+              {split.excluded.length > EXCLUDED_OPEN_MAX ? '.' : ':'}
             </p>
-            <ul className="plain-list">
-              {split.excluded.map(order => (
-                <li key={order.orderId}>
-                  <Link
-                    shallow
-                    replace
-                    scroll={false}
-                    href={`/stores/${store._id}?orderId=${order.orderId}`}
-                  >
-                    <a className="link">#{order.orderId}</a>
-                  </Link>{' '}
-                  {order.customer.firstName} {order.customer.lastName} ·{' '}
-                  {formatToMoney(orderNetBenefitAmount(order), true)} ·{' '}
-                  <em>{order.clientInvoiceExcluded?.reason}</em>{' '}
-                  <button
-                    type="button"
-                    className="link-button"
-                    onClick={() =>
-                      mutations.setExclusion.mutate({
-                        orderId: order.orderId,
-                        exclude: false,
-                      })
-                    }
-                  >
-                    Include again
-                  </button>
-                </li>
-              ))}
-            </ul>
+            {split.excluded.length > EXCLUDED_OPEN_MAX ? (
+              <details className="excluded-details">
+                <summary>Show the excluded orders</summary>
+                <ul className="plain-list">
+                  {split.excluded.map(order => (
+                    <li key={order.orderId}>
+                      <Link
+                        shallow
+                        replace
+                        scroll={false}
+                        href={`/stores/${store._id}?orderId=${order.orderId}`}
+                      >
+                        <a className="link">#{order.orderId}</a>
+                      </Link>{' '}
+                      {order.customer.firstName} {order.customer.lastName} ·{' '}
+                      {formatToMoney(orderNetBenefitAmount(order), true)} ·{' '}
+                      <em>{order.clientInvoiceExcluded?.reason}</em>{' '}
+                      <button
+                        type="button"
+                        className="link-button"
+                        onClick={() =>
+                          mutations.setExclusion.mutate({
+                            orderId: order.orderId,
+                            exclude: false,
+                          })
+                        }
+                      >
+                        Include again
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ) : (
+              <ul className="plain-list">
+                {split.excluded.map(order => (
+                  <li key={order.orderId}>
+                    <Link
+                      shallow
+                      replace
+                      scroll={false}
+                      href={`/stores/${store._id}?orderId=${order.orderId}`}
+                    >
+                      <a className="link">#{order.orderId}</a>
+                    </Link>{' '}
+                    {order.customer.firstName} {order.customer.lastName} ·{' '}
+                    {formatToMoney(orderNetBenefitAmount(order), true)} ·{' '}
+                    <em>{order.clientInvoiceExcluded?.reason}</em>{' '}
+                    <button
+                      type="button"
+                      className="link-button"
+                      onClick={() =>
+                        mutations.setExclusion.mutate({
+                          orderId: order.orderId,
+                          exclude: false,
+                        })
+                      }
+                    >
+                      Include again
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
 
@@ -815,6 +855,29 @@ const Styles = styled.div`
 
   .plain-list em {
     color: #6b7280;
+  }
+
+  .excluded-details {
+    margin: 0.25rem 0 0;
+  }
+
+  .excluded-details summary {
+    width: fit-content;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #1c44b9;
+    cursor: pointer;
+  }
+
+  .excluded-details summary:focus-visible {
+    outline: 2px solid #1c44b9;
+    outline-offset: 2px;
+    border-radius: 0.25rem;
+  }
+
+  .excluded-details .plain-list {
+    max-height: 18rem;
+    overflow-y: auto;
   }
 
   .empty,
