@@ -4,13 +4,13 @@
 // known; until then the email is shown.
 export const ADMINS: { email: string; name?: string }[] = [
   { email: 'seanhasenstein@gmail.com', name: 'Sean Hasenstein' },
-  { email: 'nick@macaport.com' },
-  { email: 'joe@macaport.com' },
+  { email: 'nick@macaport.com', name: 'Nick Schaefer' },
+  { email: 'joe@macaport.com', name: 'Joe Mansfield' },
   // ally@macaport.com removed on 05/20/26: she no longer works at Macaport.
-  { email: 'anne@macaport.com' },
-  { email: 'nschaefer@coveme.com' },
+  { email: 'anne@macaport.com', name: 'Anne Stedman' },
+  { email: 'nschaefer@coveme.com', name: 'Nick Schaefer' },
   { email: 'aschaefer@macaport.com' },
-  { email: 'katrina@macaport.com' },
+  { email: 'katrina@macaport.com', name: 'Katrina Harris' },
 ];
 
 export const ALLOWED_ADMIN_EMAILS = ADMINS.map(a => a.email);
