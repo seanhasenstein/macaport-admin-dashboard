@@ -8,6 +8,7 @@ import database from '../../../middleware/db';
 
 import { OrderSearchResult, Store } from '../../../interfaces';
 import { calculateTotalItems } from '../../../utils';
+import { orderBenefitTag } from '../../../utils/memberBenefit';
 
 interface ExtendedRequest {
   db: Db;
@@ -113,6 +114,7 @@ const handler = nc<ExtendedRequest, NextApiResponse>()
               totalItems: calculateTotalItems(o.items),
               uniqueItems: o.items.length,
               orderTotal: o.summary.total,
+              benefitTag: orderBenefitTag(o),
               status: o.orderStatus,
               shippingMethod: o.shippingMethod,
               createdAt: o.createdAt,

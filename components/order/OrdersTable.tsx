@@ -14,6 +14,7 @@ import OrdersActionsMenu from './OrdersActionsMenu';
 import OrderViewSelector from '../store/OrderViewSelector';
 
 import { calculateTotalItems, formatToMoney } from '../../utils';
+import { orderBenefitTag, stripeRefundDue } from '../../utils/memberBenefit';
 import useThrottle from '../../hooks/useThrottle';
 
 import {
@@ -24,6 +25,7 @@ import {
 } from '../../interfaces';
 import {
   getStoresOrderStatusNumbers,
+  isOrderOutstanding,
   OrderView,
   OrderViewOption,
 } from '../../utils/store';
@@ -113,19 +115,13 @@ function orderMatchesQuery(order: Order, query: string): boolean {
   return false;
 }
 
-type PrintOption =
-  | 'unfulfilled'
-  | 'personalization'
-  | 'filtered'
-  | 'single';
+type PrintOption = 'unfulfilled' | 'personalization' | 'filtered' | 'single';
 
 type Props = {
   store: StoreWithOrderStatusTotals;
   selectedOrder: Order | undefined;
   setSelectedOrder: React.Dispatch<React.SetStateAction<Order | undefined>>;
-  setPrintOption: React.Dispatch<
-    React.SetStateAction<PrintOption | undefined>
-  >;
+  setPrintOption: React.Dispatch<React.SetStateAction<PrintOption | undefined>>;
   setFilteredOrdersForPrint: React.Dispatch<React.SetStateAction<Order[]>>;
   showCancelOrderModal: boolean;
   setShowCancelOrderModal: React.Dispatch<React.SetStateAction<boolean>>;
@@ -141,6 +137,21 @@ type Props = {
   shippingFilter: string;
   setShippingFilter: React.Dispatch<React.SetStateAction<string>>;
 };
+
+// A settled refund, once nothing is left to do in Stripe. Canceled orders
+// already say so in their status.
+function refundTag(order: Order) {
+  if (order.orderStatus === 'Canceled' || stripeRefundDue(order) > 0) {
+    return null;
+  }
+  const refund = order.refund;
+  if (
+    !refund ||
+    ((refund.card ?? 0) === 0 && (refund.creditRestored ?? 0) === 0)
+  )
+    return null;
+  return refund.status === 'Full' ? 'Refunded' : 'Partly refunded';
+}
 
 export default function OrdersTable({
   store,
@@ -205,10 +216,7 @@ export default function OrdersTable({
   }, [distinctGroups, groupFilter, setGroupFilter]);
 
   React.useEffect(() => {
-    if (
-      shippingFilter &&
-      !distinctShippingMethods.includes(shippingFilter)
-    ) {
+    if (shippingFilter && !distinctShippingMethods.includes(shippingFilter)) {
       setShippingFilter('');
     }
   }, [distinctShippingMethods, shippingFilter, setShippingFilter]);
@@ -266,8 +274,7 @@ export default function OrdersTable({
     [store.orders]
   );
 
-  const hasActiveNarrowing =
-    isSearching || !!groupFilter || !!shippingFilter;
+  const hasActiveNarrowing = isSearching || !!groupFilter || !!shippingFilter;
 
   const scopedStatusTotals = React.useMemo(
     () =>
@@ -280,8 +287,7 @@ export default function OrdersTable({
   const visibleFilterItems = React.useMemo(
     () =>
       orderFilterItems.filter(
-        item =>
-          item.option === 'All' || scopedStatusTotals[item.option] > 0
+        item => item.option === 'All' || scopedStatusTotals[item.option] > 0
       ),
     [scopedStatusTotals]
   );
@@ -372,7 +378,19 @@ export default function OrdersTable({
   const session = useSession();
   const userId = session?.data?.user.id;
 
-  const closeSidebar = () => setShowSidebar(false);
+  // An order opened from a link (?orderId=) keeps its id in the URL only
+  // while the sidebar is open, so a refresh after closing doesn't reopen it
+  // and the same link opens it again next time.
+  const closeSidebar = React.useCallback(() => {
+    setShowSidebar(false);
+    if (router.query.orderId) {
+      const { orderId: _orderId, ...query } = router.query;
+      router.replace({ pathname: router.pathname, query }, undefined, {
+        shallow: true,
+        scroll: false,
+      });
+    }
+  }, [router]);
 
   const handleCopyEmails = async () => {
     const emails = Array.from(
@@ -427,30 +445,67 @@ export default function OrdersTable({
 
   const updateSelectedOrder = (orderId: string) => {
     const order = filteredOrders.find(o => o.orderId === orderId);
-    if (order) setSelectedOrder(order);
+    if (!order) return;
+    setSelectedOrder(order);
+    // Opened from a link: keep the URL on the order being shown, so a
+    // refresh reopens this one rather than the one first linked to.
+    if (router.query.orderId && router.query.orderId !== orderId) {
+      router.replace(
+        { pathname: router.pathname, query: { ...router.query, orderId } },
+        undefined,
+        { shallow: true, scroll: false }
+      );
+    }
   };
 
+  // Every way of opening an order puts its id in the URL, so a refresh
+  // reopens it; closing the sidebar takes it out again.
   const buttonOnClick = (orderId: string) => {
     updateSelectedOrder(orderId);
     setShowSidebar(true);
+    if (router.query.orderId !== orderId) {
+      router.replace(
+        { pathname: router.pathname, query: { ...router.query, orderId } },
+        undefined,
+        { shallow: true, scroll: false }
+      );
+    }
   };
 
+  // Open the order named in the URL. If the current view or filters hide
+  // it, show the view it belongs to and clear the filters first, or the
+  // sidebar would close again straight away.
+  const linkedOrderId =
+    typeof router.query.orderId === 'string' ? router.query.orderId : '';
+  const filteredOrdersRef = React.useRef(filteredOrders);
+  filteredOrdersRef.current = filteredOrders;
   React.useEffect(() => {
-    if (router.query.orderId) {
-      const order = store.orders.find(o => o.orderId === router.query.orderId);
-      if (order) {
-        setSelectedOrder(order);
-        setShowSidebar(true);
-      }
+    if (!linkedOrderId) return;
+    const order = store.orders.find(o => o.orderId === linkedOrderId);
+    if (!order) return;
+    if (!filteredOrdersRef.current.some(o => o.orderId === linkedOrderId)) {
+      const ownView: OrderView = isOrderOutstanding(order)
+        ? 'outstanding'
+        : new Date(order.createdAt).getFullYear();
+      const hasOwnView = viewOptions.some(o => o.view === ownView);
+      if (viewOptions.length > 1) setSelectedView(hasOwnView ? ownView : 'all');
+      setSearchTerm('');
+      setGroupFilter('');
+      setShippingFilter('');
+      setOrderViewOption('All');
     }
-  }, [router.query.orderId, setSelectedOrder, store.orders]);
+    setSelectedOrder(order);
+    setShowSidebar(true);
+    // Runs when the linked id changes, not on every store refetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkedOrderId, store.orders.length > 0]);
 
   React.useEffect(() => {
     if (!showSidebar || !selectedOrder) return;
     if (!filteredOrders.some(o => o.orderId === selectedOrder.orderId)) {
-      setShowSidebar(false);
+      closeSidebar();
     }
-  }, [filteredOrders, selectedOrder, showSidebar]);
+  }, [closeSidebar, filteredOrders, selectedOrder, showSidebar]);
 
   // NOTE: this is needed to update the order status in the sidebar
   // TODO: find see if there is a better way to do this
@@ -461,8 +516,7 @@ export default function OrdersTable({
     setSelectedOrder(updatedSelectedOrder);
   }, [selectedOrder?.orderId, setSelectedOrder, store]);
 
-  const showViewSelector =
-    selectedView !== undefined && viewOptions.length > 1;
+  const showViewSelector = selectedView !== undefined && viewOptions.length > 1;
   const activeFilterCount =
     (searchTerm.trim().length > 0 ? 1 : 0) +
     (groupFilter ? 1 : 0) +
@@ -615,9 +669,7 @@ export default function OrdersTable({
                 <span className="clear-count" aria-hidden="true">
                   {activeFilterCount}
                 </span>
-                <span className="sr-only">
-                  ({activeFilterCount} active)
-                </span>
+                <span className="sr-only">({activeFilterCount} active)</span>
               </button>
             )}
           </div>
@@ -705,6 +757,24 @@ export default function OrdersTable({
                                 <div className="order-id">#{o.orderId}</div>
                                 <div className="order-total">
                                   {formatToMoney(o.summary.total, true)}
+                                  {orderBenefitTag(o) && (
+                                    <span className="benefit-tag">
+                                      {orderBenefitTag(o)}
+                                    </span>
+                                  )}
+                                  {stripeRefundDue(o) > 0 && (
+                                    <span
+                                      className="benefit-tag refund-due"
+                                      title="Recorded as owed back to the card; not yet marked refunded in Stripe"
+                                    >
+                                      Stripe refund due
+                                    </span>
+                                  )}
+                                  {refundTag(o) && (
+                                    <span className="benefit-tag refunded">
+                                      {refundTag(o)}
+                                    </span>
+                                  )}
                                 </div>
                               </ButtonWrapper>
                             </td>
@@ -939,8 +1009,8 @@ const OrdersTableStyles = styled.div`
 
     &:focus-visible {
       border-color: #1c44b9;
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
-        #1c44b9 0px 0px 0px 1px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px, #1c44b9 0px 0px 0px 1px,
+        rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
     }
   }
 
@@ -964,8 +1034,8 @@ const OrdersTableStyles = styled.div`
       outline: 2px solid transparent;
       outline-offset: 2px;
       border-color: #1c44b9;
-      box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
-        #1c44b9 0px 0px 0px 1px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+      box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px, #1c44b9 0px 0px 0px 1px,
+        rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
     }
 
     &:hover {
@@ -1007,8 +1077,8 @@ const OrdersTableStyles = styled.div`
         outline: 2px solid transparent;
         outline-offset: 2px;
         border-color: #1c44b9;
-        box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px,
-          #1c44b9 0px 0px 0px 1px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+        box-shadow: rgb(255, 255, 255) 0px 0px 0px 0px, #1c44b9 0px 0px 0px 1px,
+          rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
       }
     }
   }
@@ -1189,9 +1259,37 @@ const OrdersTableStyles = styled.div`
   .order-id,
   .order-total {
     margin-top: 0.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.375rem;
     font-size: 0.75rem;
     font-weight: 500;
     color: #71717a;
+  }
+
+  .benefit-tag.refunded {
+    color: #3f3f46;
+    background-color: #f4f4f5;
+    border-color: #d4d4d8;
+  }
+
+  .benefit-tag.refund-due {
+    color: #92400e;
+    background-color: #fffbeb;
+    border-color: #fde68a;
+  }
+
+  .benefit-tag {
+    padding: 0.0625rem 0.375rem;
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    color: #1e40af;
+    background-color: #dbeafe;
+    border: 1px solid #bfdbfe;
+    border-radius: 0.25rem;
+    white-space: nowrap;
   }
 
   .order-actions {

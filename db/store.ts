@@ -201,5 +201,12 @@ export async function deleteStore(db: Db, id: string) {
   const result = await db
     .collection<WithoutId<Store>>('stores')
     .findOneAndDelete({ _id: new ObjectId(id) });
+  // The store's orders go with it, so nothing references its benefit now.
+  const benefitId = result.value?.benefitId;
+  if (benefitId && ObjectId.isValid(benefitId)) {
+    await db
+      .collection('memberBenefits')
+      .deleteOne({ _id: new ObjectId(benefitId) });
+  }
   return result.value;
 }

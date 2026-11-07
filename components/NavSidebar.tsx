@@ -55,6 +55,9 @@ export default function NavSidebar({ sidebarOpen, setSidebarOpen }: Props) {
           <Link href="/inventory-products">
             <a className="nav-link">Inventory products</a>
           </Link>
+          <Link href="/receivables">
+            <a className="nav-link">Client invoices</a>
+          </Link>
           <Link href="/stores/create">
             <a className="nav-link">Create a store</a>
           </Link>

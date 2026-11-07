@@ -16,6 +16,9 @@ import { useOrderMutation } from '../../hooks/useOrderMutations';
 import { formatPhoneNumber, formatToMoney } from '../../utils';
 
 import { Order, Store } from '../../interfaces';
+import { restoredPhrase } from '../../utils/refund';
+import { memberEnded } from '../../utils/memberBenefit';
+import { useBenefitQuery } from '../../hooks/useBenefitQuery';
 
 type Props = {
   isOpen: boolean;
@@ -49,6 +52,17 @@ export default function CancelOrderModal({
         }
       });
     }
+  );
+
+  const [restoreCredit, setRestoreCredit] = React.useState(
+    Boolean(order.benefit)
+  );
+  const benefitQuery = useBenefitQuery(store._id, Boolean(order.benefit));
+  const ended = memberEnded(benefitQuery.data, order.benefit?.email);
+  // Set when the order canceled but the credit could not come back, so the
+  // admin hears it here rather than finding out from the member.
+  const [restoreProblem, setRestoreProblem] = React.useState<string | null>(
+    null
   );
 
   const { cancelOrder } = useOrderMutation({
@@ -182,6 +196,43 @@ export default function CancelOrderModal({
                 </p>
               </div>
             </div>
+            {order.benefit && ended && (
+              <div className="benefit-choice">
+                <span>
+                  {order.benefit.email}&apos;s benefit was ended, so nothing
+                  this order used will be restored to it.
+                </span>
+              </div>
+            )}
+            {order.benefit && !ended && (
+              <label className="benefit-choice" htmlFor="cancel-restore-credit">
+                <input
+                  id="cancel-restore-credit"
+                  type="checkbox"
+                  checked={restoreCredit}
+                  onChange={e => setRestoreCredit(e.target.checked)}
+                />
+                <span>
+                  Give {order.benefit.email} back the{' '}
+                  {restoredPhrase(
+                    order.benefit.type,
+                    Math.max(
+                      0,
+                      order.benefit.used - (order.refund?.creditRestored ?? 0)
+                    )
+                  )}{' '}
+                  this order used
+                  {(order.refund?.creditRestored ?? 0) > 0
+                    ? ' and has not already had restored'
+                    : ''}
+                  .
+                  <span className="sub">
+                    Untick if the member has left or the program has ended. It
+                    can still be restored later from the member benefit panel.
+                  </span>
+                </span>
+              </label>
+            )}
             <div className="instructions">
               <h3>Items to return to inventory</h3>
               <p>
@@ -356,7 +407,19 @@ export default function CancelOrderModal({
                 allItemsAlreadyShippedOrCanceled,
             })}
           >
-            {allItemsAlreadyShippedOrCanceled ? (
+            {restoreProblem ? (
+              <p className="restore-problem">
+                <ExclamationCircleIcon className="exclamation-icon" />
+                {restoreProblem}
+                <button
+                  type="button"
+                  className="submit-button"
+                  onClick={closeModal}
+                >
+                  Close
+                </button>
+              </p>
+            ) : allItemsAlreadyShippedOrCanceled ? (
               <p>
                 <ExclamationCircleIcon className="exclamation-icon" />
                 {orderStatus === 'Canceled' ? (
@@ -379,9 +442,18 @@ export default function CancelOrderModal({
                 type="button"
                 className="submit-button"
                 onClick={() => {
-                  cancelOrder.mutate(undefined, {
-                    onSuccess: () => closeModal(),
-                  });
+                  cancelOrder.mutate(
+                    { restoreCredit: restoreCredit && !ended },
+                    {
+                      onSuccess: data => {
+                        if (data?.restoreProblem) {
+                          setRestoreProblem(data.restoreProblem);
+                        } else {
+                          closeModal();
+                        }
+                      },
+                    }
+                  );
                 }}
               >
                 Cancel this order
@@ -519,6 +591,46 @@ const CancelOrderModalStyles = styled.div`
         text-decoration: underline;
       }
     }
+  }
+
+  .restore-problem {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: #92400e;
+  }
+
+  .restore-problem .submit-button {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .benefit-choice {
+    margin: 0 0 1rem;
+    padding: 0.75rem 0.875rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: #1e3a8a;
+    background-color: #eef2ff;
+    border: 1px solid #c7d2fe;
+    border-radius: 0.375rem;
+    cursor: pointer;
+  }
+
+  .benefit-choice input {
+    margin: 0.25rem 0 0;
+    flex-shrink: 0;
+  }
+
+  .benefit-choice .sub {
+    display: block;
+    font-size: 0.75rem;
+    color: #4b5563;
   }
 
   .instructions {

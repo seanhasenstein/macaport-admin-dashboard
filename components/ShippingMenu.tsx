@@ -4,6 +4,7 @@ import { EllipsisVerticalIcon } from '@heroicons/react/24/outline';
 
 import useEscapeKeydownClose from '../hooks/useEscapeKeydownClose';
 import useOutsideClick from '../hooks/useOutsideClick';
+import { DEFAULT_INVOICE_GRACE_DAYS } from '../utils/memberBenefit';
 import { formatToMoney } from '../utils';
 
 import { ShippingData } from '../interfaces';
@@ -36,9 +37,7 @@ export default function ShippingMenu(props: Props) {
         <EllipsisVerticalIcon />
         <span className="sr-only">Toggle nav menu</span>
       </button>
-      <div
-        className={`menu-container${props.showMenu ? ' show' : ''}`}
-      >
+      <div className={`menu-container${props.showMenu ? ' show' : ''}`}>
         {props.successfulMutation ? (
           <div className="successful-mutation">
             <svg
@@ -68,13 +67,20 @@ export default function ShippingMenu(props: Props) {
               {formatToMoney(props.shipping.freeMinimum, true)}
             </div>
           </div>
+          <div className="item">
+            <div className="label">Invoice after shipping</div>
+            <div className="value">
+              {props.shipping.invoiceGraceDays ?? DEFAULT_INVOICE_GRACE_DAYS}{' '}
+              days
+            </div>
+          </div>
         </div>
         <button
           type="button"
           onClick={handleShowShippngPriceModal}
           className="menu-button"
         >
-          Update shipping details
+          Update store settings
         </button>
       </div>
     </ShippingMenuStyles>

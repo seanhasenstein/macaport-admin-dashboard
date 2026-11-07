@@ -8,7 +8,7 @@ import { Request } from '../../../interfaces';
 const handler = nc<Request, NextApiResponse>()
   .use(database)
   .get(async (req, res) => {
-    const shippingData = await shipping.getShippingData(req.db);
+    const shippingData = await shipping.findShippingData(req.db);
 
     res.json({ shipping: shippingData });
   });

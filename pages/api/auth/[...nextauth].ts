@@ -6,6 +6,7 @@ import { MongoDBAdapter } from '@next-auth/mongodb-adapter';
 import { mongoClientPromise } from '../../../db/connect';
 
 import { createIdNumber } from '../../../utils';
+import { ALLOWED_ADMIN_EMAILS } from '../../../utils/admins';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -33,17 +34,7 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     async signIn({ user }) {
-      const allowedEmailAccounts = [
-        'seanhasenstein@gmail.com',
-        'nick@macaport.com',
-        'joe@macaport.com',
-        // 'ally@macaport.com', // removed ally's email on 05/20/26 since she is no longer working at macaport
-        'anne@macaport.com',
-        'nschaefer@coveme.com',
-        'aschaefer@macaport.com',
-        'katrina@macaport.com',
-      ];
-      if (user.email && allowedEmailAccounts.includes(user.email)) {
+      if (user.email && ALLOWED_ADMIN_EMAILS.includes(user.email)) {
         return true;
       } else {
         return '/unauthorized';

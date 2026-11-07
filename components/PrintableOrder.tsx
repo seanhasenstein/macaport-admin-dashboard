@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { format } from 'date-fns';
 import { Order, Store } from '../interfaces';
 import { formatPhoneNumber, formatToMoney } from '../utils';
+import { orderAdjustments } from '../utils/memberBenefit';
 
 type Props = {
   order?: Order;
@@ -95,6 +96,17 @@ export default function PrintableOrder({ order, store }: Props) {
                     {formatToMoney(order.summary.subtotal, true)}
                   </div>
                 </div>
+                {orderAdjustments(order).map((adjustment, i) => (
+                  <div key={i} className="item">
+                    <div className="label">
+                      {adjustment.label}
+                      {adjustment.units ? ` (${adjustment.units} free)` : ''}
+                    </div>
+                    <div className="value">
+                      -{formatToMoney(-adjustment.amount, true)}
+                    </div>
+                  </div>
+                ))}
                 <div className="item">
                   <div className="label">Sales Tax</div>
                   <div className="value">

@@ -3,7 +3,8 @@ import * as store from './store';
 import * as order from './order';
 import * as inventoryProduct from './inventoryProduct';
 import * as shipping from './shipping';
-import * as teacherAppreciation from './teacherAppreciation';
+import * as memberBenefit from './memberBenefit';
+import * as clientInvoice from './clientInvoice';
 
 async function connectToDb() {
   const client = await mongoClientPromise;
@@ -11,10 +12,11 @@ async function connectToDb() {
 }
 
 export {
+  clientInvoice,
   connectToDb,
   inventoryProduct,
+  memberBenefit,
   order,
   shipping,
   store,
-  teacherAppreciation,
 };

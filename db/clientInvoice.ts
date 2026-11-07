@@ -1,0 +1,262 @@
+import { Db, ObjectId } from 'mongodb';
+import {
+  ClientInvoice,
+  ClientInvoiceLine,
+  ClientInvoiceStatus,
+} from '../interfaces';
+
+// What Macaport bills a client for a client-funded benefit. Created from
+// the benefit panel, paid and voided from there or from the receivables
+// page. Each order carries the invoice it is on, so an order is never billed
+// twice and a void releases it.
+
+const COLLECTION = 'clientInvoices';
+
+interface InvoiceDoc extends Omit<ClientInvoice, '_id'> {
+  _id: ObjectId;
+}
+
+function collection(db: Db) {
+  return db.collection<InvoiceDoc>(COLLECTION);
+}
+
+function withStringId(doc: InvoiceDoc): ClientInvoice {
+  return { ...doc, _id: String(doc._id) };
+}
+
+export async function getById(db: Db, id: string) {
+  if (!ObjectId.isValid(id)) return null;
+  const doc = await collection(db).findOne({ _id: new ObjectId(id) });
+  return doc ? withStringId(doc) : null;
+}
+
+export async function listByBenefit(db: Db, benefitId: string) {
+  const docs = await collection(db)
+    .find({ benefitId })
+    .sort({ issuedAt: -1, createdAt: -1 })
+    .toArray();
+  return docs.map(withStringId);
+}
+
+export async function listByStatus(
+  db: Db,
+  status: ClientInvoiceStatus,
+  limit = 200
+) {
+  const docs = await collection(db)
+    .find({ status })
+    .sort(status === 'open' ? { issuedAt: 1 } : { paidAt: -1 })
+    .limit(limit)
+    .toArray();
+  return docs.map(withStringId);
+}
+
+export interface CreateInvoiceInput {
+  storeId: string;
+  storeName: string;
+  benefitId: string;
+  benefitName: string;
+  number: string;
+  issuedAt: string;
+  dueAt: string | null;
+  note: string;
+  lines: ClientInvoiceLine[];
+  subtotal: number;
+  total: number;
+  createdBy: string;
+  paid: { paidAt: string; reference: string } | null;
+}
+
+export async function create(db: Db, input: CreateInvoiceInput) {
+  const now = new Date().toISOString();
+  const { paid, ...rest } = input;
+  const doc: Omit<InvoiceDoc, '_id'> = {
+    ...rest,
+    status: paid ? 'paid' : 'open',
+    paidAt: paid ? paid.paidAt : null,
+    paymentReference: paid ? paid.reference : '',
+    paidBy: paid ? input.createdBy : '',
+    voidedAt: null,
+    voidedBy: '',
+    createdAt: now,
+    updatedAt: now,
+  };
+  const inserted = await db
+    .collection<Omit<InvoiceDoc, '_id'>>(COLLECTION)
+    .insertOne(doc);
+  const id = String(inserted.insertedId);
+
+  // Link the billed orders in one write. Adjustment lines refer to orders
+  // on earlier invoices and must not be re-pointed. The filter also insists
+  // the order is not already linked, so two creates racing for the same
+  // orders cannot both win: the loser is rolled back.
+  const orderIds = input.lines
+    .filter(l => l.kind !== 'adjustment')
+    .map(l => l.orderId);
+  const linked = await db.collection('stores').updateOne(
+    { _id: new ObjectId(input.storeId) },
+    { $set: { 'orders.$[o].clientInvoiceId': id } },
+    {
+      arrayFilters: [
+        {
+          'o.orderId': { $in: orderIds },
+          'o.clientInvoiceId': { $in: [null, undefined] },
+        },
+      ],
+    }
+  );
+  const after = await db
+    .collection('stores')
+    .aggregate([
+      { $match: { _id: new ObjectId(input.storeId) } },
+      { $unwind: '$orders' },
+      {
+        $match: {
+          'orders.orderId': { $in: orderIds },
+          'orders.clientInvoiceId': id,
+        },
+      },
+      { $count: 'n' },
+    ])
+    .toArray();
+  const linkedCount = after[0]?.n ?? 0;
+  if (linked.matchedCount !== 1 || linkedCount !== orderIds.length) {
+    // Release whatever this call did link, then drop the invoice.
+    await db
+      .collection('stores')
+      .updateOne(
+        { _id: new ObjectId(input.storeId) },
+        { $set: { 'orders.$[o].clientInvoiceId': null } },
+        { arrayFilters: [{ 'o.clientInvoiceId': id }] }
+      );
+    await collection(db).deleteOne({ _id: inserted.insertedId });
+    return null;
+  }
+
+  return withStringId({ ...doc, _id: inserted.insertedId });
+}
+
+export async function markPaid(
+  db: Db,
+  id: string,
+  paidAt: string,
+  reference: string,
+  paidBy: string
+) {
+  const result = await collection(db).findOneAndUpdate(
+    { _id: new ObjectId(id), status: 'open' },
+    {
+      $set: {
+        status: 'paid',
+        paidAt,
+        paymentReference: reference,
+        paidBy,
+        updatedAt: new Date().toISOString(),
+      },
+    },
+    { returnDocument: 'after' }
+  );
+  return result.value ? withStringId(result.value) : null;
+}
+
+// Marks an order as not to be billed, or clears that. The order keeps its
+// benefit link; only the invoicing side ignores it.
+export async function setOrderExclusion(
+  db: Db,
+  storeId: string,
+  orderId: string,
+  exclusion: { reason: string; by: string; at: string } | null
+) {
+  const result = await db
+    .collection('stores')
+    .updateOne(
+      { _id: new ObjectId(storeId), 'orders.orderId': orderId },
+      { $set: { 'orders.$.clientInvoiceExcluded': exclusion } }
+    );
+  return result.matchedCount === 1;
+}
+
+// Records that a later invoice credited back part of an earlier one's
+// drift, per order, so the same drift is never credited twice.
+export async function settleDrift(
+  db: Db,
+  invoiceId: string,
+  perOrder: { orderId: string; amount: number; expectedSettled?: number }[]
+) {
+  if (perOrder.length === 0) return true;
+  // Each order's settled figure must still be what the caller read, so two
+  // invoices created at once cannot both credit the same drift.
+  const filter: Record<string, unknown> = { _id: new ObjectId(invoiceId) };
+  const inc: Record<string, number> = {};
+  for (const { orderId, amount, expectedSettled } of perOrder) {
+    inc[`settledDrift.${orderId}`] = amount;
+    if (expectedSettled !== undefined) {
+      filter[`settledDrift.${orderId}`] =
+        expectedSettled === 0 ? { $in: [0, null] } : expectedSettled;
+    }
+  }
+  const result = await collection(db).updateOne(filter, {
+    $inc: inc,
+    $set: { updatedAt: new Date().toISOString() },
+  });
+  return result.matchedCount === 1;
+}
+
+// Whether a live later invoice carries a credit against this one. Voiding
+// such an invoice would release its orders to be billed again while the
+// client keeps a credit for a bill they never paid.
+export async function hasLaterCredits(db: Db, invoiceId: string) {
+  const n = await collection(db).countDocuments(
+    { status: { $ne: 'void' }, 'lines.adjustsInvoiceId': invoiceId },
+    { limit: 1 }
+  );
+  return n > 0;
+}
+
+// Withdraws an invoice that was just created and cannot stand.
+export async function deleteInvoiceAndRelease(db: Db, invoice: ClientInvoice) {
+  await db
+    .collection('stores')
+    .updateOne(
+      { _id: new ObjectId(invoice.storeId) },
+      { $set: { 'orders.$[o].clientInvoiceId': null } },
+      { arrayFilters: [{ 'o.clientInvoiceId': invoice._id }] }
+    );
+  await collection(db).deleteOne({ _id: new ObjectId(invoice._id) });
+}
+
+// Keeps the record, releases the orders.
+export async function voidInvoice(db: Db, id: string, voidedBy: string) {
+  const result = await collection(db).findOneAndUpdate(
+    { _id: new ObjectId(id), status: { $ne: 'void' } },
+    {
+      $set: {
+        status: 'void',
+        voidedAt: new Date().toISOString(),
+        voidedBy,
+        updatedAt: new Date().toISOString(),
+      },
+    },
+    { returnDocument: 'after' }
+  );
+  if (!result.value) return null;
+  await db
+    .collection('stores')
+    .updateOne(
+      { _id: new ObjectId(result.value.storeId) },
+      { $set: { 'orders.$[o].clientInvoiceId': null } },
+      { arrayFilters: [{ 'o.clientInvoiceId': id }] }
+    );
+  // Credits this invoice carried for earlier invoices are owed again.
+  const byInvoice = new Map<string, { orderId: string; amount: number }[]>();
+  for (const line of result.value.lines) {
+    if (line.kind !== 'adjustment' || !line.adjustsInvoiceId) continue;
+    const list = byInvoice.get(line.adjustsInvoiceId) ?? [];
+    list.push({ orderId: line.orderId, amount: -line.amount });
+    byInvoice.set(line.adjustsInvoiceId, list);
+  }
+  for (const invoiceId of Array.from(byInvoice.keys())) {
+    await settleDrift(db, invoiceId, byInvoice.get(invoiceId) ?? []);
+  }
+  return withStringId(result.value);
+}

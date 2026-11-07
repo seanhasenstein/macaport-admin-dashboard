@@ -10,10 +10,19 @@ import {
 import { getNextOrderItemStatus } from '../utils/orderItem';
 import { handleUpdateOrderStatus } from '../utils/order';
 
+// One order and the store's name, without loading the rest of the store
+// document, which can run to many megabytes.
 export async function getOrderById(db: Db, storeId: string, orderId: string) {
-  const result = await db.collection<Store>('stores').findOne({ _id: storeId });
-  const order = result?.orders.find(r => r.orderId === orderId);
-  return order;
+  if (!ObjectId.isValid(storeId)) return undefined;
+  const result = await db
+    .collection<StoreWithId>('stores')
+    .findOne(
+      { _id: new ObjectId(storeId), 'orders.orderId': orderId },
+      { projection: { name: 1, 'orders.$': 1 } }
+    );
+  const order = result?.orders?.[0];
+  if (!order) return undefined;
+  return { order, storeName: result?.name ?? '' };
 }
 
 export async function updateOrderStatus(
@@ -56,32 +65,33 @@ export async function cancelOrder(
     // quantity: 0,
     // itemTotal: 0,
   }));
-  const updatedOrder: Order = {
-    ...order,
-    orderStatus: 'Canceled',
-    items: updatedItems,
-    summary: {
-      ...order.summary,
-      // todo: handle this based on refund status?
-      subtotal: 0,
-      salesTax: 0,
-      shipping: 0,
-      total: 0,
+  // Only what cancelling changes is written, so anything saved on the
+  // order since it was read (a Stripe confirmation, an invoice link) stays.
+  // The card refund is the whole charge; it is made in Stripe by hand and
+  // confirmed on the order like any other.
+  const result = await db.collection<StoreWithId>('stores').findOneAndUpdate(
+    { _id: new ObjectId(storeId) },
+    {
+      $set: {
+        'orders.$[order].orderStatus': 'Canceled',
+        'orders.$[order].items': updatedItems,
+        'orders.$[order].summary.subtotal': 0,
+        'orders.$[order].summary.salesTax': 0,
+        'orders.$[order].summary.shipping': 0,
+        'orders.$[order].summary.total': 0,
+        'orders.$[order].refund.status': 'Full',
+        'orders.$[order].refund.amount': order.summary.total,
+        'orders.$[order].refund.card': order.summary.total,
+      },
     },
-    // todo: should we handle this differently?
-    refund: {
-      status: 'Full',
-      amount: order.summary.total,
-    },
-  };
-
-  const result = await db
-    .collection<StoreWithId>('stores')
-    .findOneAndUpdate(
-      { _id: new ObjectId(storeId) },
-      { $set: { 'orders.$[order]': updatedOrder } },
-      { arrayFilters: [{ 'order.orderId': orderId }], returnDocument: 'after' }
-    );
+    // Only an uncanceled order: two cancels racing cannot both write.
+    {
+      arrayFilters: [
+        { 'order.orderId': orderId, 'order.orderStatus': { $ne: 'Canceled' } },
+      ],
+      returnDocument: 'after',
+    }
+  );
 
   return result.value;
 }
@@ -267,10 +277,7 @@ export async function markReceiptsPrintedForOrders(
   if (store) {
     const targetIds = new Set(orderIds);
     const updatedOrders = store.orders.map(order => {
-      if (
-        targetIds.has(order.orderId) &&
-        order.orderStatus === 'Unfulfilled'
-      ) {
+      if (targetIds.has(order.orderId) && order.orderStatus === 'Unfulfilled') {
         return {
           ...order,
           meta: {

@@ -8,6 +8,7 @@ import {
   StoreStatusFilter,
 } from '../interfaces';
 import { hydrateOrderItemsWithArtworkId } from './orderItem';
+import { stripeRefundDue } from './memberBenefit';
 import { convertStoreToStoresTableStore } from './storesTable';
 
 export type OrderView = number | 'all' | 'outstanding';
@@ -22,8 +23,12 @@ const SETTLED_ORDER_STATUSES: ReadonlySet<string> = new Set([
   'Canceled',
 ]);
 
+// Outstanding means someone still has to do something: fulfil or ship it,
+// or refund a card that is still owed money in Stripe.
 export function isOrderOutstanding(order: Order): boolean {
-  return !SETTLED_ORDER_STATUSES.has(order.orderStatus);
+  return (
+    !SETTLED_ORDER_STATUSES.has(order.orderStatus) || stripeRefundDue(order) > 0
+  );
 }
 
 export function getOrderViewOptions(orders: Order[]): OrderViewOption[] {

@@ -11,8 +11,15 @@ import PrintableOrder from '../PrintableOrder';
 import OrderDetailItem from './OrderDetailItem';
 import OrderItem from './OrderItem';
 import OrderItemsBreakdown from './OrderItemsBreakdown';
+import RefundModal from './RefundModal';
+import OrderRefundPanel from './OrderRefundPanel';
+import OrderBenefitPanel from './OrderBenefitPanel';
 
 import { formatPhoneNumber, formatToMoney } from '../../utils';
+import {
+  adjustmentKindLabel,
+  orderAdjustments,
+} from '../../utils/memberBenefit';
 
 import { Order, Store } from '../../interfaces';
 
@@ -52,6 +59,7 @@ export default function OrderSidebar({
   openTriggerStoreShipmentModal,
 }: Props) {
   const mainContentRef = React.useRef<HTMLDivElement>(null);
+  const [showRefundModal, setShowRefundModal] = React.useState(false);
 
   const session = useSession();
   const userId = session?.data?.user.id;
@@ -103,11 +111,12 @@ export default function OrderSidebar({
     stripeId,
     summary,
     orderStatus,
-    switchFitnessDiscount,
-    sheboyganLutheranStaffDiscount,
   } = selectedOrder;
   const { email, firstName, lastName, phone } = customer;
   const { subtotal, salesTax, shipping, total, stripeFee } = summary;
+
+  // Read through the helper so legacy orders render the same rows.
+  const adjustments = orderAdjustments(selectedOrder);
 
   const renderShippingAddressLabel = () => {
     if (shippingMethod === 'Direct') {
@@ -153,8 +162,8 @@ export default function OrderSidebar({
       <OrderSidebarStyles>
         <Sidebar
           {...{ isOpen, closeSidebar }}
-          disableOutsideClick={showCancelOrderModal}
-          disableEscapeKeydown={showCancelOrderModal}
+          disableOutsideClick={showCancelOrderModal || showRefundModal}
+          disableEscapeKeydown={showCancelOrderModal || showRefundModal}
           customHeader={
             <div className="custom-header">
               <div className="customer-details">
@@ -199,6 +208,7 @@ export default function OrderSidebar({
                     setShowCancelOrderModal,
                     store,
                     openTriggerStoreShipmentModal,
+                    openRefundModal: () => setShowRefundModal(true),
                   }}
                 />
               </div>
@@ -238,40 +248,6 @@ export default function OrderSidebar({
                     customValueClass="shipping-address-value"
                   />
                 )}
-                {switchFitnessDiscount && summary.discount ? (
-                  <OrderDetailItem
-                    label="Switch discount:"
-                    value={
-                      <>
-                        {formatToMoney(summary.discount, true)} discount applied
-                        for{' '}
-                        <span
-                          title={switchFitnessDiscount.email}
-                          className="switch-discount-email"
-                        >
-                          {switchFitnessDiscount.email}
-                        </span>
-                      </>
-                    }
-                  />
-                ) : null}
-                {sheboyganLutheranStaffDiscount && summary.discount ? (
-                  <OrderDetailItem
-                    label="Staff discount:"
-                    value={
-                      <>
-                        {formatToMoney(summary.discount, true)} discount applied
-                        for{' '}
-                        <span
-                          title={sheboyganLutheranStaffDiscount.email}
-                          className="switch-discount-email"
-                        >
-                          {sheboyganLutheranStaffDiscount.email}
-                        </span>
-                      </>
-                    }
-                  />
-                ) : null}
                 <OrderDetailItem
                   label="Order note:"
                   value={note ? note : 'None provided'}
@@ -287,24 +263,18 @@ export default function OrderSidebar({
                   customLabelClass="summary-label"
                   customValueClass="summary-value"
                 />
-                {switchFitnessDiscount && summary.discount ? (
+                {adjustments.map((adjustment, i) => (
                   <OrderDetailItem
-                    label="Discount:"
-                    value={`-${formatToMoney(summary.discount, true)}`}
+                    key={i}
+                    label={`${adjustmentKindLabel(adjustment.kind)}${
+                      adjustment.units ? ` (${adjustment.units} free)` : ''
+                    }:`}
+                    value={`-${formatToMoney(-adjustment.amount, true)}`}
                     customClass="summary-item"
                     customLabelClass="summary-label"
                     customValueClass="summary-value"
                   />
-                ) : null}
-                {sheboyganLutheranStaffDiscount && summary.discount ? (
-                  <OrderDetailItem
-                    label="Discount:"
-                    value={`-${formatToMoney(summary.discount, true)}`}
-                    customClass="summary-item"
-                    customLabelClass="summary-label"
-                    customValueClass="summary-value"
-                  />
-                ) : null}
+                ))}
                 <OrderDetailItem
                   label="Sales tax:"
                   value={formatToMoney(salesTax, true)}
@@ -342,6 +312,8 @@ export default function OrderSidebar({
                 />
               </div>
             </div>
+            <OrderBenefitPanel order={selectedOrder} store={store} />
+            <OrderRefundPanel order={selectedOrder} store={store} />
             <div className="order-items">
               <p className="order-items-label">
                 <span>Order items</span>
@@ -408,6 +380,13 @@ export default function OrderSidebar({
           </div>
         </Sidebar>
       </OrderSidebarStyles>
+      {showRefundModal && (
+        <RefundModal
+          order={selectedOrder}
+          store={store}
+          closeModal={() => setShowRefundModal(false)}
+        />
+      )}
       <PrintableOrder
         key={selectedOrder.orderId}
         order={selectedOrder}
@@ -590,13 +569,6 @@ const OrderSidebarStyles = styled.div`
       flex-direction: column;
       gap: 1rem 0;
       border-right: 1px solid #d4d4d8;
-    }
-    .switch-discount-email {
-      display: inline-block;
-      max-width: 14.75rem;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
     }
     .note-item {
       flex-direction: column;

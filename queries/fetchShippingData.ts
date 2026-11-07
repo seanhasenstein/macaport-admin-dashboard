@@ -7,7 +7,8 @@ export async function fetchShippingData() {
     throw new Error('Failed to fetch the shipping data.');
   }
 
-  const data: { shipping: ShippingData } = await response.json();
+  // null when the store settings have never been saved.
+  const data: { shipping: ShippingData | null } = await response.json();
 
   return data.shipping;
 }

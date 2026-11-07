@@ -17,7 +17,7 @@ const handler = nc<Request, NextApiResponse>()
       req.query.sid,
       req.query.id
     );
-    res.json({ order: result });
+    res.json({ order: result?.order });
   });
 
 export default withAuth(handler);
