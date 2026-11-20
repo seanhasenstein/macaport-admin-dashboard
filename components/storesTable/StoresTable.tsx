@@ -135,7 +135,7 @@ export default function StoresTable({ stores, tableLabel }: Props) {
                             </div>
                             <div className="divider">|</div>
                             <div className="total-orders">
-                              Orders: {s.orders.length}
+                              Orders: {s.ordersCount}
                             </div>
                           </div>
                         </div>
@@ -143,7 +143,7 @@ export default function StoresTable({ stores, tableLabel }: Props) {
                     </TdLink>
                   </td>
                   {/* <td className="text-center">{s.products}</td> */}
-                  {/* <td className="text-center">{s.orders.length}</td> */}
+                  {/* <td className="text-center">{s.ordersCount}</td> */}
                   <td className={classNames('notify-td', hasUnfulfilled)}>
                     <TdLink storeId={s._id}>
                       <span>{s.ordersStatusTotals.unfulfilled}</span>

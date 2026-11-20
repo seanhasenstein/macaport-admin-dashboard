@@ -2,19 +2,13 @@ import { useRouter } from 'next/router';
 import { useMutation, useQueryClient } from 'react-query';
 import { useSession } from 'next-auth/react';
 
-import {
-  Order,
-  Store,
-  StoreForm,
-  StoreProduct,
-  StoresTableStore,
-} from '../interfaces';
+import { Order, Store, StoreForm, StoreProduct } from '../interfaces';
 
 import { formatDataForDb } from '../utils/storeForm';
 import { handleUpdateOrderStatus } from '../utils/order';
 
 type Props = {
-  store?: Store | StoresTableStore;
+  store?: Store;
 };
 
 export function useStoreMutations({ store }: Props = {}) {
@@ -221,7 +215,7 @@ export function useStoreMutations({ store }: Props = {}) {
             return updatedOrder;
           });
 
-          const updatedStore: Store | StoresTableStore = {
+          const updatedStore: Store = {
             ...store,
             orders: updatedOrders,
           };
